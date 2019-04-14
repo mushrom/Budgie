@@ -1,6 +1,8 @@
 #include <mcts-gb/mcts.hpp>
 #include <random>
 #include <chrono>
+#include <algorithm>
+#include <iostream>
 #include <unistd.h>
 
 namespace mcts_thing {
@@ -14,35 +16,22 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
-void mcts_node::explore(coordinate coord, board *state,
+void mcts_node::explore(board *state,
                         unsigned playouts,
-                        unsigned depth,
                         unsigned branching)
 {
 	// TODO: heavy playouts
 	// TODO: more sophisticated searching here
 
-	board foo(*state);
-	foo.make_move(coord);
-	//foo.print();
-	//usleep(100000);
 
-	if (foo.moves >= (foo.dimension * foo.dimension)) {
-		// TODO: scoring
-		//foo.print();
-		update(coord, foo.determine_winner());
-
-		// asdfasdf
-		return;
-	}
-
-	unsigned iters = (depth > 0 && playouts > 1)? branching : 1; 
+	unsigned iters = (playouts > 1 && branching > 1)? branching : 1; 
 
 	for (unsigned i = 0; i < iters; i++) {
+		board foo(*state);
 		coordinate coord = random_coord(&foo);
 
 		// TODO: this will loop forever, need to test for end of game
-		for (unsigned i = 0; (!foo.is_valid_move(coord) || foo.is_suicide(coord, foo.current_player)) && i < 50; i++) {
+		for (unsigned i = 0; (!foo.is_valid_move(coord) || foo.is_suicide(coord, foo.current_player) || leaves.find(coord) != leaves.end()) && i < foo.dimension*foo.dimension; i++) {
 			coord = random_coord(&foo);
 		}
 
@@ -51,8 +40,9 @@ void mcts_node::explore(coordinate coord, board *state,
 			//foo.print();
 			// XXX:  penalize illegal/suicide moves, most definitely a better way...
 			if (foo.moves < (foo.dimension * foo.dimension)) {
-				update(coord, foo.other_player(foo.current_player));
+				//update(coord, foo.other_player(foo.current_player));
 				continue;
+				//return;
 
 			} else {
 				update(coord, foo.determine_winner());
@@ -60,11 +50,53 @@ void mcts_node::explore(coordinate coord, board *state,
 			return;
 		}
 
+		if (foo.moves >= 2*(foo.dimension * foo.dimension)) {
+			// TODO: scoring
+			//foo.print();
+			update(coord, foo.determine_winner());
+
+			// asdfasdf
+			return;
+		}
+
+		unsigned temp = (branching > 2)? branching / 2 : 1;
+
 		//leaves[coord] = mcts_node(this, foo.current_player);
 		leaves[coord].parent = this;
 		leaves[coord].color  = foo.current_player;
-		leaves[coord].explore(coord, &foo, playouts / branching, depth - (depth > 0), branching);
+
+		foo.make_move(coord);
+		leaves[coord].explore(&foo, playouts / branching, temp );
 		//explore(coord, &foo);
+	}
+}
+
+void mcts_node::exploit(board *state, unsigned moves) {
+	if (moves < 2) {
+		return;
+	}
+
+	std::vector<std::pair<coordinate, mcts_node>> vec(leaves.begin(), leaves.end());
+
+	std::sort(vec.begin(), vec.end(),
+		[](auto& a, auto& b){
+			return a.second.win_rate() > b.second.win_rate();
+		});
+
+	// trim less-useful search trees
+	for (auto it = vec.begin() + moves; it < vec.end(); it++) {
+		leaves.erase(it->first);
+	}
+
+	for (auto it = vec.begin(); it < vec.begin() + moves; it++) {
+		std::cout << "# trying out move "
+		          << "(" << it->first.first << "," << it->first.second << ")"
+		          << ", win rate: " << it->second.win_rate() << std::endl;
+
+		leaves[it->first].explore(state, 40 * moves);
+		leaves[it->first].exploit(state, moves / 2);
+
+		std::cout << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
 	}
 }
 
@@ -78,16 +110,24 @@ coordinate mcts_node::best_move(void) {
 	auto max = leaves.begin();
 
 	for (; it != leaves.end(); it++) {
-		double weight = (double)it->second.wins / (double)it->second.wins;
-		double cur = (double)max->second.wins / (double)max->second.wins;
+		double weight = (double)it->second.wins / (double)it->second.traversals;
+		double cur = (double)max->second.wins / (double)max->second.traversals;
 
 		if (weight > cur) {
 			max = it;
 		}
 	}
 
-	// TODO: actually find the move with the highest win rate
+	double cur = (double)max->second.wins / (double)max->second.traversals;
+	printf("# estimated win rate: %g (%u/%u) at (%u, %u)\n",
+	       cur, max->second.wins, max->second.traversals,
+	       max->first.first, max->first.second);
+
 	return max->first;
+}
+
+double mcts_node::win_rate(void){
+	return (double)wins / (double)traversals;
 }
 
 void mcts_node::update(coordinate& coord, point::color winner) {

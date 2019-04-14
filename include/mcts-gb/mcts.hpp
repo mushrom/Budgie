@@ -15,13 +15,14 @@ class mcts_node {
 			traversals = wins = 0;
 		};
 
-		void explore(coordinate coord, board *state,
-		             unsigned playouts=1500, unsigned depth=4, unsigned branching=10);
+		void explore(board *state, unsigned playouts=4000, unsigned branching=80);
+		void exploit(board *state, unsigned moves=8);
 		coordinate best_move(void);
 		void update(coordinate& coord, point::color winner);
+		double win_rate(void);
+
 		std::map<coordinate, mcts_node> leaves;
 		mcts_node *parent;
-
 		unsigned color;
 		unsigned traversals;
 		unsigned wins;
@@ -34,6 +35,11 @@ class mcts {
 		};
 
 		~mcts(){};
+
+		void reset() {
+			delete root;
+			root = new mcts_node(nullptr, point::color::Empty);
+		}
 
 		mcts_node *root;
 };

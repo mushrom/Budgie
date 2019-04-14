@@ -40,6 +40,10 @@ class board {
 
 		// XXX
 		board(board& other) {
+			set(other);
+		}
+
+		void set(board& other) {
 			dimension = other.dimension;
 			moves = other.moves;
 			current_player = other.current_player;
@@ -64,6 +68,7 @@ class board {
 		bool captures_enemy(coordinate& coord, point::color color);
 		void make_move(coordinate& coord);
 		unsigned count_stones(point::color player);
+		unsigned count_territory(point::color player);
 		point::color determine_winner(void);
 		void print(void);
 
@@ -76,7 +81,8 @@ class board {
 
 	private:
 		void set_coordinate(coordinate& coord, point::color color);
-		bool reaches_empty_iter(coordinate& coord, point::color color, std::map<coordinate, bool>& marked);
+		bool reaches_iter(coordinate& coord, point::color color, point::color target, std::map<coordinate, bool>& marked);
+		bool reaches(coordinate& coord, point::color color, point::color target);
 		bool reaches_empty(coordinate& coord, point::color color);
 		void clear_stones(coordinate& coord, point::color color);
 		void clear_enemy_stones(coordinate& coord, point::color color);

@@ -40,7 +40,8 @@ void gtp_client::repl(void) {
 
 		else if (s == "list_commands") {
 			std::cout << "= name\nversion\nlist_commands\nboardsize\ngenmove\n"
-					  << "clear_board\nkomi\nplay\nprotocol_version\nquit\n\n";
+					  << "clear_board\nkomi\nplay\nprotocol_version\nquit\n"
+			          << "showboard\n\n";
 		}
 
 		else if (args[0] == "komi") {
@@ -59,7 +60,9 @@ void gtp_client::repl(void) {
 		}
 
 		else if (args[0] == "clear_board") {
-			game = board(boardsize);
+			board temp(boardsize);
+			game.set(temp);
+
 			current_move = search_tree.root;
 			game.komi = komi;
 			game.moves = 0;
@@ -72,7 +75,7 @@ void gtp_client::repl(void) {
 			                          ? point::color::Black
 			                          : point::color::White;
 
-			std::string asdf = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+			std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
 
 			unsigned x = asdf.find(args[2][0]) + 1;
 			unsigned y = atoi(args[2].substr(1).c_str());
@@ -80,10 +83,6 @@ void gtp_client::repl(void) {
 			//printf("(%u, %u)\n", x, y);
 
 			coordinate coord = {x, y};
-
-			current_move->leaves[coord].parent = current_move;
-			current_move->leaves[coord].color = game.current_player;
-			current_move = &current_move->leaves[coord];
 			game.make_move(coord);
 
 			std::cout << "=\n\n";
@@ -95,15 +94,8 @@ void gtp_client::repl(void) {
 			                          ? point::color::Black
 			                          : point::color::White;
 									  */
-			//game.print();
-
-			if (game.moves > 0) {
-				current_move->explore(game.last_move, &game);
-
-			} else {
-				current_move->explore(coordinate(5, 5), &game);
-			}
-
+			current_move->explore(&game);
+			current_move->exploit(&game);
 			coordinate coord = current_move->best_move();
 
 			if (!game.is_valid_coordinate(coord) || game.is_suicide(coord, game.current_player)) {
@@ -111,11 +103,20 @@ void gtp_client::repl(void) {
 				continue;
 			}
 
-			std::string asdf = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-			std::cout << "= " << asdf[coord.first - 1] << std::to_string(coord.second) << "\n\n";
+			std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+			std::cout << "= " << asdf[coord.first - 1] << std::to_string(coord.second) << "\n";
 
-			current_move = &current_move->leaves[coord];
+			std::cout << "\n\n";
+
+			search_tree.reset();
+			current_move = search_tree.root;
+			//current_move = &current_move->leaves[coord];
 			game.make_move(coord);
+			game.print();
+		}
+
+		else if (s == "showboard") {
+			game.print();
 		}
 
 		else if (s == "quit") {

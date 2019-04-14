@@ -10,9 +10,10 @@ bool board::is_valid_move(coordinate& coord) {
 	return grid[index] == point::color::Empty;
 }
 
-bool board::reaches_empty_iter(coordinate& coord,
-                               point::color color,
-                               std::map<coordinate, bool>& marked)
+bool board::reaches_iter(coordinate& coord,
+                         point::color color,
+                         point::color target,
+                         std::map<coordinate, bool>& marked)
 {
 	bool ret = false;
 
@@ -32,7 +33,7 @@ bool board::reaches_empty_iter(coordinate& coord,
 				break;
 			}
 
-			else if (color == foo && (ret = reaches_empty_iter(thing, color, marked))) {
+			else if (color == foo && (ret = reaches_iter(thing, color, target, marked))) {
 				break;
 			}
 		}
@@ -41,11 +42,15 @@ bool board::reaches_empty_iter(coordinate& coord,
 	return ret;
 }
 
-bool board::reaches_empty(coordinate& coord, point::color color) {
+bool board::reaches(coordinate& coord, point::color color, point::color target) {
 	// XXX: map here is really bad, feels gross tbh
 	std::map<coordinate, bool> marked;
 
-	return reaches_empty_iter(coord, color, marked);
+	return reaches_iter(coord, color, target, marked);
+}
+
+bool board::reaches_empty(coordinate& coord, point::color color) {
+	return reaches(coord, color, point::color::Empty);
 }
 
 void board::clear_stones(coordinate& coord, point::color color) {
@@ -166,9 +171,27 @@ unsigned board::count_stones(point::color player) {
 	return ret;
 }
 
+unsigned board::count_territory(point::color player) {
+	unsigned territory = 0;
+
+	// XXX: horribly inefficient, need to do a flood fill sort of thing
+	for (unsigned x = 0; x < dimension; x++) {
+		for (unsigned y = 0; y < dimension; y++) {
+			coordinate coord = {x, y};
+			territory += reaches(coord, point::color::Empty, player)
+			             && !reaches(coord, point::color::Empty, other_player(player));
+		}
+	}
+
+	return 0;
+}
+
 point::color board::determine_winner(void) {
 	int white = count_stones(point::color::White) + komi;
 	int black = count_stones(point::color::Black);
+
+	white += count_territory(point::color::White);
+	black += count_territory(point::color::Black);
 
 	//printf("game result: %u points black, %u points white\n", black, white);
 
@@ -190,7 +213,7 @@ void board::print(void) {
 		for (unsigned x = 0; x < dimension; x++) {
 			unsigned index = y * dimension + x;
 
-			printf("%c ", ".O#"[grid[index]]);
+			printf("%c ", ". O#"[grid[index]]);
 		}
 
 		printf(" \n");
