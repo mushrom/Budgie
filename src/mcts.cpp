@@ -23,7 +23,6 @@ void mcts_node::explore(board *state,
 	// TODO: heavy playouts
 	// TODO: more sophisticated searching here
 
-
 	unsigned iters = (playouts > 1 && branching > 1)? branching : 1; 
 
 	for (unsigned i = 0; i < iters; i++) {
@@ -31,7 +30,12 @@ void mcts_node::explore(board *state,
 		coordinate coord = random_coord(&foo);
 
 		// TODO: this will loop forever, need to test for end of game
-		for (unsigned i = 0; (!foo.is_valid_move(coord) || foo.is_suicide(coord, foo.current_player) || leaves.find(coord) != leaves.end()) && i < foo.dimension*foo.dimension; i++) {
+		for (unsigned i = 0;
+		    (!foo.is_valid_move(coord)
+		       || leaves.find(coord) != leaves.end()
+		       || foo.is_suicide(coord, foo.current_player))
+		    && i < 2*foo.dimension*foo.dimension; i++)
+		{
 			coord = random_coord(&foo);
 		}
 
@@ -39,17 +43,20 @@ void mcts_node::explore(board *state,
 			// TODO: scoring
 			//foo.print();
 			// XXX:  penalize illegal/suicide moves, most definitely a better way...
+			/*
 			if (foo.moves < (foo.dimension * foo.dimension)) {
 				//update(coord, foo.other_player(foo.current_player));
 				continue;
 				//return;
 
 			} else {
+			*/
 				update(coord, foo.determine_winner());
-			}
-			return;
+				return;
+			//}
 		}
 
+		/*
 		if (foo.moves >= 2*(foo.dimension * foo.dimension)) {
 			// TODO: scoring
 			//foo.print();
@@ -58,21 +65,20 @@ void mcts_node::explore(board *state,
 			// asdfasdf
 			return;
 		}
+		*/
 
 		unsigned temp = (branching > 2)? branching / 2 : 1;
 
-		//leaves[coord] = mcts_node(this, foo.current_player);
 		leaves[coord].parent = this;
 		leaves[coord].color  = foo.current_player;
 
 		foo.make_move(coord);
 		leaves[coord].explore(&foo, playouts / branching, temp );
-		//explore(coord, &foo);
 	}
 }
 
 void mcts_node::exploit(board *state, unsigned moves) {
-	if (moves < 2) {
+	if (moves < 2 || leaves.begin() == leaves.end()) {
 		return;
 	}
 
@@ -93,10 +99,11 @@ void mcts_node::exploit(board *state, unsigned moves) {
 		          << "(" << it->first.first << "," << it->first.second << ")"
 		          << ", win rate: " << it->second.win_rate() << std::endl;
 
-		leaves[it->first].explore(state, 40 * moves);
+		leaves[it->first].explore(state, 30 * moves);
 		leaves[it->first].exploit(state, moves / 2);
 
 		std::cout << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
+		std::cout << "# traversals: " << leaves[it->first].traversals << std::endl;
 	}
 }
 
@@ -144,6 +151,21 @@ void mcts_node::update(coordinate& coord, point::color winner) {
 
 	if (parent != nullptr) {
 		parent->update(coord, winner);
+	}
+}
+
+unsigned mcts_node::terminal_nodes(void) {
+	if (leaves.size() == 0) {
+		return 1;
+
+	} else {
+		unsigned ret = 0;
+
+		for (auto& thing : leaves) {
+			ret += thing.second.terminal_nodes();
+		}
+
+		return ret;
 	}
 }
 

@@ -95,7 +95,14 @@ void gtp_client::repl(void) {
 			                          : point::color::White;
 									  */
 			current_move->explore(&game);
-			current_move->exploit(&game);
+			std::cout << "# total playouts (completed games): "
+			          << current_move->terminal_nodes() << std::endl;
+
+			current_move->exploit(&game, 8);
+			current_move->exploit(&game, 4);
+			current_move->exploit(&game, 2);
+
+
 			coordinate coord = current_move->best_move();
 
 			if (!game.is_valid_coordinate(coord) || game.is_suicide(coord, game.current_player)) {

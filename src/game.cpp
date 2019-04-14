@@ -129,7 +129,7 @@ bool board::captures_enemy(coordinate& coord, point::color color) {
 }
 
 bool board::is_suicide(coordinate& coord, point::color color) {
-	return !(captures_enemy(coord, color) || reaches_empty(coord, color));
+	return !(reaches_empty(coord, color) || captures_enemy(coord, color));
 }
 
 bool board::is_valid_coordinate(coordinate& coord) {
