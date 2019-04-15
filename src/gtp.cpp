@@ -109,6 +109,11 @@ void gtp_client::repl(void) {
 				continue;
 			}
 
+			if (current_move->leaves[coord].win_rate() > 0.9) {
+				std::cout << "= pass\n\n";
+				continue;
+			}
+
 			if (!game.is_valid_coordinate(coord)
 			    || game.is_suicide(coord, game.current_player))
 			{
