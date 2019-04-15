@@ -102,11 +102,17 @@ void gtp_client::repl(void) {
 			current_move->exploit(&game, 4);
 			current_move->exploit(&game, 2);
 
-
 			coordinate coord = current_move->best_move();
 
-			if (!game.is_valid_coordinate(coord) || game.is_suicide(coord, game.current_player)) {
-				std::cout << "= PASS\n\n";
+			if (current_move->leaves[coord].win_rate() < 0.1) {
+				std::cout << "= resign\n\n";
+				continue;
+			}
+
+			if (!game.is_valid_coordinate(coord)
+			    || game.is_suicide(coord, game.current_player))
+			{
+				std::cout << "= pass\n\n";
 				continue;
 			}
 
