@@ -16,12 +16,19 @@ std::vector<std::string> split_string(std::string& s) {
 	return ret;
 }
 
+coordinate string_to_coord(std::string& str) {
+	std::string asdf = "abcdefghjklmnopqrstuvwxyz";
+
+	unsigned x = asdf.find(std::tolower(str[0])) + 1;
+	unsigned y = atoi(str.substr(1).c_str());
+
+	return {x, y};
+}
+
 void gtp_client::repl(void) {
 	std::string s;
 
 	while (std::getline(std::cin, s)) {
-		std::cerr << "DEBUG: " << s << std::endl << std::flush;
-
 		if (s == "" || s[0] == '#') {
 			continue;
 		}
@@ -73,46 +80,70 @@ void gtp_client::repl(void) {
 		}
 
 		else if (args[0] == "play") {
-			point::color player = (args[1] == "B" || args[1] == "black")
+			point::color player = (args[1] == "B" || args[1] == "b" || args[1] == "black")
 			                          ? point::color::Black
 			                          : point::color::White;
 
-			std::string asdf = "abcdefghjklmnopqrstuvwxyz";
-
+			/*
 			unsigned x = asdf.find(std::tolower(args[2][0])) + 1;
 			unsigned y = atoi(args[2].substr(1).c_str());
+			coordinate coord = {x, y};
+			*/
+
+			coordinate coord = string_to_coord(args[2]);
 
 			//printf("(%u, %u)\n", x, y);
 
-			coordinate coord = {x, y};
+			// TODO: same todo as below
+			game.current_player = player;
 			game.make_move(coord);
 
 			std::cout << "=\n\n";
 		}
 
+		else if (args[0] == "set_free_handicap") {
+			point::color player = game.current_player;
+
+			for (auto it = args.begin() + 1; it != args.end(); it++) {
+				coordinate coord = string_to_coord(*it);
+
+				// TODO: again same todo
+				game.current_player = player;
+				game.make_move(coord);
+			}
+
+			std::cout << "=\n\n";
+		}
+
 		else if (args[0] == "genmove") {
-			/*
-			point::color player = (args[1] == "B")
+			// TODO: should have function to handle this, rather than mutating the game state
+			//       from here
+			// TODO: should have function to map words to player colors
+			game.current_player = (args[1] == "B" || args[1] == "b" || args[1] == "black")
 			                          ? point::color::Black
 			                          : point::color::White;
-									  */
-			current_move->explore(&game);
-			/*
-			std::cout << "# total playouts (completed games): "
-			          << current_move->terminal_nodes() << std::endl;
-					  */
 
-			current_move->exploit(&game, 8, 2);
-			current_move->exploit(&game, 4, 4);
+			current_move->explore(&game);
+			std::cerr << "# initial search playouts (completed games): "
+			          << current_move->terminal_nodes() << std::endl;
+
+			//current_move->exploit(&game, 6, 2);
+			//current_move->exploit(&game, 6, 2);
+			//current_move->exploit(&game  6, 2);
+			//current_move->exploit(&game, 2, 4);
 
 			coordinate coord = current_move->best_move();
+			std::cerr << "# exploit search playouts (completed games): "
+			          << current_move->terminal_nodes() << std::endl;
+			std::cerr << "# estimated win rate: "
+			          << current_move->leaves[coord].win_rate() << std::endl;
 
-			if (current_move->leaves[coord].win_rate() < 0.1) {
+			if (current_move->leaves[coord].win_rate() < 0.15) {
 				std::cout << "= resign\n\n";
 				continue;
 			}
 
-			if (current_move->leaves[coord].win_rate() > 0.9) {
+			if (current_move->leaves[coord].win_rate() > 0.99) {
 				std::cout << "= pass\n\n";
 				continue;
 			}
@@ -131,9 +162,13 @@ void gtp_client::repl(void) {
 
 			search_tree.reset();
 			current_move = search_tree.root;
-			//current_move = &current_move->leaves[coord];
 			game.make_move(coord);
-			//game.print();
+
+#ifdef GTP2OGS_WORKAROUND
+			// XXX: gtp2ogs is a little buggy, doesn't properly kill the bot, so need to
+			//      exit here after every move to avoid bot instances building up...
+			return;
+#endif
 		}
 
 		else if (s == "showboard") {
@@ -141,16 +176,15 @@ void gtp_client::repl(void) {
 		}
 
 		else if (s == "quit") {
+			std::cout << "=\n\n";
 			return;
 		}
 
 		else {
 			//std::cout << "? unknown command\n\n";
+			std::cerr << "# unknown command: " << s << std::endl;
 			std::cout << "= \n\n";
 		}
-
-		std::cerr << "DEBUG: Done" << std::endl << std::flush;
-		std::cout << std::flush;
 	}
 }
 
