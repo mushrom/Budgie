@@ -5,6 +5,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#define MIN(a, b) ((a < b)? a : b)
+
 namespace mcts_thing {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine generator(seed);
@@ -23,13 +25,12 @@ void mcts_node::explore(board *state,
 	// TODO: heavy playouts
 	// TODO: more sophisticated searching here
 
-	unsigned iters = (playouts > 1 && branching > 1)? branching : 1; 
+	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
 
 	for (unsigned i = 0; i < iters; i++) {
 		board foo(*state);
 		coordinate coord = random_coord(&foo);
 
-		// TODO: this will loop forever, need to test for end of game
 		for (unsigned i = 0;
 		    (!foo.is_valid_move(coord)
 		       || leaves.find(coord) != leaves.end()
@@ -40,45 +41,20 @@ void mcts_node::explore(board *state,
 		}
 
 		if (!foo.is_valid_move(coord) || foo.is_suicide(coord, foo.current_player)) {
-			// TODO: scoring
-			//foo.print();
-			// XXX:  penalize illegal/suicide moves, most definitely a better way...
-			/*
-			if (foo.moves < (foo.dimension * foo.dimension)) {
-				//update(coord, foo.other_player(foo.current_player));
-				continue;
-				//return;
-
-			} else {
-			*/
-				update(coord, foo.determine_winner());
-				return;
-			//}
-		}
-
-		/*
-		if (foo.moves >= 2*(foo.dimension * foo.dimension)) {
-			// TODO: scoring
-			//foo.print();
 			update(coord, foo.determine_winner());
-
-			// asdfasdf
 			return;
 		}
-		*/
-
-		unsigned temp = (branching > 2)? branching / 2 : 1;
 
 		leaves[coord].parent = this;
 		leaves[coord].color  = foo.current_player;
 
 		foo.make_move(coord);
-		leaves[coord].explore(&foo, playouts / branching, temp );
+		leaves[coord].explore(&foo, playouts / iters, branching);
 	}
 }
 
-void mcts_node::exploit(board *state, unsigned moves) {
-	if (moves < 1 || leaves.begin() == leaves.end()) {
+void mcts_node::exploit(board *state, unsigned moves, unsigned depth) {
+	if (depth == 0 || leaves.begin() == leaves.end()) {
 		return;
 	}
 
@@ -101,8 +77,8 @@ void mcts_node::exploit(board *state, unsigned moves) {
 		          << ", win rate: " << it->second.win_rate() << std::endl;
 				  */
 
-		leaves[it->first].explore(state, 30 * moves);
-		leaves[it->first].exploit(state, moves / 2);
+		leaves[it->first].explore(state, 45 * depth);
+		leaves[it->first].exploit(state, moves, depth - 1);
 
 		/*
 		std::cout << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
