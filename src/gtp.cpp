@@ -20,14 +20,16 @@ void gtp_client::repl(void) {
 	std::string s;
 
 	while (std::getline(std::cin, s)) {
-		if (s == "") {
+		std::cerr << "DEBUG: " << s << std::endl << std::flush;
+
+		if (s == "" || s[0] == '#') {
 			continue;
 		}
 
 		auto args = split_string(s);
 
 		if (s == "name") {
-			std::cout << "= SpecialBot\n\n";
+			std::cout << "= BudgieBot\n\n";
 		}
 
 		else if (s == "version") {
@@ -71,13 +73,13 @@ void gtp_client::repl(void) {
 		}
 
 		else if (args[0] == "play") {
-			point::color player = (args[1] == "B")
+			point::color player = (args[1] == "B" || args[1] == "black")
 			                          ? point::color::Black
 			                          : point::color::White;
 
-			std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+			std::string asdf = "abcdefghjklmnopqrstuvwxyz";
 
-			unsigned x = asdf.find(args[2][0]) + 1;
+			unsigned x = asdf.find(std::tolower(args[2][0])) + 1;
 			unsigned y = atoi(args[2].substr(1).c_str());
 
 			//printf("(%u, %u)\n", x, y);
@@ -95,12 +97,17 @@ void gtp_client::repl(void) {
 			                          : point::color::White;
 									  */
 			current_move->explore(&game);
+			/*
 			std::cout << "# total playouts (completed games): "
 			          << current_move->terminal_nodes() << std::endl;
+					  */
 
-			current_move->exploit(&game, 8);
+			current_move->exploit(&game, 2);
+			//current_move->exploit(&game, 1);
+			/*
 			current_move->exploit(&game, 4);
 			current_move->exploit(&game, 2);
+			*/
 
 			coordinate coord = current_move->best_move();
 
@@ -130,7 +137,7 @@ void gtp_client::repl(void) {
 			current_move = search_tree.root;
 			//current_move = &current_move->leaves[coord];
 			game.make_move(coord);
-			game.print();
+			//game.print();
 		}
 
 		else if (s == "showboard") {
@@ -142,8 +149,12 @@ void gtp_client::repl(void) {
 		}
 
 		else {
-			std::cout << "? unknown command\n\n";
+			//std::cout << "? unknown command\n\n";
+			std::cout << "= \n\n";
 		}
+
+		std::cerr << "DEBUG: Done" << std::endl << std::flush;
+		std::cout << std::flush;
 	}
 }
 

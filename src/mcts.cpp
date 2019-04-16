@@ -78,7 +78,7 @@ void mcts_node::explore(board *state,
 }
 
 void mcts_node::exploit(board *state, unsigned moves) {
-	if (moves < 2 || leaves.begin() == leaves.end()) {
+	if (moves < 1 || leaves.begin() == leaves.end()) {
 		return;
 	}
 
@@ -95,15 +95,19 @@ void mcts_node::exploit(board *state, unsigned moves) {
 	}
 
 	for (auto it = vec.begin(); it < vec.begin() + moves; it++) {
+		/*
 		std::cout << "# trying out move "
 		          << "(" << it->first.first << "," << it->first.second << ")"
 		          << ", win rate: " << it->second.win_rate() << std::endl;
+				  */
 
 		leaves[it->first].explore(state, 30 * moves);
 		leaves[it->first].exploit(state, moves / 2);
 
+		/*
 		std::cout << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
 		std::cout << "# traversals: " << leaves[it->first].traversals << std::endl;
+		*/
 	}
 }
 
@@ -126,9 +130,11 @@ coordinate mcts_node::best_move(void) {
 	}
 
 	double cur = (double)max->second.wins / (double)max->second.traversals;
+	/*
 	printf("# estimated win rate: %g (%u/%u) at (%u, %u)\n",
 	       cur, max->second.wins, max->second.traversals,
 	       max->first.first, max->first.second);
+		   */
 
 	return max->first;
 }
