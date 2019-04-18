@@ -1,3 +1,5 @@
+# initial things to prevent the bot from filling their own eyes
+# and immediately being captured
 oOo
 O*O
 oO?
@@ -18,24 +20,52 @@ x*x
 ---
 :0
 
-|??
-|*?
+...
+.*.
 ---
-:5
+:0
 
-Oo?
-X*o
+# captures first
+oOo
+OX*
+?O?
+:21
+
+?O?
+*XO
 ---
-:20
+:21
 
+# then defensive moves
 ?O?
 X*?
 ?O?
-:50
+:20
+
+Oo?
+.*X
+xOo
+:20
+
+O*?
+XO?
+???
+:20
+
+?Xo
+XO*
+?x?
+:20
 
 OX?
-x*?
-xOo
+*OX
+---
+:25
+
+# then offensive moves
+Oo?
+X*o
+---
 :20
 
 ?X?
@@ -43,10 +73,15 @@ o*O
 ?X?
 :20
 
-?Xx
-?*X
-?x?
-:5
+OO?
+.XO
+?*?
+:20
+
+*oo
+XO?
+xo?
+:15
 
 ?XO
 ?*o
@@ -65,46 +100,23 @@ o*O
 
 ?X*
 XOo
-XO?
-:30
-
-oOo
-OX*
-???
-:15
-
-oOo
-OX*
-?O?
-:20
-
-???
-?*?
 XOo
-:15
-
-?O?
-*XO
----
 :20
 
-oX?
-*OX
----
-:25
-
-?o?
+oOo
+oXO
 ?*?
----
-:9
+:15
 
-?*?
+*??
+XOo
 ???
----
-:9
+:15
 
-???
-?*?
+# things otherwise not matched above
+# not quite forbidden, but probably a bad idea...
+|??
+|*?
 ---
 :5
 
@@ -113,7 +125,17 @@ oX?
 +--
 :9
 
-oo?
-*oX
-oo?
-:15
+?*?
+???
+---
+:9
+
+???
+?*?
+---
+:9
+
+?Xx
+?*X
+?x?
+:5

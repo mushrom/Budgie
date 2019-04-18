@@ -23,7 +23,7 @@ bool board::is_ko(coordinate& coord) {
 	board temp(this);
 	temp.make_move(coord);
 
-	unsigned k = 8;
+	unsigned k = 4;
 	for (board *ptr = temp.parent;
 	     ptr != nullptr && k;
 	     ptr = ptr->parent, k--)

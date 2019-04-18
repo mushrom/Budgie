@@ -36,6 +36,12 @@ bool pattern::test_grid(board *state, point::color grid[9]) {
 				ret = grid[i] == point::color::Empty;
 				break;
 
+			case '.':
+				// '*' will be matched as the point for the next move,
+				// so it can't be used as a matcher for empty space
+				ret = grid[i] == point::color::Empty;
+				break;
+
 			case '?':
 			default:
 				break;
@@ -82,6 +88,12 @@ bool pattern::matches(board *state, coordinate coord) {
 	for (int y = -1; y <= 1; y += 2) {
 		for (int x = -1; x <= 1; x += 2) {
 			read_grid(state, coord, temp, y, x);
+			ret = ret || test_grid(state, temp);
+
+			rotate_grid(temp);
+			ret = ret || test_grid(state, temp);
+
+			rotate_grid(temp);
 			ret = ret || test_grid(state, temp);
 
 			rotate_grid(temp);

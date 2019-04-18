@@ -36,7 +36,9 @@ void mcts_node::explore(board *state,
 	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
 	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
 
+	/*
 	// TODO: could we make an iterator for available moves?
+	// TODO: compile-time option to enable this
 	for (unsigned y = 1; y <= state->dimension; y++) {
 		for (unsigned x = 1; x < state->dimension; x++) {
 			coordinate coord = {x, y};
@@ -46,20 +48,36 @@ void mcts_node::explore(board *state,
 			}
 		}
 	}
+	*/
 
-	if (state->moves >= 2*state->dimension*state->dimension || weighted_moves.size() == 0) {
+	for (unsigned k = 0; k < iters; k++) {
+		coordinate coord;
+
+		for (unsigned j = 0; j < state->dimension*state->dimension; j++) {
+			coord = random_coord(state);
+			if (state->is_valid_move(coord)) {
+				break;
+			}
+		}
+
+		weighted_moves.push_back({coord, patterns.search(state, coord)});
+	}
+
+	if (state->moves >= 2*state->dimension*state->dimension
+	   || weighted_moves.size() == 0)
+	{
 		update(state->determine_winner());
 		return;
 	}
 
 	// TODO: pattern weights, sort by weights
-	std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
+	//std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
 	std::sort(weighted_moves.begin(), weighted_moves.end(),
 		[](auto& a, auto& b) {
 			return a.second > b.second;
 		});
 
-	for (unsigned i = 0; i < iters && i < weighted_moves.size() - 1; i++) {
+	for (unsigned i = 0; i < iters && i < weighted_moves.size(); i++) {
 		board foo(state);
 		coordinate coord = weighted_moves[i].first;
 

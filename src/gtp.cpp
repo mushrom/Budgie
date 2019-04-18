@@ -134,6 +134,7 @@ void gtp_client::repl(void) {
 			//current_move->exploit(&game, 2, 4);
 			//current_move->exploit(&game, 8, 2);
 			/*
+			current_move->exploit(&game, 8, 2);
 			current_move->exploit(&game, 4, 4);
 			*/
 
