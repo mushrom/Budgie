@@ -1,4 +1,5 @@
 #include <mcts-gb/mcts.hpp>
+#include <mcts-gb/pattern_db.hpp>
 #include <random>
 #include <chrono>
 #include <algorithm>
@@ -10,6 +11,7 @@
 namespace mcts_thing {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine generator(seed);
+	pattern_db patterns("patterns.txt");
 
 // TODO: Maybe move this
 coordinate random_coord(board *b) {
@@ -34,22 +36,33 @@ void mcts_node::explore(board *state,
 	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
 	std::vector<coordinate> moves = state->available_moves();
 
-	if (moves.size() == 0) {
+	if (state->moves >= 2*state->dimension*state->dimension || moves.size() == 0) {
 		update(state->determine_winner());
 		return;
 	}
 
+	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
+
+	for (coordinate& thing : moves) {
+		weighted_moves.push_back({thing, patterns.search(state, thing)});
+	}
+
 	// TODO: pattern weights, sort by weights
-	std::shuffle(moves.begin(), moves.end(), generator);
+	//std::shuffle(moves.begin(), moves.end(), generator);
+	std::sort(weighted_moves.begin(), weighted_moves.end(),
+		[](auto& a, auto& b) {
+			return a.second > b.second;
+		});
 
 	for (unsigned i = 0; i < iters && i < moves.size() - 1; i++) {
-		board foo(*state);
-		coordinate coord = moves[i];
+		board foo(state);
+		coordinate coord = weighted_moves[i].first;
 
 		leaves[coord].parent = this;
 		leaves[coord].color  = foo.current_player;
 
 		foo.make_move(coord);
+		//foo.print();
 		leaves[coord].explore(&foo, playouts / iters, branching);
 	}
 }
@@ -113,7 +126,7 @@ coordinate mcts_node::best_move(void) {
 }
 
 double mcts_node::win_rate(void){
-	return (double)wins / (double)traversals;
+	return (traversals > 0)?  (double)wins / (double)traversals : 0;
 }
 
 void mcts_node::update(point::color winner) {

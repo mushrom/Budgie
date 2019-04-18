@@ -1,18 +1,48 @@
 #include <stdio.h>
 #include <mcts-gb/game.hpp>
 #include <map>
+#include <iostream>
 
 namespace mcts_thing {
 
 bool board::is_valid_move(coordinate& coord) {
 	// TODO: check for ko
-	if (!is_valid_coordinate(coord)) {
+	if (!is_valid_coordinate(coord) || is_ko(coord)) {
 		return false;
 	}
 
 	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 
 	return grid[index] == point::color::Empty;
+}
+
+bool board::is_ko(coordinate& coord) {
+	// TODO: need a faster way to search for ko...
+	return (parent && parent->last_move == coord);
+
+	board temp(this);
+	temp.make_move(coord);
+
+	unsigned k = 8;
+	for (board *ptr = temp.parent;
+	     ptr != nullptr && k;
+	     ptr = ptr->parent, k--)
+	{
+		bool is_different = false;
+
+		for (unsigned i = 0; i < dimension * dimension; i++) {
+			if (temp.grid[i] != ptr->grid[i]) {
+				is_different = true;
+				break;
+			}
+		}
+
+		if (!is_different) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool board::reaches_iter(coordinate& coord,

@@ -39,19 +39,21 @@ class board {
 		};
 
 		// XXX
-		board(board& other) {
+		board(board *other) {
 			set(other);
 		}
 
-		void set(board& other) {
-			dimension = other.dimension;
-			moves = other.moves;
-			current_player = other.current_player;
+		void set(board *other) {
+			parent = other;
+
+			dimension = other->dimension;
+			moves = other->moves;
+			current_player = other->current_player;
 
 			grid.reserve(dimension * dimension);
 
 			for (unsigned i = 0; i < dimension * dimension; i++) {
-				grid[i] = other.grid[i];
+				grid[i] = other->grid[i];
 			}
 		}
 
@@ -65,6 +67,7 @@ class board {
 		bool is_valid_move(coordinate& coord);
 		bool is_valid_coordinate(coordinate& coord);
 		bool is_suicide(coordinate& coord, point::color color);
+		bool is_ko(coordinate& coord);
 		bool captures_enemy(coordinate& coord, point::color color);
 		void make_move(coordinate& coord);
 		unsigned count_stones(point::color player);
@@ -72,6 +75,15 @@ class board {
 		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
 		void print(void);
+		void reset(unsigned boardsize, unsigned n_komi) {
+			dimension = boardsize;
+			komi = n_komi;
+			grid.reserve(dimension * dimension);
+
+			for (unsigned i = 0; i < dimension * dimension; i++) {
+				grid[i] = point::color::Empty;
+			}
+		}
 
 		std::vector<point::color> grid;
 		int komi = 7;
@@ -79,6 +91,7 @@ class board {
 		unsigned moves = 0;
 		point::color current_player = point::color::Black;
 		coordinate last_move;
+		board *parent = nullptr;
 
 	private:
 		void set_coordinate(coordinate& coord, point::color color);

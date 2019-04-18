@@ -69,12 +69,13 @@ void gtp_client::repl(void) {
 		}
 
 		else if (args[0] == "clear_board") {
-			board temp(boardsize);
-			game.set(temp);
+			game.reset(boardsize, komi);
 
+			/*
 			current_move = search_tree.root;
 			game.komi = komi;
 			game.moves = 0;
+			*/
 
 			std::cout << "=\n\n";
 		}
@@ -131,7 +132,7 @@ void gtp_client::repl(void) {
 			//current_move->exploit(&game, 6, 2);
 			//current_move->exploit(&game, 6, 2);
 			//current_move->exploit(&game, 2, 4);
-			current_move->exploit(&game, 8, 2);
+			//current_move->exploit(&game, 8, 2);
 			/*
 			current_move->exploit(&game, 4, 4);
 			*/
@@ -147,10 +148,12 @@ void gtp_client::repl(void) {
 				continue;
 			}
 
+			/*
 			if (current_move->leaves[coord].win_rate() > 0.99) {
 				std::cout << "= pass\n\n";
 				continue;
 			}
+			*/
 
 			if (!game.is_valid_coordinate(coord)
 			    || game.is_suicide(coord, game.current_player))
