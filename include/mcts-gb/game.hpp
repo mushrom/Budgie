@@ -69,6 +69,7 @@ class board {
 		void make_move(coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
+		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
 		void print(void);
 

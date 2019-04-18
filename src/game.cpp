@@ -5,6 +5,11 @@
 namespace mcts_thing {
 
 bool board::is_valid_move(coordinate& coord) {
+	// TODO: check for ko
+	if (!is_valid_coordinate(coord)) {
+		return false;
+	}
+
 	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 
 	return grid[index] == point::color::Empty;
@@ -175,8 +180,8 @@ unsigned board::count_territory(point::color player) {
 	unsigned territory = 0;
 
 	// XXX: horribly inefficient, need to do a flood fill sort of thing
-	for (unsigned x = 0; x < dimension; x++) {
-		for (unsigned y = 0; y < dimension; y++) {
+	for (unsigned x = 1; x <= dimension; x++) {
+		for (unsigned y = 1; y <= dimension; y++) {
 			coordinate coord = {x, y};
 			territory += reaches(coord, point::color::Empty, player)
 			             && !reaches(coord, point::color::Empty, other_player(player));
@@ -184,6 +189,22 @@ unsigned board::count_territory(point::color player) {
 	}
 
 	return 0;
+}
+
+std::vector<coordinate> board::available_moves(void) {
+	std::vector<coordinate> ret = {};
+
+	for (unsigned x = 1; x <= dimension; x++) {
+		for (unsigned y = 1; y <= dimension; y++) {
+			coordinate coord = {x, y};
+
+			if (is_valid_move(coord) && !is_suicide(coord, current_player)) {
+				ret.push_back(coord);
+			}
+		}
+	}
+
+	return ret;
 }
 
 point::color board::determine_winner(void) {

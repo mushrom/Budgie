@@ -18,6 +18,12 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
+auto random_choice(auto& c) {
+	std::uniform_int_distribution<int> distribution(0, c.size());
+
+	return c[distribution(generator)];
+}
+
 void mcts_node::explore(board *state,
                         unsigned playouts,
                         unsigned branching)
@@ -26,24 +32,19 @@ void mcts_node::explore(board *state,
 	// TODO: more sophisticated searching here
 
 	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
+	std::vector<coordinate> moves = state->available_moves();
 
-	for (unsigned i = 0; i < iters; i++) {
+	if (moves.size() == 0) {
+		update(state->determine_winner());
+		return;
+	}
+
+	// TODO: pattern weights, sort by weights
+	std::shuffle(moves.begin(), moves.end(), generator);
+
+	for (unsigned i = 0; i < iters && i < moves.size() - 1; i++) {
 		board foo(*state);
-		coordinate coord = random_coord(&foo);
-
-		for (unsigned i = 0;
-		    (!foo.is_valid_move(coord)
-		       || leaves.find(coord) != leaves.end()
-		       || foo.is_suicide(coord, foo.current_player))
-		    && i < 2*foo.dimension*foo.dimension; i++)
-		{
-			coord = random_coord(&foo);
-		}
-
-		if (!foo.is_valid_move(coord) || foo.is_suicide(coord, foo.current_player)) {
-			update(coord, foo.determine_winner());
-			return;
-		}
+		coordinate coord = moves[i];
 
 		leaves[coord].parent = this;
 		leaves[coord].color  = foo.current_player;
@@ -71,19 +72,15 @@ void mcts_node::exploit(board *state, unsigned moves, unsigned depth) {
 	}
 
 	for (auto it = vec.begin(); it < vec.begin() + moves; it++) {
-		/*
-		std::cout << "# trying out move "
+		std::cerr << "# trying out move "
 		          << "(" << it->first.first << "," << it->first.second << ")"
 		          << ", win rate: " << it->second.win_rate() << std::endl;
-				  */
 
 		leaves[it->first].explore(state, 45 * depth);
 		leaves[it->first].exploit(state, moves, depth - 1);
 
-		/*
-		std::cout << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
-		std::cout << "# traversals: " << leaves[it->first].traversals << std::endl;
-		*/
+		std::cerr << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
+		std::cerr << "# traversals: " << leaves[it->first].traversals << std::endl;
 	}
 }
 
@@ -119,7 +116,7 @@ double mcts_node::win_rate(void){
 	return (double)wins / (double)traversals;
 }
 
-void mcts_node::update(coordinate& coord, point::color winner) {
+void mcts_node::update(point::color winner) {
 	//leaves[coord].traversals++;
 	//leaves[coord].wins += this->color == winner;
 	traversals++;
@@ -132,7 +129,7 @@ void mcts_node::update(coordinate& coord, point::color winner) {
 	*/
 
 	if (parent != nullptr) {
-		parent->update(coord, winner);
+		parent->update(winner);
 	}
 }
 
