@@ -34,17 +34,22 @@ void mcts_node::explore(board *state,
 	// TODO: more sophisticated searching here
 
 	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
-	std::vector<coordinate> moves = state->available_moves();
-
-	if (state->moves >= 2*state->dimension*state->dimension || moves.size() == 0) {
-		update(state->determine_winner());
-		return;
-	}
-
 	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
 
-	for (coordinate& thing : moves) {
-		weighted_moves.push_back({thing, patterns.search(state, thing)});
+	// TODO: could we make an iterator for available moves?
+	for (unsigned y = 1; y <= state->dimension; y++) {
+		for (unsigned x = 1; x < state->dimension; x++) {
+			coordinate coord = {x, y};
+
+			if (state->is_valid_move(coord)) {
+				weighted_moves.push_back({coord, patterns.search(state, coord)});
+			}
+		}
+	}
+
+	if (state->moves >= 2*state->dimension*state->dimension || weighted_moves.size() == 0) {
+		update(state->determine_winner());
+		return;
 	}
 
 	// TODO: pattern weights, sort by weights
@@ -54,7 +59,7 @@ void mcts_node::explore(board *state,
 			return a.second > b.second;
 		});
 
-	for (unsigned i = 0; i < iters && i < moves.size() - 1; i++) {
+	for (unsigned i = 0; i < iters && i < weighted_moves.size() - 1; i++) {
 		board foo(state);
 		coordinate coord = weighted_moves[i].first;
 

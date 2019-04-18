@@ -210,8 +210,8 @@ unsigned board::count_territory(point::color player) {
 	unsigned territory = 0;
 
 	// XXX: horribly inefficient, need to do a flood fill sort of thing
-	for (unsigned x = 1; x <= dimension; x++) {
-		for (unsigned y = 1; y <= dimension; y++) {
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 			territory += reaches(coord, point::color::Empty, player)
 			             && !reaches(coord, point::color::Empty, other_player(player));
@@ -224,11 +224,11 @@ unsigned board::count_territory(point::color player) {
 std::vector<coordinate> board::available_moves(void) {
 	std::vector<coordinate> ret = {};
 
-	for (unsigned x = 1; x <= dimension; x++) {
-		for (unsigned y = 1; y <= dimension; y++) {
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 
-			if (is_valid_move(coord) && !is_suicide(coord, current_player)) {
+			if (is_valid_move(coord)/* && !is_suicide(coord, current_player)*/) {
 				ret.push_back(coord);
 			}
 		}
