@@ -53,7 +53,7 @@ void mcts_node::explore(board *state,
 	}
 
 	// TODO: pattern weights, sort by weights
-	//std::shuffle(moves.begin(), moves.end(), generator);
+	std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
 	std::sort(weighted_moves.begin(), weighted_moves.end(),
 		[](auto& a, auto& b) {
 			return a.second > b.second;

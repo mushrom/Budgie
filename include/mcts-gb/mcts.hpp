@@ -15,7 +15,7 @@ class mcts_node {
 			traversals = wins = 0;
 		};
 
-		void explore(board *state, unsigned playouts=2400, unsigned branching=20);
+		void explore(board *state, unsigned playouts=1200, unsigned branching=10);
 		void exploit(board *state, unsigned moves=8, unsigned depth=4);
 		coordinate best_move(void);
 		void update(point::color winner);

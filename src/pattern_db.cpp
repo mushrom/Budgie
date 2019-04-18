@@ -45,19 +45,33 @@ bool pattern::test_grid(board *state, point::color grid[9]) {
 	return ret;
 }
 
-void pattern::flip_grid_horizontally(point::color grid[9]) {
-	for (unsigned i = 0; i < 3; i++) {
-		point::color temp = grid[3*i];
-		grid[3*i] = grid[3*i + 2];
-		grid[3*i + 2] = temp;
+void pattern::rotate_grid(point::color grid[9]) {
+	for (unsigned y = 0; y < 3; y++) {
+		for (unsigned x = 0; x < 3; x++) {
+			point::color temp = grid[y*3 + x];
+
+			grid[y*3 + x] = grid[x*3 + y];
+			grid[x*3 + y] = temp;
+		}
 	}
 }
 
-void pattern::flip_grid_vertically(point::color grid[9]) {
-	for (unsigned i = 0; i < 3; i++) {
-		point::color temp = grid[i];
-		grid[i] = grid[6 + i];
-		grid[6 + i] = temp;
+void pattern::read_grid(board *state, coordinate coord, point::color grid[9], int y_dir, int x_dir) {
+	int y_start = y_dir * y_offset;
+	int y_end = y_start + y_dir*-3;
+
+	int x_start = x_dir * x_offset;
+	int x_end = x_start + x_dir*-3;
+
+	int j = 0;
+	for (int y = y_start; y != y_end; y -= y_dir, j++) {
+
+		int m = 0;
+		for (int x = x_start; x != x_end; x -= x_dir, m++) {
+			coordinate k = {coord.first + x, coord.second + y};
+			//grid[3*(y-y_offset) + (x-x_offset)] = state->get_coordinate(k);
+			grid[j*3 + m] = state->get_coordinate(k);
+		}
 	}
 }
 
@@ -65,23 +79,30 @@ bool pattern::matches(board *state, coordinate coord) {
 	bool ret = false;
 	point::color temp[9];
 
-	for (int y = -1; y <= 1; y++) {
-		for (int x = -1; x <= 1; x++) {
-			coordinate k = {coord.first + x, coord.second + y};
-			temp[3*(y+1) + (x+1)] = state->get_coordinate(k);
-		}
-	}
-
-	for (unsigned y = 0; y < 2; y++) {
-		for (unsigned x = 0; x < 2; x++) {
+	for (int y = -1; y <= 1; y += 2) {
+		for (int x = -1; x <= 1; x += 2) {
+			read_grid(state, coord, temp, y, x);
 			ret = ret || test_grid(state, temp);
-			flip_grid_horizontally(temp);
-		}
 
-		flip_grid_vertically(temp);
+			rotate_grid(temp);
+			ret = ret || test_grid(state, temp);
+		}
 	}
 
 	return ret;
+}
+
+void pattern::print(void) {
+	std::cerr << "weight: " << weight << ", ";
+	std::cerr << "x off: " << x_offset << ", y off: " << y_offset << std::endl;
+
+	for (unsigned y = 0; y < 3; y++) {
+		for (unsigned x = 0; x < 3; x++) {
+			std::cerr << minigrid[y*3 + x];
+		}
+
+		std::cerr << std::endl;
+	}
 }
 
 pattern pattern_db::read_pattern(std::ifstream& f){
@@ -102,6 +123,11 @@ asdf:
 		if (i < 3) {
 			for (unsigned k = 0; k < 3; k++) {
 				ret.minigrid[i*3 + k] = buf[k];
+
+				if (buf[k] == '*') {
+					ret.x_offset = k;
+					ret.y_offset = i;
+				}
 			}
 		}
 
@@ -110,18 +136,7 @@ asdf:
 		}
 	}
 
-	/*
-	std::cerr << "read a pattern with weight " << ret.weight << ":\n";
-
-	for (unsigned y = 0; y < 3; y++) {
-		for (unsigned x = 0; x < 3; x++) {
-			std::cerr << ret.minigrid[y*3 + x];
-		}
-
-		std::cerr << std::endl;
-	}
-	*/
-
+	//ret.print();
 	ret.valid = true;
 	return ret;
 }
