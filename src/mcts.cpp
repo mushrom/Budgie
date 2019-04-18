@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #define MIN(a, b) ((a < b)? a : b)
+#define MAX(a, b) ((a > b)? a : b)
 
 namespace mcts_thing {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -36,21 +37,24 @@ void mcts_node::explore(board *state,
 	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
 	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
 
-	/*
 	// TODO: could we make an iterator for available moves?
 	// TODO: compile-time option to enable this
 	for (unsigned y = 1; y <= state->dimension; y++) {
-		for (unsigned x = 1; x < state->dimension; x++) {
+		for (unsigned x = 1; x <= state->dimension; x++) {
 			coordinate coord = {x, y};
 
 			if (state->is_valid_move(coord)) {
-				weighted_moves.push_back({coord, patterns.search(state, coord)});
+				unsigned weight = patterns.search(state, coord);
+
+				if (weight != 0) {
+					weighted_moves.push_back({coord, weight});
+				}
 			}
 		}
 	}
-	*/
 
-	for (unsigned k = 0; k < iters; k++) {
+	/*
+	for (unsigned k = 0; k < MIN(iters, 20); k++) {
 		coordinate coord;
 
 		for (unsigned j = 0; j < state->dimension*state->dimension; j++) {
@@ -60,8 +64,19 @@ void mcts_node::explore(board *state,
 			}
 		}
 
-		weighted_moves.push_back({coord, patterns.search(state, coord)});
+		unsigned weight = patterns.search(state, coord);
+
+		if (weight != 0) {
+			weighted_moves.push_back({coord, patterns.search(state, coord)});
+		}
 	}
+	*/
+
+	/*
+	printf("\e[1;1H");
+	state->print();
+	usleep(1000000);
+	*/
 
 	if (state->moves >= 2*state->dimension*state->dimension
 	   || weighted_moves.size() == 0)
@@ -71,7 +86,7 @@ void mcts_node::explore(board *state,
 	}
 
 	// TODO: pattern weights, sort by weights
-	//std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
+	std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
 	std::sort(weighted_moves.begin(), weighted_moves.end(),
 		[](auto& a, auto& b) {
 			return a.second > b.second;
@@ -85,7 +100,6 @@ void mcts_node::explore(board *state,
 		leaves[coord].color  = foo.current_player;
 
 		foo.make_move(coord);
-		//foo.print();
 		leaves[coord].explore(&foo, playouts / iters, branching);
 	}
 }

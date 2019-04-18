@@ -16,12 +16,23 @@ O*O
 :0
 
 xXx
-x*x
+x*X
 ---
 :0
 
 ...
 .*.
+---
+:0
+
+# dumb things to avoid
+?X?
+x*X
+---
+:0
+
+.*.
+...
 ---
 :0
 
@@ -36,82 +47,105 @@ OX*
 ---
 :21
 
+|?O
+|X*
++--
+:15
+
 # then defensive moves
+# - block peeps
 ?O?
 X*?
 ?O?
 :20
 
+# - or at the very least respond if poked through...
+?O?
+*XX
+?O?
+:30
+
+# - block cuts
 Oo?
 .*X
-xOo
+xO?
 :20
 
-O*?
-XO?
+# - also block these cuts
+*O?
+OX?
 ???
 :20
 
+# - respond to atari
 ?Xo
 XO*
 ?x?
 :20
 
+# - connect stuff
 OX?
 *OX
 ---
+:20
+
+# - respond to attachment
+.O?
+*Xx
+???
 :25
 
 # then offensive moves
 Oo?
 X*o
 ---
+:15
+
+# - take some liberties
+oOo
+OX*
+???
 :20
 
-?X?
-o*O
-?X?
+oX?
+O*o
+oX?
 :20
 
+# - peep
+oX?
+*.o
+ox?
+:20
+
+# - try for a ladder
 OO?
 .XO
 ?*?
 :20
 
-*oo
-XO?
-xo?
+# - poke shape points
+.X.
+.*.
+X.X
 :15
 
-?XO
-?*o
-?oo
+X.X
+.*.
+X..
 :20
 
-?XO
-?*X
-?Oo
+# - try to make false eyes
+*xo
+X.X
+XXx
+:21
+
+# - asdf
+*..
+..O
+x..
 :20
-
-?o*
-?OX
-?Ox
-:20
-
-?X*
-XOo
-XOo
-:20
-
-oOo
-oXO
-?*?
-:15
-
-*??
-XOo
-???
-:15
 
 # things otherwise not matched above
 # not quite forbidden, but probably a bad idea...

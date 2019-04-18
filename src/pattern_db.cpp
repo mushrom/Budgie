@@ -128,7 +128,7 @@ asdf:
 			return ret;
 		}
 
-		while (buf == "" || buf[0] == '#') {
+		if (buf == "" || buf[0] == '#') {
 			goto asdf;
 		}
 
@@ -168,7 +168,14 @@ pattern_db::pattern_db(const std::string& db) {
 unsigned pattern_db::search(board *state, coordinate coord) {
 	for (auto& p : patterns) {
 		if (p.matches(state, coord)) {
-			//std::cerr << "matched pattern with weight " << p.weight << std::endl;
+			/*
+			if (p.weight > 20) {
+				std::cerr << "matched pattern with weight " << p.weight <<
+					" at (" << coord.first << "," << coord.second << ")" << std::endl;
+				state->print();
+				p.print();
+			}
+			*/
 			return p.weight;
 		}
 	}

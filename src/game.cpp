@@ -260,7 +260,7 @@ void board::print(void) {
 	//printf("\e[1;1H");
 
 	for (unsigned y = 0; y < dimension; y++) {
-		printf("# ");
+		printf("# %2d ", y + 1);
 		for (unsigned x = 0; x < dimension; x++) {
 			unsigned index = y * dimension + x;
 
@@ -269,6 +269,12 @@ void board::print(void) {
 
 		printf(" \n");
 	}
+
+	printf("#   ");
+	for (unsigned x = 0; x < dimension; x++) {
+		printf("%2d", x + 1);
+	}
+	printf(" \n");
 }
 
 // namespace mcts_thing
