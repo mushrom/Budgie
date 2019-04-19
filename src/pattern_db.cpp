@@ -53,7 +53,8 @@ bool pattern::test_grid(board *state, point::color grid[9]) {
 
 void pattern::rotate_grid(point::color grid[9]) {
 	for (unsigned y = 0; y < 3; y++) {
-		for (unsigned x = 0; x < 3; x++) {
+		for (unsigned x = y; x < 3; x++) {
+			/*
 			unsigned ny = 2 - x;
 			unsigned nx = y;
 
@@ -61,7 +62,29 @@ void pattern::rotate_grid(point::color grid[9]) {
 
 			grid[3*ny + nx] = grid[3*y + x];
 			grid[3*y + x] = temp;
+			*/
+
+			point::color temp = grid[3*y + x];
+
+			grid[3*y + x] = grid[3*x + y];
+			grid[3*x + y] = temp;
 		}
+	}
+}
+
+void pattern::flip_horizontally(point::color grid[9]) {
+	for (unsigned y = 0; y < 3; y++) {
+		point::color temp = grid[3*y];
+		grid[3*y] = grid[3*y + 2];
+		grid[3*y + 2] = temp;
+	}
+}
+
+void pattern::flip_vertically(point::color grid[9]) {
+	for (unsigned x = 0; x < 3; x++) {
+		point::color temp = grid[x];
+		grid[x] = grid[3*2 + x];
+		grid[3*2 + x] = temp;
 	}
 }
 
@@ -72,11 +95,18 @@ void pattern::read_grid(board *state, coordinate coord, point::color grid[9], in
 	int x_start = x_dir * x_offset;
 	int x_end = x_start + x_dir*-3;
 
+	/*
+	fprintf(stderr, "yoff: %d, xoff: %d, y_start: %d, x_start: %d, "
+	        "y_end: %d: x_end: %d\n",
+	        y_offset, x_offset, y_start, x_start, y_end, x_end);
+			*/
+
 	int j = 0;
 	for (int y = y_start; y != y_end; y -= y_dir, j++) {
-
 		int m = 0;
+
 		for (int x = x_start; x != x_end; x -= x_dir, m++) {
+			//fprintf(stderr, "- x: %d, y: %d\n", x, y);
 			coordinate k = {coord.first + x, coord.second + y};
 			//grid[3*(y-y_offset) + (x-x_offset)] = state->get_coordinate(k);
 			grid[j*3 + m] = state->get_coordinate(k);
@@ -95,6 +125,62 @@ bool pattern::matches(board *state, coordinate coord) {
 
 			/*
 			fprintf(stderr, "rotations for xdir: %d, ydir: %d\n", x, y);;
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_horizontally(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_vertically(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_horizontally(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_vertically(temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+
+			fprintf(stderr, "- (rotating)\n");;
+			*/
+			rotate_grid(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_horizontally(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_vertically(temp);
+			ret = ret || test_grid(state, temp);
+			/*
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			flip_horizontally(temp);
+			ret = ret || test_grid(state, temp);
+			/*
 			print_grid(temp);
 			std::cerr << std::endl;
 			*/

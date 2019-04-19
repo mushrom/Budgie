@@ -31,20 +31,20 @@ x*X
 ---
 :0
 
-.*.
-...
----
-:0
+#.*.
+#...
+#---
+#:0
 
-???
-?*?
----
-:9
+#???
+#?*?
+#---
+#:9
 
-|??
-|*?
-|??
-:9
+#|??
+#|*?
+#|??
+#:9
 
 # captures first
 oOo
@@ -67,6 +67,23 @@ Oo?
 X*o
 ---
 :25
+
+# - poke shape points
+.X.
+o*o
+XoX
+:15
+
+X.X
+.*.
+X..
+:20
+
+# - try to make false eyes
+*XO
+X.X
+XXx
+:21
 
 # then offensive moves
 # - take some liberties
@@ -92,47 +109,13 @@ oX?
 #?*?
 #:20
 
-# - poke shape points
-.X.
-.*.
-X.X
-:15
-
-X.X
-.*.
-X..
-:20
-
-# - try to make false eyes
-*xo
-X.X
-XXx
-:21
 
 # then defensive moves
-# - block peeps
-?O?
-X*?
-?O?
-:20
-
-# - or at the very least respond if poked through...
-?O?
-*XX
-?O?
-:30
-
-# - block cuts
-Oo?
-.*X
-xO?
-:20
-
-# - also block these cuts
-*O?
-OX?
-???
-:20
+# - don't play into an obvious atari
+?X?
+X*x
+?x?
+:5
 
 # - respond to atari
 ?Xo
@@ -157,6 +140,30 @@ OX?
 XXO
 ???
 :22
+
+# - block peeps
+?O?
+X*?
+?O?
+:20
+
+# - or at the very least respond if poked through...
+?O?
+*XX
+?O?
+:30
+
+# - block cuts
+Oo?
+.*X
+xO?
+:20
+
+# - also block these cuts
+*O?
+OX?
+???
+:20
 
 # - asdf
 *..

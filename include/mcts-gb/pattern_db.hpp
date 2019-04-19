@@ -21,6 +21,9 @@ class pattern {
 	private:
 		bool test_grid(board *state, point::color grid[9]);
 		void rotate_grid(point::color grid[9]);
+		void flip_horizontally(point::color grid[9]);
+		void flip_vertically(point::color grid[9]);
+
 		void read_grid(board *state, coordinate coord, point::color grid[9], int y_dir, int x_dir);
 		void print_grid(point::color grid[9]);
 

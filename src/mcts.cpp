@@ -72,15 +72,16 @@ void mcts_node::explore(board *state,
 	}
 	*/
 
-	//printf("\e[1;1H");
 	/*
+	printf("\e[1;1H");
 	state->print();
-	usleep(1000000);
+	usleep(10000);
 	*/
 
 	if (state->moves >= 2*state->dimension*state->dimension
 	   || weighted_moves.size() == 0)
 	{
+		//state->print();
 		update(state->determine_winner());
 		return;
 	}
