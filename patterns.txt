@@ -36,11 +36,21 @@ x*X
 ---
 :0
 
+???
+?*?
+---
+:9
+
+|??
+|*?
+|??
+:9
+
 # captures first
 oOo
 OX*
 ?O?
-:21
+:25
 
 ?O?
 *XO
@@ -51,6 +61,53 @@ OX*
 |X*
 +--
 :15
+
+# asdf
+Oo?
+X*o
+---
+:25
+
+# then offensive moves
+# - take some liberties
+oOo
+OX*
+???
+:21
+
+oX?
+O*o
+oX?
+:20
+
+## - peep
+#oX?
+#*.o
+#oX?
+#:20
+
+## - try for a ladder
+#OO?
+#.XO
+#?*?
+#:20
+
+# - poke shape points
+.X.
+.*.
+X.X
+:15
+
+X.X
+.*.
+X..
+:20
+
+# - try to make false eyes
+*xo
+X.X
+XXx
+:21
 
 # then defensive moves
 # - block peeps
@@ -95,51 +152,11 @@ OX?
 ???
 :25
 
-# then offensive moves
-Oo?
-X*o
----
-:15
-
-# - take some liberties
-oOo
-OX*
+# - respond to butting
+??*
+XXO
 ???
-:20
-
-oX?
-O*o
-oX?
-:20
-
-# - peep
-oX?
-*.o
-ox?
-:20
-
-# - try for a ladder
-OO?
-.XO
-?*?
-:20
-
-# - poke shape points
-.X.
-.*.
-X.X
-:15
-
-X.X
-.*.
-X..
-:20
-
-# - try to make false eyes
-*xo
-X.X
-XXx
-:21
+:22
 
 # - asdf
 *..
@@ -159,15 +176,15 @@ x..
 +--
 :9
 
-?*?
-???
----
-:9
+#?*?
+#???
+#---
+#:9
 
-???
-?*?
----
-:9
+#|??
+#|?*
+#|??
+#:9
 
 ?Xx
 ?*X

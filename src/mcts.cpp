@@ -72,8 +72,8 @@ void mcts_node::explore(board *state,
 	}
 	*/
 
+	//printf("\e[1;1H");
 	/*
-	printf("\e[1;1H");
 	state->print();
 	usleep(1000000);
 	*/

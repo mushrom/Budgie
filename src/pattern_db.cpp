@@ -54,10 +54,13 @@ bool pattern::test_grid(board *state, point::color grid[9]) {
 void pattern::rotate_grid(point::color grid[9]) {
 	for (unsigned y = 0; y < 3; y++) {
 		for (unsigned x = 0; x < 3; x++) {
-			point::color temp = grid[y*3 + x];
+			unsigned ny = 2 - x;
+			unsigned nx = y;
 
-			grid[y*3 + x] = grid[x*3 + y];
-			grid[x*3 + y] = temp;
+			point::color temp = grid[3*ny + nx];
+
+			grid[3*ny + nx] = grid[3*y + x];
+			grid[3*y + x] = temp;
 		}
 	}
 }
@@ -90,18 +93,61 @@ bool pattern::matches(board *state, coordinate coord) {
 			read_grid(state, coord, temp, y, x);
 			ret = ret || test_grid(state, temp);
 
+			/*
+			fprintf(stderr, "rotations for xdir: %d, ydir: %d\n", x, y);;
+			print_grid(temp);
+			std::cerr << std::endl;
+			*/
+
+			/*
 			rotate_grid(temp);
+			print_grid(temp);
+			std::cerr << std::endl;
 			ret = ret || test_grid(state, temp);
 
 			rotate_grid(temp);
+			print_grid(temp);
+			std::cerr << std::endl;
 			ret = ret || test_grid(state, temp);
 
 			rotate_grid(temp);
+			print_grid(temp);
+			std::cerr << std::endl;
 			ret = ret || test_grid(state, temp);
+			*/
 		}
 	}
 
 	return ret;
+}
+
+void pattern::print_grid(point::color grid[9]){
+	for (unsigned y = 0; y < 3; y++) {
+		for (unsigned x = 0; x < 3; x++) {
+			switch (grid[y*3 + x]) {
+				case point::color::Empty:
+					std::cerr << '.';
+					break;
+
+				case point::color::Black:
+					std::cerr << 'O';
+					break;
+
+				case point::color::White:
+					std::cerr << '#';
+					break;
+
+				case point::color::Invalid:
+					std::cerr << '+';
+					break;
+			}
+
+			std::cerr << ' ';
+			//std::cerr << grid[y*3 + x];
+		}
+
+		std::cerr << std::endl;
+	}
 }
 
 void pattern::print(void) {
@@ -110,7 +156,7 @@ void pattern::print(void) {
 
 	for (unsigned y = 0; y < 3; y++) {
 		for (unsigned x = 0; x < 3; x++) {
-			std::cerr << minigrid[y*3 + x];
+			std::cerr << minigrid[y*3 + x] << ' ';
 		}
 
 		std::cerr << std::endl;
@@ -169,12 +215,12 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	for (auto& p : patterns) {
 		if (p.matches(state, coord)) {
 			/*
-			if (p.weight > 20) {
+			//if (p.weight > 20) {
 				std::cerr << "matched pattern with weight " << p.weight <<
 					" at (" << coord.first << "," << coord.second << ")" << std::endl;
 				state->print();
 				p.print();
-			}
+			//}
 			*/
 			return p.weight;
 		}
