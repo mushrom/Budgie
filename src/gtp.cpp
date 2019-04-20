@@ -124,41 +124,19 @@ void gtp_client::repl(void) {
 			                          ? point::color::Black
 			                          : point::color::White;
 
-			current_move->explore(&game);
-			std::cerr << "# initial search playouts (completed games): "
-			          << current_move->terminal_nodes() << std::endl;
+			search_tree.reset();
+			coordinate coord = search_tree.do_search(&game);
 
-			//current_move->exploit(&game, 6, 2);
-			//current_move->exploit(&game, 6, 2);
-			//current_move->exploit(&game, 6, 2);
-			//current_move->exploit(&game, 2, 4);
-			//current_move->exploit(&game, 8, 2);
-			/*
-			current_move->exploit(&game, 8, 2);
-			current_move->exploit(&game, 4, 4);
-			*/
+			std::cerr << "# coord: (" << coord.first << ", "
+				<< coord.second << "), win rate: "
+				<< search_tree.win_rate(coord) << std::endl;
 
-			coordinate coord = current_move->best_move();
-			std::cerr << "# exploit search playouts (completed games): "
-			          << current_move->terminal_nodes() << std::endl;
-			std::cerr << "# estimated win rate: "
-			          << current_move->leaves[coord].win_rate() << std::endl;
-
-			if (current_move->leaves[coord].win_rate() < 0.15) {
+			if (search_tree.win_rate(coord) < 0.15) {
 				std::cout << "= resign\n\n";
 				continue;
 			}
 
-			/*
-			if (current_move->leaves[coord].win_rate() > 0.99) {
-				std::cout << "= pass\n\n";
-				continue;
-			}
-			*/
-
-			if (!game.is_valid_coordinate(coord)
-			    || game.is_suicide(coord, game.current_player))
-			{
+			if (game.is_suicide(coord, game.current_player)) {
 				std::cout << "= pass\n\n";
 				continue;
 			}
@@ -168,8 +146,8 @@ void gtp_client::repl(void) {
 
 			std::cout << "\n\n";
 
-			search_tree.reset();
-			current_move = search_tree.root;
+			//search_tree.reset();
+			//current_move = search_tree.root;
 			game.make_move(coord);
 
 #ifdef GTP2OGS_WORKAROUND

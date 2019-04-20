@@ -21,24 +21,45 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
-auto random_choice(auto& c) {
-	std::uniform_int_distribution<int> distribution(0, c.size());
+coordinate mcts::do_search(board *state, unsigned playouts) {
+	// fully visit root node
+	for (auto& x : state->available_moves()) {
+		//root->leaves[x].parent = root;
+		//root->leaves[x].color = state->current_player;
+		root->explore(x, state);
+		//fprintf(stderr, "(%d, %d) : %g\n", x.first, x.second, root->leaves[x].win_rate());
+	}
 
-	return c[distribution(generator)];
+	while (root->traversals < playouts) {
+		coordinate coord = root->max_utc(state);
+		root->explore(coord, state);
+	}
+
+	fprintf(stderr, "# %u playouts\n", root->traversals);
+
+	return root->best_move();
 }
 
-void mcts_node::explore(board *state,
-                        unsigned playouts,
-                        unsigned branching)
-{
-	// TODO: heavy playouts
-	// TODO: more sophisticated searching here
+double mcts::win_rate(coordinate& coord) {
+	return root->leaves[coord].win_rate();
+}
 
-	unsigned iters = (playouts > 1 && branching > 1)? MIN(playouts, branching) : 1;
+std::vector<coordinate> mcts_node::random_move_selector(board *state, unsigned n) {
+	std::vector<coordinate> ret = {};
+
+	for (unsigned k = 0; k < n; k++) {
+		coordinate coord;
+
+		ret.push_back(coord);
+	}
+
+	return ret;
+}
+
+std::vector<coordinate> mcts_node::pattern_move_selector(board *state, unsigned n) {
+	// TODO: could we make an iterator for available moves?
 	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
 
-	// TODO: could we make an iterator for available moves?
-	// TODO: compile-time option to enable this
 	for (unsigned y = 1; y <= state->dimension; y++) {
 		for (unsigned x = 1; x <= state->dimension; x++) {
 			coordinate coord = {x, y};
@@ -53,86 +74,88 @@ void mcts_node::explore(board *state,
 		}
 	}
 
-	/*
-	for (unsigned k = 0; k < MIN(iters, 20); k++) {
-		coordinate coord;
-
-		for (unsigned j = 0; j < state->dimension*state->dimension; j++) {
-			coord = random_coord(state);
-			if (state->is_valid_move(coord)) {
-				break;
-			}
-		}
-
-		unsigned weight = patterns.search(state, coord);
-
-		if (weight != 0) {
-			weighted_moves.push_back({coord, patterns.search(state, coord)});
-		}
-	}
-	*/
-
-	/*
-	printf("\e[1;1H");
-	state->print();
-	usleep(10000);
-	*/
-
-	if (state->moves >= 2*state->dimension*state->dimension
-	   || weighted_moves.size() == 0)
-	{
-		//state->print();
-		update(state->determine_winner());
-		return;
-	}
-
-	// TODO: pattern weights, sort by weights
 	std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
 	std::sort(weighted_moves.begin(), weighted_moves.end(),
 		[](auto& a, auto& b) {
 			return a.second > b.second;
 		});
 
-	for (unsigned i = 0; i < iters && i < weighted_moves.size(); i++) {
-		board foo(state);
-		coordinate coord = weighted_moves[i].first;
+	std::vector<coordinate> ret = {};
 
-		leaves[coord].parent = this;
-		leaves[coord].color  = foo.current_player;
-
-		foo.make_move(coord);
-		leaves[coord].explore(&foo, playouts / iters, branching);
+	for (auto& x : weighted_moves) {
+		ret.push_back(x.first);
 	}
+
+	return ret;
 }
 
-void mcts_node::exploit(board *state, unsigned moves, unsigned depth) {
-	if (depth == 0 || leaves.begin() == leaves.end()) {
+void mcts_node::explore(coordinate& coord, board *state)
+{
+	leaves[coord].parent = this;
+	leaves[coord].color = state->current_player;
+
+	if (!state->is_valid_move(coord)) {
+		// should only get here from the root level, so using Invalid
+		// as a color ensures that neither player gets "free wins" from
+		// illegal moves
+		update(point::color::Invalid);
 		return;
 	}
 
-	std::vector<std::pair<coordinate, mcts_node>> vec(leaves.begin(), leaves.end());
-
-	std::sort(vec.begin(), vec.end(),
-		[](auto& a, auto& b){
-			return a.second.win_rate() > b.second.win_rate();
-		});
-
-	// trim less-useful search trees
-	for (auto it = vec.begin() + moves; it < vec.end(); it++) {
-		leaves.erase(it->first);
+	if (state->moves >= 2*state->dimension*state->dimension)
+	{
+		update(state->determine_winner());
+		return;
 	}
 
-	for (auto it = vec.begin(); it < vec.begin() + moves; it++) {
-		std::cerr << "# trying out move "
-		          << "(" << it->first.first << "," << it->first.second << ")"
-		          << ", win rate: " << it->second.win_rate() << std::endl;
+	board foo(state);
+	foo.make_move(coord);
 
-		leaves[it->first].explore(state, 45 * depth);
-		leaves[it->first].exploit(state, moves, depth - 1);
+	if (leaves[coord].fully_visited(state)) {
+		//fprintf(stderr, "# fully visited node at (%u, %u) : (%u)\n", coord.first, coord.second, leaves[coord].traversals);
+		coordinate next = leaves[coord].max_utc(&foo);
+		leaves[coord].explore(next, &foo);
 
-		std::cerr << "# adjusted win rate: " << leaves[it->first].win_rate() << std::endl;
-		std::cerr << "# traversals: " << leaves[it->first].traversals << std::endl;
+	} else {
+		coordinate next = {0, 0};
+
+		for (unsigned j = 0; j < 2*foo.dimension*foo.dimension; j++) {
+			coordinate temp = random_coord(state);
+
+			if (!foo.is_valid_move(temp)) {
+				// allocate dummy node
+				leaves[coord].leaves[temp].parent = &leaves[coord];
+				continue;
+			}
+
+			if (leaves[coord].leaves.find(temp) == leaves[coord].leaves.end()) {
+				next = temp;
+				break;
+			}
+		}
+
+		if (!foo.is_valid_move(next)) {
+			leaves[coord].update(foo.determine_winner());
+			return;
+		}
+
+		leaves[coord].explore(next, &foo);
 	}
+
+	//unsigned branching = 1;
+	// TODO: asdf
+	//std::vector<coordinate> moves = selector(&foo, 1);
+
+	//printf("\e[1;1H");
+	//foo.print();
+	//usleep(10000);
+
+
+	//leaves[coord].explore(moves[0], &foo);
+}
+
+bool mcts_node::fully_visited(board *state) {
+	return leaves.size() == state->dimension * state->dimension;
 }
 
 coordinate mcts_node::best_move(void) {
@@ -145,39 +168,49 @@ coordinate mcts_node::best_move(void) {
 	auto max = leaves.begin();
 
 	for (; it != leaves.end(); it++) {
-		double weight = (double)it->second.wins / (double)it->second.traversals;
-		double cur = (double)max->second.wins / (double)max->second.traversals;
-
-		if (weight > cur) {
+		if (it->second.traversals > max->second.traversals) {
 			max = it;
 		}
 	}
 
-	double cur = (double)max->second.wins / (double)max->second.traversals;
-	/*
-	printf("# estimated win rate: %g (%u/%u) at (%u, %u)\n",
-	       cur, max->second.wins, max->second.traversals,
-	       max->first.first, max->first.second);
-		   */
-
 	return max->first;
+}
+
+coordinate mcts_node::max_utc(board *state) {
+	double cur_max = 0;
+	coordinate ret = {0, 0};
+
+	for (auto& x : state->available_moves()) {
+		double temp = uct(x, state);
+
+		if (temp > cur_max) {
+			cur_max = temp;
+			ret = x;
+		}
+	}
+
+	return ret;
 }
 
 double mcts_node::win_rate(void){
 	return (traversals > 0)?  (double)wins / (double)traversals : 0;
 }
 
+double mcts_node::uct(const coordinate& coord, board *state) {
+	if (leaves[coord].traversals == 0) {
+		return 1;
+	}
+
+	//double weight = patterns.search(state, coord) / 10.0;
+	double weight = 1;
+
+	return weight*leaves[coord].win_rate()
+		+ MCTS_UCT_C * sqrt(log(traversals / leaves[coord].traversals));
+}
+
 void mcts_node::update(point::color winner) {
-	//leaves[coord].traversals++;
-	//leaves[coord].wins += this->color == winner;
 	traversals++;
 	wins += color == winner;
-
-	/*
-	if (traversals < 1000 || parent == nullptr) {
-		printf("(%u) %u/%u   \n", winner, traversals, wins);
-	}
-	*/
 
 	if (parent != nullptr) {
 		parent->update(winner);

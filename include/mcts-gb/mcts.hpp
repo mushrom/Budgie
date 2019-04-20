@@ -5,6 +5,8 @@
 #include <utility>
 #include <map>
 
+#define MCTS_UCT_C 0.45
+
 namespace mcts_thing {
 
 class mcts_node {
@@ -15,12 +17,19 @@ class mcts_node {
 			traversals = wins = 0;
 		};
 
-		void explore(board *state, unsigned playouts=500, unsigned branching=25);
-		void exploit(board *state, unsigned moves=8, unsigned depth=4);
-		coordinate best_move(void);
+		typedef std::vector<coordinate> (*move_selector)(board *state, unsigned n);
+
+		void explore(coordinate& coord, board *state);
 		void update(point::color winner);
 		double win_rate(void);
+		double uct(const coordinate& coord, board *state);
+		coordinate best_move(void);
+		coordinate max_utc(board *state);
 		unsigned terminal_nodes(void);
+		bool fully_visited(board *state);
+
+		static std::vector<coordinate> random_move_selector(board *state, unsigned n);
+		static std::vector<coordinate> pattern_move_selector(board *state, unsigned n);
 
 		std::map<coordinate, mcts_node> leaves;
 		mcts_node *parent;
@@ -36,6 +45,9 @@ class mcts {
 		};
 
 		~mcts(){};
+
+		coordinate do_search(board *state, unsigned playouts=5000);
+		double win_rate(coordinate& coord);
 
 		void reset() {
 			delete root;

@@ -26,53 +26,28 @@ x*X
 :0
 
 # dumb things to avoid
-?X?
-x*X
----
-:0
-
-#.*.
-#...
+#?X?
+#x*X
 #---
 #:0
 
-#???
-#?*?
-#---
-#:9
-
-#|??
-#|*?
-#|??
-#:9
-
 # captures first
-#oOo
-#OX*
-#?O?
-#:25
-
 # - centered, more general
+
+?oO
+o*X
+---
+:15
+
 O??
 X*?
-O??
-:25
+o??
+:15
 
-#?O?
-#*XO
-#---
-#:21
-
-#|?O
-#|X*
-#+--
-#:15
-
-# asdf
-Oo?
-X*o
----
-:25
+X??
+?*O
+?OX
+:15
 
 # - poke shape points
 .X.
@@ -83,86 +58,47 @@ XoX
 XoX
 o*o
 Xoo
-:20
-
-# - try to make false eyes
-#*Xo
-#X.X
-#XXx
-#:21
+:15
 
 # then offensive moves
-# - take some liberties
-#oOo
-#OX*
-#???
-#:21
-
 oX?
 O*o
 oX?
-:20
+:15
 
 ## - peep
-#oX?
-#*.o
-#oX?
-#:20
-
-## - try for a ladder
-#OO?
-#.XO
-#?*?
-#:20
+?oX
+o*.
+?oX
+:12
 
 # then defensive moves
-# - don't play into an obvious atari
-?X?
-X*x
-?x?
-:5
-
 ## - respond to atari
-#?Xo
-#XO*
-#?x?
-#:20
-
 # - (more general, centered)
-Xo?
+X??
 O*o
 X??
-:20
+:15
 
 ## - connect stuff
-#OX?
-#*OX
-#---
-#:20
-
 # - (centered)
-OXO
-o*o
+?OX
+?*O
 ---
-:20
+:15
 
 # - (centered)
 ?OX
 ?*O
 ---
-:20
+:15
 
 ## - respond to attachment
-#.O?
-#*Xx
-#???
-#:25
-
 # - (more general, centered)
 ?oO
 ?*X
 ?o?
-:25
+:15
 
 ## - respond to butting
 #??*
@@ -174,61 +110,24 @@ o*o
 ?O?
 X*?
 ?O?
-:20
+:15
 
 ## - or at the very least respond if poked through...
-#?O?
-#*XX
-#?O?
-#:30
-
 # - (centered)
 O??
 X*?
 O??
-:30
+:15
 
-# - block cuts
-Oo?
-.*X
-xO?
-:20
-
-## - also block these cuts
-#*O?
-#OX?
-#???
-#:20
-
-# - asdf
-#*..
-#..O
-#x..
+## - block cuts
+#Oo?
+#.*X
+#xO?
 #:20
 
 # things otherwise not matched above
 # not quite forbidden, but probably a bad idea...
-|??
-|*?
----
-:5
-
-#|?*
 #|??
-#+--
-#:9
-
-#?*?
-#???
+#|*?
 #---
-#:9
-
-#|??
-#|?*
-#|??
-#:9
-
-?Xx
-?*X
-?x?
-:5
+#:5
