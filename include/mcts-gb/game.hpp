@@ -79,6 +79,7 @@ class board {
 			dimension = boardsize;
 			komi = n_komi;
 			grid.reserve(dimension * dimension);
+			moves = 0;
 
 			for (unsigned i = 0; i < dimension * dimension; i++) {
 				grid[i] = point::color::Empty;

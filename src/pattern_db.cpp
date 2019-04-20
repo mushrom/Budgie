@@ -88,123 +88,67 @@ void pattern::flip_vertically(point::color grid[9]) {
 	}
 }
 
-void pattern::read_grid(board *state, coordinate coord, point::color grid[9], int y_dir, int x_dir) {
-	int y_start = y_dir * y_offset;
-	int y_end = y_start + y_dir*-3;
-
-	int x_start = x_dir * x_offset;
-	int x_end = x_start + x_dir*-3;
-
-	/*
-	fprintf(stderr, "yoff: %d, xoff: %d, y_start: %d, x_start: %d, "
-	        "y_end: %d: x_end: %d\n",
-	        y_offset, x_offset, y_start, x_start, y_end, x_end);
-			*/
-
-	int j = 0;
-	for (int y = y_start; y != y_end; y -= y_dir, j++) {
-		int m = 0;
-
-		for (int x = x_start; x != x_end; x -= x_dir, m++) {
+void pattern::read_grid(board *state, coordinate coord, point::color grid[9]) {
+	for (int y = -1; y <= 1; y++) {
+		for (int x = -1; x <= 1; x++) {
 			//fprintf(stderr, "- x: %d, y: %d\n", x, y);
 			coordinate k = {coord.first + x, coord.second + y};
 			//grid[3*(y-y_offset) + (x-x_offset)] = state->get_coordinate(k);
-			grid[j*3 + m] = state->get_coordinate(k);
+			grid[(y+1)*3 + (x+1)] = state->get_coordinate(k);
 		}
 	}
+}
+
+#define RET_IF_MATCHES(S, T) {\
+	if (test_grid(S, T)) {\
+		return true;\
+	}\
 }
 
 bool pattern::matches(board *state, coordinate coord) {
 	bool ret = false;
 	point::color temp[9];
 
-	for (int y = -1; y <= 1; y += 2) {
-		for (int x = -1; x <= 1; x += 2) {
-			read_grid(state, coord, temp, y, x);
-			ret = ret || test_grid(state, temp);
+	read_grid(state, coord, temp);
 
-			/*
-			fprintf(stderr, "rotations for xdir: %d, ydir: %d\n", x, y);;
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_horizontally(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_vertically(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_horizontally(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_vertically(temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-
-			fprintf(stderr, "- (rotating)\n");;
-			*/
-			rotate_grid(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_horizontally(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_vertically(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			flip_horizontally(temp);
-			ret = ret || test_grid(state, temp);
-			/*
-			print_grid(temp);
-			std::cerr << std::endl;
-			*/
-
-			/*
-			rotate_grid(temp);
-			print_grid(temp);
-			std::cerr << std::endl;
-			ret = ret || test_grid(state, temp);
-
-			rotate_grid(temp);
-			print_grid(temp);
-			std::cerr << std::endl;
-			ret = ret || test_grid(state, temp);
-
-			rotate_grid(temp);
-			print_grid(temp);
-			std::cerr << std::endl;
-			ret = ret || test_grid(state, temp);
-			*/
-		}
+	if (temp[4] != point::color::Empty) {
+		// if the point isn't empty, there's no pattern that will match
+		return false;
 	}
 
-	return ret;
+	ret = ret || test_grid(state, temp);
+
+	// test different orientations of the grid which still match some pattern
+	flip_horizontally(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_vertically(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_horizontally(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_vertically(temp);
+	rotate_grid(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_horizontally(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_vertically(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	flip_horizontally(temp);
+	//ret = ret || test_grid(state, temp);
+	RET_IF_MATCHES(state, temp);
+
+	return false;
 }
 
 void pattern::print_grid(point::color grid[9]){
@@ -278,6 +222,13 @@ asdf:
 		else {
 			ret.weight = atoi(buf.substr(1).c_str());
 		}
+	}
+
+	// TODO: remove y_offset and x_offset fields
+	if (ret.y_offset != 1 && ret.x_offset != 1) {
+		std::cerr << "warning: invalid pattern:" << std::endl;
+		ret.valid = false;
+		ret.print();
 	}
 
 	//ret.print();

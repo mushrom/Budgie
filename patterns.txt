@@ -47,20 +47,26 @@ x*X
 #:9
 
 # captures first
-oOo
-OX*
-?O?
+#oOo
+#OX*
+#?O?
+#:25
+
+# - centered, more general
+O??
+X*?
+O??
 :25
 
-?O?
-*XO
----
-:21
+#?O?
+#*XO
+#---
+#:21
 
-|?O
-|X*
-+--
-:15
+#|?O
+#|X*
+#+--
+#:15
 
 # asdf
 Oo?
@@ -74,23 +80,23 @@ o*o
 XoX
 :15
 
-X.X
-.*.
-X..
+XoX
+o*o
+Xoo
 :20
 
 # - try to make false eyes
-*XO
-X.X
-XXx
-:21
+#*Xo
+#X.X
+#XXx
+#:21
 
 # then offensive moves
 # - take some liberties
-oOo
-OX*
-???
-:21
+#oOo
+#OX*
+#???
+#:21
 
 oX?
 O*o
@@ -109,7 +115,6 @@ oX?
 #?*?
 #:20
 
-
 # then defensive moves
 # - don't play into an obvious atari
 ?X?
@@ -117,29 +122,53 @@ X*x
 ?x?
 :5
 
-# - respond to atari
-?Xo
-XO*
-?x?
+## - respond to atari
+#?Xo
+#XO*
+#?x?
+#:20
+
+# - (more general, centered)
+Xo?
+O*o
+X??
 :20
 
-# - connect stuff
-OX?
-*OX
+## - connect stuff
+#OX?
+#*OX
+#---
+#:20
+
+# - (centered)
+OXO
+o*o
 ---
 :20
 
-# - respond to attachment
-.O?
-*Xx
-???
+# - (centered)
+?OX
+?*O
+---
+:20
+
+## - respond to attachment
+#.O?
+#*Xx
+#???
+#:25
+
+# - (more general, centered)
+?oO
+?*X
+?o?
 :25
 
-# - respond to butting
-??*
-XXO
-???
-:22
+## - respond to butting
+#??*
+#XXO
+#???
+#:22
 
 # - block peeps
 ?O?
@@ -147,10 +176,16 @@ X*?
 ?O?
 :20
 
-# - or at the very least respond if poked through...
-?O?
-*XX
-?O?
+## - or at the very least respond if poked through...
+#?O?
+#*XX
+#?O?
+#:30
+
+# - (centered)
+O??
+X*?
+O??
 :30
 
 # - block cuts
@@ -159,17 +194,17 @@ Oo?
 xO?
 :20
 
-# - also block these cuts
-*O?
-OX?
-???
-:20
+## - also block these cuts
+#*O?
+#OX?
+#???
+#:20
 
 # - asdf
-*..
-..O
-x..
-:20
+#*..
+#..O
+#x..
+#:20
 
 # things otherwise not matched above
 # not quite forbidden, but probably a bad idea...
@@ -178,10 +213,10 @@ x..
 ---
 :5
 
-|?*
-|??
-+--
-:9
+#|?*
+#|??
+#+--
+#:9
 
 #?*?
 #???
