@@ -2,6 +2,7 @@
 
 #include <mcts-gb/game.hpp>
 #include <mcts-gb/mcts.hpp>
+#include <map>
 
 namespace mcts_thing {
 
@@ -12,7 +13,7 @@ class gtp_client {
 			current_move = search_tree.root;
 		}
 
-		void repl(void);
+		void repl(std::map<std::string, std::string> options);
 		void clear_board(void);
 		void set_board_size(void);
 

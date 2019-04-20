@@ -5,7 +5,7 @@
 #include <utility>
 #include <map>
 
-#define MCTS_UCT_C 0.45
+#define MCTS_UCT_C 0.5
 
 namespace mcts_thing {
 
@@ -19,17 +19,16 @@ class mcts_node {
 
 		typedef std::vector<coordinate> (*move_selector)(board *state, unsigned n);
 
-		void explore(coordinate& coord, board *state);
+		// XXX: toggleable patterns in UCT weighting for testing, good chance
+		//      it'll be removed... eventually
+		void explore(coordinate& coord, board *state, bool use_patterns);
 		void update(point::color winner);
 		double win_rate(void);
-		double uct(const coordinate& coord, board *state);
+		double uct(const coordinate& coord, board *state, bool use_patterns);
 		coordinate best_move(void);
-		coordinate max_utc(board *state);
+		coordinate max_utc(board *state, bool use_patterns);
 		unsigned terminal_nodes(void);
 		bool fully_visited(board *state);
-
-		static std::vector<coordinate> random_move_selector(board *state, unsigned n);
-		static std::vector<coordinate> pattern_move_selector(board *state, unsigned n);
 
 		std::map<coordinate, mcts_node> leaves;
 		mcts_node *parent;
@@ -46,7 +45,9 @@ class mcts {
 
 		~mcts(){};
 
-		coordinate do_search(board *state, unsigned playouts=5000);
+		coordinate do_search(board *state,
+		                     unsigned playouts=20000,
+		                     bool use_patterns=true);
 		double win_rate(coordinate& coord);
 
 		void reset() {

@@ -21,18 +21,15 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
-coordinate mcts::do_search(board *state, unsigned playouts) {
+coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 	// fully visit root node
 	for (auto& x : state->available_moves()) {
-		//root->leaves[x].parent = root;
-		//root->leaves[x].color = state->current_player;
-		root->explore(x, state);
-		//fprintf(stderr, "(%d, %d) : %g\n", x.first, x.second, root->leaves[x].win_rate());
+		root->explore(x, state, use_patterns);
 	}
 
 	while (root->traversals < playouts) {
-		coordinate coord = root->max_utc(state);
-		root->explore(coord, state);
+		coordinate coord = root->max_utc(state, use_patterns);
+		root->explore(coord, state, use_patterns);
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
@@ -44,52 +41,7 @@ double mcts::win_rate(coordinate& coord) {
 	return root->leaves[coord].win_rate();
 }
 
-std::vector<coordinate> mcts_node::random_move_selector(board *state, unsigned n) {
-	std::vector<coordinate> ret = {};
-
-	for (unsigned k = 0; k < n; k++) {
-		coordinate coord;
-
-		ret.push_back(coord);
-	}
-
-	return ret;
-}
-
-std::vector<coordinate> mcts_node::pattern_move_selector(board *state, unsigned n) {
-	// TODO: could we make an iterator for available moves?
-	std::vector<std::pair<coordinate, unsigned>> weighted_moves = {};
-
-	for (unsigned y = 1; y <= state->dimension; y++) {
-		for (unsigned x = 1; x <= state->dimension; x++) {
-			coordinate coord = {x, y};
-
-			if (state->is_valid_move(coord)) {
-				unsigned weight = patterns.search(state, coord);
-
-				if (weight != 0) {
-					weighted_moves.push_back({coord, weight});
-				}
-			}
-		}
-	}
-
-	std::shuffle(weighted_moves.begin(), weighted_moves.end(), generator);
-	std::sort(weighted_moves.begin(), weighted_moves.end(),
-		[](auto& a, auto& b) {
-			return a.second > b.second;
-		});
-
-	std::vector<coordinate> ret = {};
-
-	for (auto& x : weighted_moves) {
-		ret.push_back(x.first);
-	}
-
-	return ret;
-}
-
-void mcts_node::explore(coordinate& coord, board *state)
+void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 {
 	leaves[coord].parent = this;
 	leaves[coord].color = state->current_player;
@@ -113,8 +65,8 @@ void mcts_node::explore(coordinate& coord, board *state)
 
 	if (leaves[coord].fully_visited(state)) {
 		//fprintf(stderr, "# fully visited node at (%u, %u) : (%u)\n", coord.first, coord.second, leaves[coord].traversals);
-		coordinate next = leaves[coord].max_utc(&foo);
-		leaves[coord].explore(next, &foo);
+		coordinate next = leaves[coord].max_utc(&foo, use_patterns);
+		leaves[coord].explore(next, &foo, use_patterns);
 
 	} else {
 		coordinate next = {0, 0};
@@ -139,7 +91,7 @@ void mcts_node::explore(coordinate& coord, board *state)
 			return;
 		}
 
-		leaves[coord].explore(next, &foo);
+		leaves[coord].explore(next, &foo, use_patterns);
 	}
 
 	//unsigned branching = 1;
@@ -176,12 +128,12 @@ coordinate mcts_node::best_move(void) {
 	return max->first;
 }
 
-coordinate mcts_node::max_utc(board *state) {
+coordinate mcts_node::max_utc(board *state, bool use_patterns) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
 	for (auto& x : state->available_moves()) {
-		double temp = uct(x, state);
+		double temp = uct(x, state, use_patterns);
 
 		if (temp > cur_max) {
 			cur_max = temp;
@@ -196,13 +148,13 @@ double mcts_node::win_rate(void){
 	return (traversals > 0)?  (double)wins / (double)traversals : 0;
 }
 
-double mcts_node::uct(const coordinate& coord, board *state) {
+double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) {
 	if (leaves[coord].traversals == 0) {
 		return 1;
 	}
 
-	//double weight = patterns.search(state, coord) / 10.0;
-	double weight = 1;
+	double weight = use_patterns? patterns.search(state, coord) / 10.0
+	                            : 1;
 
 	return weight*leaves[coord].win_rate()
 		+ MCTS_UCT_C * sqrt(log(traversals / leaves[coord].traversals));

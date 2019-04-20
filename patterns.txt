@@ -20,51 +20,40 @@ x*X
 ---
 :0
 
-...
-.*.
----
-:0
-
-# dumb things to avoid
-#?X?
-#x*X
-#---
-#:0
-
 # captures first
 # - centered, more general
 
 ?oO
 o*X
 ---
-:15
+:12
 
 O??
 X*?
 o??
-:15
+:12
 
 X??
 ?*O
 ?OX
-:15
+:12
 
 # - poke shape points
 .X.
 o*o
 XoX
-:15
+:12
 
 XoX
 o*o
 Xoo
-:15
+:12
 
 # then offensive moves
 oX?
 O*o
 oX?
-:15
+:12
 
 ## - peep
 ?oX
@@ -78,56 +67,31 @@ o*.
 X??
 O*o
 X??
-:15
+:12
 
 ## - connect stuff
 # - (centered)
 ?OX
 ?*O
 ---
-:15
+:12
 
 # - (centered)
 ?OX
 ?*O
 ---
-:15
+:12
 
 ## - respond to attachment
 # - (more general, centered)
 ?oO
 ?*X
 ?o?
-:15
-
-## - respond to butting
-#??*
-#XXO
-#???
-#:22
-
-# - block peeps
-?O?
-X*?
-?O?
-:15
+:12
 
 ## - or at the very least respond if poked through...
 # - (centered)
 O??
 X*?
 O??
-:15
-
-## - block cuts
-#Oo?
-#.*X
-#xO?
-#:20
-
-# things otherwise not matched above
-# not quite forbidden, but probably a bad idea...
-#|??
-#|*?
-#---
-#:5
+:12

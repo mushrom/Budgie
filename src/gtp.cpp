@@ -25,7 +25,10 @@ coordinate string_to_coord(std::string& str) {
 	return {x, y};
 }
 
-void gtp_client::repl(void) {
+void gtp_client::repl(std::map<std::string, std::string> options) {
+	unsigned playouts = stoi(options["playouts"]);
+	unsigned use_patterns = stoi(options["use_patterns"]);
+
 	std::string s;
 
 	while (std::getline(std::cin, s)) {
@@ -85,15 +88,7 @@ void gtp_client::repl(void) {
 			                          ? point::color::Black
 			                          : point::color::White;
 
-			/*
-			unsigned x = asdf.find(std::tolower(args[2][0])) + 1;
-			unsigned y = atoi(args[2].substr(1).c_str());
-			coordinate coord = {x, y};
-			*/
-
 			coordinate coord = string_to_coord(args[2]);
-
-			//printf("(%u, %u)\n", x, y);
 
 			// TODO: same todo as below
 			game.current_player = player;
@@ -125,7 +120,7 @@ void gtp_client::repl(void) {
 			                          : point::color::White;
 
 			search_tree.reset();
-			coordinate coord = search_tree.do_search(&game);
+			coordinate coord = search_tree.do_search(&game, playouts, use_patterns);
 
 			std::cerr << "# coord: (" << coord.first << ", "
 				<< coord.second << "), win rate: "
@@ -146,8 +141,6 @@ void gtp_client::repl(void) {
 
 			std::cout << "\n\n";
 
-			//search_tree.reset();
-			//current_move = search_tree.root;
 			game.make_move(coord);
 
 #ifdef GTP2OGS_WORKAROUND
