@@ -46,15 +46,7 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	leaves[coord].parent = this;
 	leaves[coord].color = state->current_player;
 
-	if (!state->is_valid_move(coord)) {
-		// should only get here from the root level, so using Invalid
-		// as a color ensures that neither player gets "free wins" from
-		// illegal moves
-		update(point::color::Invalid);
-		return;
-	}
-
-	if (state->moves >= 2*state->dimension*state->dimension)
+	if (state->moves > 2*state->dimension*state->dimension)
 	{
 		update(state->determine_winner());
 		return;
@@ -76,6 +68,7 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 
 			if (!foo.is_valid_move(temp)) {
 				// allocate dummy node
+				// TODO: smart pointers for leaf nodes
 				leaves[coord].leaves[temp].parent = &leaves[coord];
 				continue;
 			}
@@ -94,16 +87,9 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 		leaves[coord].explore(next, &foo, use_patterns);
 	}
 
-	//unsigned branching = 1;
-	// TODO: asdf
-	//std::vector<coordinate> moves = selector(&foo, 1);
-
 	//printf("\e[1;1H");
 	//foo.print();
 	//usleep(10000);
-
-
-	//leaves[coord].explore(moves[0], &foo);
 }
 
 bool mcts_node::fully_visited(board *state) {

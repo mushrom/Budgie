@@ -15,28 +15,28 @@ O*O
 +--
 :0
 
-xXx
-x*X
----
-:0
+#xXx
+#x*X
+#---
+#:0
 
 # captures first
 # - centered, more general
 
-?oO
-o*X
----
-:12
+#?oO
+#o*X
+#---
+#:12
 
-O??
-X*?
-o??
-:12
+#O??
+#X*?
+#o??
+#:12
 
-X??
-?*O
-?OX
-:12
+#X??
+#?*O
+#?OX
+#:12
 
 # - poke shape points
 .X.

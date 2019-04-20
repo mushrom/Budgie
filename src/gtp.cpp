@@ -122,12 +122,18 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 			search_tree.reset();
 			coordinate coord = search_tree.do_search(&game, playouts, use_patterns);
 
-			std::cerr << "# coord: (" << coord.first << ", "
-				<< coord.second << "), win rate: "
-				<< search_tree.win_rate(coord) << std::endl;
+			std::cerr << "# coord: (" << coord.first << ", " << coord.second
+				<< "), win rate: " << search_tree.win_rate(coord)
+				<< ", traversals: " << search_tree.root->leaves[coord].traversals
+				<< std::endl;
 
 			if (search_tree.win_rate(coord) < 0.15) {
 				std::cout << "= resign\n\n";
+				continue;
+			}
+
+			if (search_tree.win_rate(coord) == 1) {
+				std::cout << "= pass\n\n";
 				continue;
 			}
 

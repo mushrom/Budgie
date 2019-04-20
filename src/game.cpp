@@ -228,7 +228,7 @@ std::vector<coordinate> board::available_moves(void) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 
-			if (is_valid_move(coord)/* && !is_suicide(coord, current_player)*/) {
+			if (is_valid_move(coord) && !is_suicide(coord, current_player)) {
 				ret.push_back(coord);
 			}
 		}
