@@ -6,8 +6,7 @@
 namespace mcts_thing {
 
 bool board::is_valid_move(coordinate& coord) {
-	// TODO: check for ko
-	if (!is_valid_coordinate(coord) || is_ko(coord)) {
+	if (!is_valid_coordinate(coord) || violates_ko(coord)) {
 		return false;
 	}
 
@@ -16,18 +15,23 @@ bool board::is_valid_move(coordinate& coord) {
 	return grid[index] == point::color::Empty;
 }
 
-bool board::is_ko(coordinate& coord) {
-	// TODO: need a faster way to search for ko...
-	return (parent && parent->last_move == coord);
+bool board::violates_ko(coordinate& coord) {
+	uint64_t hash = gen_hash(coord, current_player);
 
-	board temp(this);
-	temp.make_move(coord);
+	// TODO: do we really need to do full superko checking?
+	unsigned k = 9;
 
-	unsigned k = 4;
-	for (board *ptr = temp.parent;
+	for (move::moveptr ptr = move_list;
 	     ptr != nullptr && k;
-	     ptr = ptr->parent, k--)
+	     ptr = ptr->previous, k--)
 	{
+		if (hash == ptr->hash) {
+			// TODO: check that it's not just a hash collision, although it's
+			//       pretty unlikely
+			return true;
+		}
+
+		/*
 		bool is_different = false;
 
 		for (unsigned i = 0; i < dimension * dimension; i++) {
@@ -40,6 +44,7 @@ bool board::is_ko(coordinate& coord) {
 		if (!is_different) {
 			return true;
 		}
+		*/
 	}
 
 	return false;
@@ -110,7 +115,9 @@ void board::clear_stones(coordinate& coord, point::color color) {
 	}
 }
 
-void board::clear_enemy_stones(coordinate& coord, point::color color) {
+bool board::clear_enemy_stones(coordinate& coord, point::color color) {
+	bool ret = false;
+
 	coordinate left  = {coord.first - 1, coord.second};
 	coordinate right = {coord.first + 1, coord.second};
 	coordinate up    = {coord.first,     coord.second - 1};
@@ -123,14 +130,20 @@ void board::clear_enemy_stones(coordinate& coord, point::color color) {
 	for (auto thing : {left, right, up, down}) {
 		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
 			clear_stones(thing, enemy);
+			ret = true;
 		}
 	}
+
+	return ret;
 }
 
-void board::clear_own_stones(coordinate& coord, point::color color) {
+bool board::clear_own_stones(coordinate& coord, point::color color) {
 	if (!reaches_empty(coord, color)) {
 		clear_stones(coord, color);
+		return true;
 	}
+
+	return false;
 }
 
 bool board::captures_enemy(coordinate& coord, point::color color) {
@@ -182,12 +195,27 @@ point::color board::get_coordinate(coordinate& coord) {
 }
 
 void board::make_move(coordinate& coord) {
+	bool any_captured = false;
 	//unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 	//grid[index] = current_player;
 	set_coordinate(coord, current_player);
-	clear_enemy_stones(coord, current_player);
-	clear_own_stones(coord, current_player);
+	any_captured = clear_enemy_stones(coord, current_player);
+	any_captured = any_captured || clear_own_stones(coord, current_player);
 
+	if (!any_captured) {
+		hash = gen_hash(coord, current_player);
+
+	} else {
+		hash = InitialHash;
+
+		for (unsigned i = 0; i < dimension * dimension; i++) {
+			if (grid[i] != point::color::Empty) {
+				hash = gen_hash(coord, grid[i]);
+			}
+		}
+	}
+
+	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
 	last_move = coord;
 	moves++;
 
@@ -247,6 +275,17 @@ point::color board::determine_winner(void) {
 	//printf("game result: %u points black, %u points white\n", black, white);
 
 	return (black > white)? point::color::Black : point::color::White;
+}
+
+uint64_t board::gen_hash(coordinate& coord, point::color color) {
+	// generate 12 bit identifier for this move
+	uint16_t foo = (color << 10) | (coord.first << 5) | coord.second;
+
+	// note: we need an associative hash here, since the board hash
+	//       will need to be rebuilt outside of move order, this is a good
+	//       hash for uniquely identifying games though
+	//return (hash << 12) + hash + foo;
+	return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
 void board::set_coordinate(coordinate& coord, point::color color) {

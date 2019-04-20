@@ -45,7 +45,6 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 {
 	leaves[coord].parent = this;
 	leaves[coord].color = state->current_player;
-
 	if (state->moves > 2*state->dimension*state->dimension)
 	{
 		update(state->determine_winner());
@@ -54,6 +53,12 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 
 	board foo(state);
 	foo.make_move(coord);
+
+	/*
+	printf("\e[1;1H");
+	foo.print();
+	usleep(10000);
+	*/
 
 	if (leaves[coord].fully_visited(state)) {
 		//fprintf(stderr, "# fully visited node at (%u, %u) : (%u)\n", coord.first, coord.second, leaves[coord].traversals);
@@ -86,10 +91,6 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 
 		leaves[coord].explore(next, &foo, use_patterns);
 	}
-
-	//printf("\e[1;1H");
-	//foo.print();
-	//usleep(10000);
 }
 
 bool mcts_node::fully_visited(board *state) {

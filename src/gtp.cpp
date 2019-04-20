@@ -124,7 +124,7 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 			std::cerr << "# coord: (" << coord.first << ", " << coord.second
 				<< "), win rate: " << search_tree.win_rate(coord)
-				<< ", traversals: " << search_tree.root->leaves[coord].traversals
+				<< ", traversals: " << std::dec << search_tree.root->leaves[coord].traversals
 				<< std::endl;
 
 			if (search_tree.win_rate(coord) < 0.15) {
@@ -148,6 +148,8 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 			std::cout << "\n\n";
 
 			game.make_move(coord);
+			std::cerr << "# board hash: " << std::hex << game.hash << std::endl;
+
 
 #ifdef GTP2OGS_WORKAROUND
 			// XXX: gtp2ogs is a little buggy, doesn't properly kill the bot, so need to

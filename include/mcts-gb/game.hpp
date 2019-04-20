@@ -3,7 +3,9 @@
 #include <vector>
 #include <utility>
 #include <stdio.h>
+#include <stdint.h>
 #include <map>
+#include <memory>
 
 namespace mcts_thing {
 
@@ -27,6 +29,27 @@ class point {
 		~point(){};
 };
 
+class move {
+	public:
+		typedef std::shared_ptr<move> moveptr;
+
+		move(moveptr prev,
+		     coordinate& koord,
+		     point::color c,
+		     uint64_t h)
+		{
+			previous = prev;
+			coord    = koord;
+			color    = c;
+			hash     = h;
+		}
+
+		std::shared_ptr<move> previous;
+		coordinate coord;
+		point::color color;
+		uint64_t hash;
+};
+
 class board {
 	public:
 		board(unsigned size = 9){
@@ -44,11 +67,16 @@ class board {
 		}
 
 		void set(board *other) {
-			parent = other;
-
+			// copy game info
+			komi = other->komi;
 			dimension = other->dimension;
-			moves = other->moves;
 			current_player = other->current_player;
+			moves = other->moves;
+			last_move = other->last_move;
+
+			// copy internal info
+			move_list = other->move_list;
+			hash = other->hash;
 
 			grid.reserve(dimension * dimension);
 
@@ -56,6 +84,12 @@ class board {
 				grid[i] = other->grid[i];
 			}
 		}
+
+		enum {
+			//InitialHash = 19937,
+			InitialHash = 1073741827,
+			//InitialHash = 65537,
+		};
 
 		point::color get_coordinate(coordinate& coord);
 		point::color other_player(point::color color) {
@@ -67,13 +101,14 @@ class board {
 		bool is_valid_move(coordinate& coord);
 		bool is_valid_coordinate(coordinate& coord);
 		bool is_suicide(coordinate& coord, point::color color);
-		bool is_ko(coordinate& coord);
+		bool violates_ko(coordinate& coord);
 		bool captures_enemy(coordinate& coord, point::color color);
 		void make_move(coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
 		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
+		uint64_t gen_hash(coordinate& coord, point::color color);
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi) {
 			dimension = boardsize;
@@ -86,7 +121,9 @@ class board {
 			}
 		}
 
+		move::moveptr move_list;
 		std::vector<point::color> grid;
+		uint64_t hash = InitialHash;
 		int komi = 7;
 		unsigned dimension;
 		unsigned moves = 0;
@@ -100,8 +137,8 @@ class board {
 		bool reaches(coordinate& coord, point::color color, point::color target);
 		bool reaches_empty(coordinate& coord, point::color color);
 		void clear_stones(coordinate& coord, point::color color);
-		void clear_enemy_stones(coordinate& coord, point::color color);
-		void clear_own_stones(coordinate& coord, point::color color);
+		bool clear_enemy_stones(coordinate& coord, point::color color);
+		bool clear_own_stones(coordinate& coord, point::color color);
 };
 
 // namespace mcts_thing
