@@ -25,6 +25,25 @@ coordinate string_to_coord(std::string& str) {
 	return {x, y};
 }
 
+std::string coord_string(coordinate& coord) {
+	std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+	std::string ret = asdf[coord.first - 1] + std::to_string(coord.second);
+
+	return ret;
+}
+
+std::string color_to_string(point::color color) {
+	return (color == point::color::Black)? "black" : "white";
+}
+
+point::color string_to_color(std::string& str) {
+	if (str == "B" || str == "b" || str == "black") {
+		return point::color::Black;
+	}
+
+	return point::color::White;
+}
+
 void gtp_client::repl(std::map<std::string, std::string> options) {
 	unsigned playouts = stoi(options["playouts"]);
 	unsigned use_patterns = stoi(options["use_patterns"]);
@@ -38,19 +57,19 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 		auto args = split_string(s);
 
-		if (s == "name") {
+		if (args[0] == "name") {
 			std::cout << "= BudgieBot\n\n";
 		}
 
-		else if (s == "version") {
+		else if (args[0] == "version") {
 			std::cout << "= 0.0.1\n\n";
 		}
 
-		else if (s == "protocol_version") {
+		else if (args[0] == "protocol_version") {
 			std::cout << "= 2\n\n";
 		}
 
-		else if (s == "list_commands") {
+		else if (args[0] == "list_commands") {
 			std::cout << "= name\nversion\nlist_commands\nboardsize\ngenmove\n"
 					  << "clear_board\nkomi\nplay\nprotocol_version\nquit\n"
 			          << "showboard\n\n";
@@ -112,13 +131,10 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 		}
 
 		else if (args[0] == "genmove") {
-			// TODO: should have function to handle this, rather than mutating the game state
-			//       from here
-			// TODO: should have function to map words to player colors
-			game.current_player = (args[1] == "B" || args[1] == "b" || args[1] == "black")
-			                          ? point::color::Black
-			                          : point::color::White;
+			// TODO: should have function to handle this, rather than mutating the
+			//       game state from here
 
+			game.current_player = string_to_color(args[1]);
 			search_tree.reset();
 			coordinate coord = search_tree.do_search(&game, playouts, use_patterns);
 
@@ -142,10 +158,7 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 				continue;
 			}
 
-			std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
-			std::cout << "= " << asdf[coord.first - 1] << std::to_string(coord.second) << "\n";
-
-			std::cout << "\n\n";
+			std::cout << "= " << coord_string(coord) << "\n\n";
 
 			game.make_move(coord);
 			std::cerr << "# board hash: " << std::hex << game.hash << std::endl;
@@ -158,11 +171,25 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 #endif
 		}
 
-		else if (s == "showboard") {
+		else if (args[0] == "move_history") {
+			std::cout << "= ";
+
+			for (move::moveptr ptr = game.move_list;
+			     ptr != nullptr;
+			     ptr = ptr->previous)
+			{
+				std::cout << color_to_string(ptr->color) << " "
+				          << coord_string(ptr->coord) << '\n';
+			}
+
+			std::cout << '\n';
+		}
+
+		else if (args[0] == "showboard") {
 			game.print();
 		}
 
-		else if (s == "quit") {
+		else if (args[0] == "quit") {
 			std::cout << "=\n\n";
 			return;
 		}
