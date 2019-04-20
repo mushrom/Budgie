@@ -140,7 +140,8 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 			std::cerr << "# coord: (" << coord.first << ", " << coord.second
 				<< "), win rate: " << search_tree.win_rate(coord)
-				<< ", traversals: " << std::dec << search_tree.root->leaves[coord].traversals
+				<< ", traversals: "
+				<< std::dec << search_tree.root->leaves[coord]->traversals
 				<< std::endl;
 
 			if (search_tree.win_rate(coord) < 0.15) {

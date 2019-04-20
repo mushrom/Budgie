@@ -42,24 +42,24 @@ O*O
 .X.
 o*o
 XoX
-:12
+:110
 
 XoX
 o*o
 Xoo
-:12
+:110
 
 # then offensive moves
 oX?
 O*o
 oX?
-:12
+:110
 
 ## - peep
 ?oX
 o*.
 ?oX
-:12
+:110
 
 # then defensive moves
 ## - respond to atari
@@ -67,31 +67,31 @@ o*.
 X??
 O*o
 X??
-:12
+:110
 
 ## - connect stuff
 # - (centered)
 ?OX
 ?*O
 ---
-:12
+:110
 
 # - (centered)
 ?OX
 ?*O
 ---
-:12
+:110
 
 ## - respond to attachment
 # - (more general, centered)
 ?oO
 ?*X
 ?o?
-:12
+:110
 
 ## - or at the very least respond if poked through...
 # - (centered)
 O??
 X*?
 O??
-:12
+:110

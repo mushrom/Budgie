@@ -4,20 +4,21 @@
 #include <list>
 #include <utility>
 #include <map>
+#include <memory>
 
-#define MCTS_UCT_C 0.5
+#define MCTS_UCT_C 0.35
 
 namespace mcts_thing {
 
 class mcts_node {
 	public:
+		typedef std::unique_ptr<mcts_node> nodeptr;
+
 		mcts_node(mcts_node *n_parent = nullptr, point::color player = point::color::Empty) {
 			color = player;
 			parent = n_parent;
 			traversals = wins = 0;
 		};
-
-		typedef std::vector<coordinate> (*move_selector)(board *state, unsigned n);
 
 		// XXX: toggleable patterns in UCT weighting for testing, good chance
 		//      it'll be removed... eventually
@@ -29,12 +30,20 @@ class mcts_node {
 		coordinate max_utc(board *state, bool use_patterns);
 		unsigned terminal_nodes(void);
 		bool fully_visited(board *state);
+		void map_set(unsigned index);
+		bool map_get(unsigned index);
+		void map_set_coord(coordinate& coord, board *state);
+		bool map_get_coord(coordinate& coord, board *state);
 
-		std::map<coordinate, mcts_node> leaves;
+		std::map<coordinate, nodeptr> leaves;
 		mcts_node *parent;
 		unsigned color;
 		unsigned traversals;
 		unsigned wins;
+
+		//bool move_map[512] = {0};
+		uint32_t move_map[16] = {0};
+		unsigned unique_traversed = 0;
 };
 
 class mcts {

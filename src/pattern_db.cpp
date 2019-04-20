@@ -263,7 +263,7 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 		}
 	}
 
-	return 10;
+	return 100;
 }
 
 // mcts_thing
