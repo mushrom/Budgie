@@ -29,11 +29,14 @@ class mcts_node {
 		coordinate best_move(void);
 		coordinate max_utc(board *state, bool use_patterns);
 		unsigned terminal_nodes(void);
+		unsigned nodes(void);
 		bool fully_visited(board *state);
 		void map_set(unsigned index);
 		bool map_get(unsigned index);
 		void map_set_coord(coordinate& coord, board *state);
 		bool map_get_coord(coordinate& coord, board *state);
+
+		void dump_node_statistics(const coordinate& coord, board *state, unsigned depth=0);
 
 		std::map<coordinate, nodeptr> leaves;
 		mcts_node *parent;

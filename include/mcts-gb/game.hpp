@@ -34,7 +34,7 @@ class move {
 		typedef std::shared_ptr<move> moveptr;
 
 		move(moveptr prev,
-		     coordinate& koord,
+		     const coordinate& koord,
 		     point::color c,
 		     uint64_t h)
 		{
@@ -91,24 +91,24 @@ class board {
 			//InitialHash = 65537,
 		};
 
-		point::color get_coordinate(coordinate& coord);
+		point::color get_coordinate(const coordinate& coord);
 		point::color other_player(point::color color) {
 			return (color == point::color::Black)
 				? point::color::White
 				: point::color::Black;
 		};
 
-		bool is_valid_move(coordinate& coord);
-		bool is_valid_coordinate(coordinate& coord);
-		bool is_suicide(coordinate& coord, point::color color);
-		bool violates_ko(coordinate& coord);
-		bool captures_enemy(coordinate& coord, point::color color);
-		void make_move(coordinate& coord);
+		bool is_valid_move(const coordinate& coord);
+		bool is_valid_coordinate(const coordinate& coord);
+		bool is_suicide(const coordinate& coord, point::color color);
+		bool violates_ko(const coordinate& coord);
+		bool captures_enemy(const coordinate& coord, point::color color);
+		void make_move(const coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
 		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
-		uint64_t gen_hash(coordinate& coord, point::color color);
+		uint64_t gen_hash(const coordinate& coord, point::color color);
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi) {
 			dimension = boardsize;
@@ -132,13 +132,13 @@ class board {
 		board *parent = nullptr;
 
 	private:
-		void set_coordinate(coordinate& coord, point::color color);
-		bool reaches_iter(coordinate& coord, point::color color, point::color target, std::map<coordinate, bool>& marked);
-		bool reaches(coordinate& coord, point::color color, point::color target);
-		bool reaches_empty(coordinate& coord, point::color color);
-		void clear_stones(coordinate& coord, point::color color);
-		bool clear_enemy_stones(coordinate& coord, point::color color);
-		bool clear_own_stones(coordinate& coord, point::color color);
+		void set_coordinate(const coordinate& coord, point::color color);
+		bool reaches_iter(const coordinate& coord, point::color color, point::color target, std::map<coordinate, bool>& marked);
+		bool reaches(const coordinate& coord, point::color color, point::color target);
+		bool reaches_empty(const coordinate& coord, point::color color);
+		void clear_stones(const coordinate& coord, point::color color);
+		bool clear_enemy_stones(const coordinate& coord, point::color color);
+		bool clear_own_stones(const coordinate& coord, point::color color);
 };
 
 // namespace mcts_thing

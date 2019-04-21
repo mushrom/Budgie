@@ -138,6 +138,12 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 			search_tree.reset();
 			coordinate coord = search_tree.do_search(&game, playouts, use_patterns);
 
+			if (!game.is_valid_coordinate(coord)) {
+				std::cerr << "# no valid moves, passing" << std::endl;
+				std::cout << "= pass\n\n";
+				continue;
+			}
+
 			std::cerr << "# coord: (" << coord.first << ", " << coord.second
 				<< "), win rate: " << search_tree.win_rate(coord)
 				<< ", traversals: "
@@ -163,13 +169,6 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 			game.make_move(coord);
 			std::cerr << "# board hash: " << std::hex << game.hash << std::endl;
-
-
-#ifdef GTP2OGS_WORKAROUND
-			// XXX: gtp2ogs is a little buggy, doesn't properly kill the bot, so need to
-			//      exit here after every move to avoid bot instances building up...
-			return;
-#endif
 		}
 
 		else if (args[0] == "move_history") {

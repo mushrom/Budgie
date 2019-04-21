@@ -5,8 +5,11 @@
 
 namespace mcts_thing {
 
-bool board::is_valid_move(coordinate& coord) {
-	if (!is_valid_coordinate(coord) || violates_ko(coord)) {
+bool board::is_valid_move(const coordinate& coord) {
+	if (!is_valid_coordinate(coord)
+		|| violates_ko(coord)
+		/*|| is_suicide(coord, current_player)*/)
+	{
 		return false;
 	}
 
@@ -15,7 +18,7 @@ bool board::is_valid_move(coordinate& coord) {
 	return grid[index] == point::color::Empty;
 }
 
-bool board::violates_ko(coordinate& coord) {
+bool board::violates_ko(const coordinate& coord) {
 	uint64_t hash = gen_hash(coord, current_player);
 
 	// TODO: do we really need to do full superko checking?
@@ -50,7 +53,7 @@ bool board::violates_ko(coordinate& coord) {
 	return false;
 }
 
-bool board::reaches_iter(coordinate& coord,
+bool board::reaches_iter(const coordinate& coord,
                          point::color color,
                          point::color target,
                          std::map<coordinate, bool>& marked)
@@ -68,7 +71,7 @@ bool board::reaches_iter(coordinate& coord,
 		if (is_valid_coordinate(thing) && marked.find(thing) == marked.end()) {
 			point::color foo = get_coordinate(thing);
 
-			if (foo == point::color::Empty) {
+			if (foo == target) {
 				ret = true;
 				break;
 			}
@@ -82,18 +85,18 @@ bool board::reaches_iter(coordinate& coord,
 	return ret;
 }
 
-bool board::reaches(coordinate& coord, point::color color, point::color target) {
+bool board::reaches(const coordinate& coord, point::color color, point::color target) {
 	// XXX: map here is really bad, feels gross tbh
 	std::map<coordinate, bool> marked;
 
 	return reaches_iter(coord, color, target, marked);
 }
 
-bool board::reaches_empty(coordinate& coord, point::color color) {
+bool board::reaches_empty(const coordinate& coord, point::color color) {
 	return reaches(coord, color, point::color::Empty);
 }
 
-void board::clear_stones(coordinate& coord, point::color color) {
+void board::clear_stones(const coordinate& coord, point::color color) {
 	coordinate left  = {coord.first - 1, coord.second};
 	coordinate right = {coord.first + 1, coord.second};
 	coordinate up    = {coord.first,     coord.second - 1};
@@ -115,7 +118,7 @@ void board::clear_stones(coordinate& coord, point::color color) {
 	}
 }
 
-bool board::clear_enemy_stones(coordinate& coord, point::color color) {
+bool board::clear_enemy_stones(const coordinate& coord, point::color color) {
 	bool ret = false;
 
 	coordinate left  = {coord.first - 1, coord.second};
@@ -137,7 +140,7 @@ bool board::clear_enemy_stones(coordinate& coord, point::color color) {
 	return ret;
 }
 
-bool board::clear_own_stones(coordinate& coord, point::color color) {
+bool board::clear_own_stones(const coordinate& coord, point::color color) {
 	if (!reaches_empty(coord, color)) {
 		clear_stones(coord, color);
 		return true;
@@ -146,7 +149,7 @@ bool board::clear_own_stones(coordinate& coord, point::color color) {
 	return false;
 }
 
-bool board::captures_enemy(coordinate& coord, point::color color) {
+bool board::captures_enemy(const coordinate& coord, point::color color) {
 	if (get_coordinate(coord) != point::color::Empty) {
 		return false;
 	}
@@ -176,16 +179,16 @@ bool board::captures_enemy(coordinate& coord, point::color color) {
 	return ret;
 }
 
-bool board::is_suicide(coordinate& coord, point::color color) {
+bool board::is_suicide(const coordinate& coord, point::color color) {
 	return !(reaches_empty(coord, color) || captures_enemy(coord, color));
 }
 
-bool board::is_valid_coordinate(coordinate& coord) {
+bool board::is_valid_coordinate(const coordinate& coord) {
 	return !(coord.first < 1 || coord.second < 1
 	         || coord.first > dimension || coord.second > dimension);
 }
 
-point::color board::get_coordinate(coordinate& coord) {
+point::color board::get_coordinate(const coordinate& coord) {
 	if (!is_valid_coordinate(coord)) {
 		// XXX
 		return point::color::Invalid;
@@ -194,7 +197,11 @@ point::color board::get_coordinate(coordinate& coord) {
 	return grid[(coord.second - 1)*dimension + (coord.first - 1)];
 }
 
-void board::make_move(coordinate& coord) {
+void board::make_move(const coordinate& coord) {
+	if (!is_valid_move(coord)) {
+		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
+	}
+
 	bool any_captured = false;
 	//unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 	//grid[index] = current_player;
@@ -241,12 +248,17 @@ unsigned board::count_territory(point::color player) {
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
+
+			if (get_coordinate(coord) != point::color::Empty) {
+				continue;
+			}
+
 			territory += reaches(coord, point::color::Empty, player)
 			             && !reaches(coord, point::color::Empty, other_player(player));
 		}
 	}
 
-	return 0;
+	return territory;
 }
 
 std::vector<coordinate> board::available_moves(void) {
@@ -265,19 +277,47 @@ std::vector<coordinate> board::available_moves(void) {
 	return ret;
 }
 
+#include <unistd.h>
+
 point::color board::determine_winner(void) {
-	int white = count_stones(point::color::White) + komi;
-	int black = count_stones(point::color::Black);
+	int white_stones = count_stones(point::color::White) + komi;
+	int black_stones = count_stones(point::color::Black);
 
-	white += count_territory(point::color::White);
-	black += count_territory(point::color::Black);
+	int white_territory = count_territory(point::color::White);
+	int black_territory = count_territory(point::color::Black);
 
-	//printf("game result: %u points black, %u points white\n", black, white);
+	int white = white_stones + white_territory;
+	int black = black_stones + black_territory;
+
+	/*
+	// TODO: maybe add an option to show predicted score and most likely playout
+	print();
+	printf(
+		"game result: %d points black, %d points white\n"
+		"             black: %d territory, %d stones\n"
+		"             white: %d territory, %d stones\n"
+		"             %u moves made\n",
+		black, white,
+		black_territory, black_stones,
+		white_territory, white_stones,
+		moves
+	);
+
+	for (move::moveptr thing = move_list; thing != nullptr; thing = thing->previous) {
+		printf(
+			" -> %s : (%u, %u)\n",
+			(thing->color == point::color::Black)? "black" : "white",
+			thing->coord.first, thing->coord.second
+		);
+	}
+
+	sleep(1);
+	*/
 
 	return (black > white)? point::color::Black : point::color::White;
 }
 
-uint64_t board::gen_hash(coordinate& coord, point::color color) {
+uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	// generate 12 bit identifier for this move
 	uint16_t foo = (color << 10) | (coord.first << 5) | coord.second;
 
@@ -288,7 +328,7 @@ uint64_t board::gen_hash(coordinate& coord, point::color color) {
 	return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
-void board::set_coordinate(coordinate& coord, point::color color) {
+void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
 		unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
 		grid[index] = color;

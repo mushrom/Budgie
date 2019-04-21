@@ -29,11 +29,18 @@ coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 
 	while (root->traversals < playouts) {
 		coordinate coord = root->max_utc(state, use_patterns);
+
+		if (coord == coordinate(0, 0)) {
+			return {0, 0};
+		}
+
 		root->explore(coord, state, use_patterns);
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
 
+	coordinate temp = {1, 1};
+	root->dump_node_statistics(temp, state);
 	return root->best_move();
 }
 
@@ -74,18 +81,20 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	if (leaf->fully_visited(state)) {
 		//fprintf(stderr, "# fully visited node at (%u, %u) : (%u)\n", coord.first, coord.second, leaf->traversals);
 		coordinate next = leaf->max_utc(&foo, use_patterns);
+
+		if (next == coordinate(0, 0)) {
+			leaf->update(foo.determine_winner());
+			return;
+		}
+
 		leaf->explore(next, &foo, use_patterns);
 
 	} else {
 		coordinate next = {0, 0};
-		unsigned spaces = foo.dimension * foo.dimension;
 
 		// TODO: can just reuse the move map to find unvisited moves
 		while (!leaf->fully_visited(state)) {
-			//fprintf(stderr, "%p: asdasdfasdfasdf, %u, %lu\n", leaf, leaf->unique_traversed, sizeof(mcts_node));
 			coordinate temp = random_coord(state);
-			unsigned index = temp.second*state->dimension + temp.first;
-
 			if (leaf->map_get_coord(temp, state)) {
 				continue;
 			}
@@ -93,6 +102,10 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 			leaf->map_set_coord(temp, state);
 
 			if (!foo.is_valid_move(temp)) {
+				continue;
+			}
+
+			if (use_patterns && patterns.search(state, temp) == 0) {
 				continue;
 			}
 
@@ -168,17 +181,6 @@ coordinate mcts_node::max_utc(board *state, bool use_patterns) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
-	/*
-	for (auto& x : state->available_moves()) {
-		double temp = uct(x, state, use_patterns);
-
-		if (temp > cur_max) {
-			cur_max = temp;
-			ret = x;
-		}
-	}
-	*/
-
 	for (auto& x : leaves) {
 		if (x.second == nullptr) {
 			continue;
@@ -200,20 +202,22 @@ double mcts_node::win_rate(void){
 }
 
 double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) {
-	/*
-	if (leaves[coord] == nullptr || leaves[coord]->traversals == 0) {
-		return 1;
-	}
-	*/
-
 	if (leaves[coord] == nullptr) {
+		return 0;
+	}
+
+	if (!state->is_valid_move(coord)) {
 		return 0;
 	}
 
 	double weight = use_patterns? patterns.search(state, coord) / 100.0 : 1;
 
+	if (weight == 0) {
+		return 0;
+	}
+
 	return weight*leaves[coord]->win_rate()
-		+ MCTS_UCT_C * sqrt(log(traversals / leaves[coord]->traversals));
+		+ MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
 }
 
 void mcts_node::update(point::color winner) {
@@ -235,13 +239,48 @@ unsigned mcts_node::terminal_nodes(void) {
 		for (auto& thing : leaves) {
 			if (thing.second != nullptr) {
 				ret += thing.second->terminal_nodes();
-				if (thing.second->parent != this) {
-					fprintf(stderr, "got problems!\n");
-				}
 			}
 		}
 
 		return ret;
+	}
+}
+
+unsigned mcts_node::nodes(void){
+	unsigned ret = 1;
+
+	for (auto& thing : leaves) {
+		if (thing.second != nullptr) {
+			ret += thing.second->nodes();
+		}
+	}
+
+	return ret;
+}
+
+void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsigned depth) {
+	auto print_spaces = [&](){
+		for (unsigned i = 0; i < depth*2; i++) {
+			std::cerr << ' ';
+		}
+	};
+
+	if (depth >= 2) {
+		return;
+	}
+
+	print_spaces();
+
+	fprintf(stderr, "%s coord (%u, %u), winrate: %g, traversals: %u\n",
+		fully_visited(state)? "fully visited" : "visited",
+		coord.first, coord.second, win_rate(), traversals);
+
+	for (auto& x : leaves) {
+		if (x.second == nullptr) {
+			continue;
+		}
+
+		x.second->dump_node_statistics(x.first, state, depth + 1);
 	}
 }
 
