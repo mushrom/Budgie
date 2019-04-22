@@ -14,3 +14,19 @@ O*O
 |*O
 +--
 :0
+
+# avoid playing dumb self-ataris
+?.?
+X*X
+?X?
+:0
+
+|.?
+|*X
++--
+:0
+
+?Xx
+.*X
+---
+:0

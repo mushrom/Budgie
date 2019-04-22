@@ -250,20 +250,65 @@ unsigned board::count_stones(point::color player) {
 	return ret;
 }
 
+unsigned board::territory_flood(const coordinate& coord,
+                                bool is_territory,
+                                std::bitset<384>& traversed_map)
+{
+	if (!is_valid_coordinate(coord)) {
+		return 0;
+	}
+
+	unsigned index = coord_to_index(coord);
+
+	if (traversed_map[index]) {
+		return 0;
+	}
+
+	traversed_map[index] = true;
+
+	if (get_coordinate(coord) != point::color::Empty) {
+		return 0;
+
+	} else {
+		coordinate left  = {coord.first - 1, coord.second};
+		coordinate right = {coord.first + 1, coord.second};
+		coordinate up    = {coord.first,     coord.second - 1};
+		coordinate down  = {coord.first,     coord.second + 1};
+
+		unsigned ret = is_territory;
+
+		for (const auto& thing : {left, right, up, down}) {
+			ret += territory_flood(thing, is_territory, traversed_map);
+		}
+
+		return ret;
+	}
+}
+
+unsigned board::coord_to_index(const coordinate& coord) {
+	return dimension*coord.second + coord.first;
+}
+
+// TODO: Right now the bot the bot doesn't count stones in atari as being dead,
+//       which impacts territory counting, since playing a stone in your opponents
+//       territory immediately makes their territory invalid in the bot's eyes...
+//
+//       Also makes it very annoying to play sometimes.
 unsigned board::count_territory(point::color player) {
+	std::bitset<384> bitmap = {0};
 	unsigned territory = 0;
 
-	// XXX: horribly inefficient, need to do a flood fill sort of thing
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
+			unsigned index = coord_to_index(coord);
 
-			if (get_coordinate(coord) != point::color::Empty) {
+			if (bitmap[index] || get_coordinate(coord) != point::color::Empty) {
 				continue;
 			}
 
-			territory += reaches(coord, point::color::Empty, player)
-			             && !reaches(coord, point::color::Empty, other_player(player));
+			bool is_territory = !reaches(coord, point::color::Empty, other_player(player));
+			territory += territory_flood(coord, is_territory, bitmap);
 		}
 	}
 

@@ -110,6 +110,7 @@ class board {
 		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
 		uint64_t gen_hash(const coordinate& coord, point::color color);
+		unsigned coord_to_index(const coordinate& coord);
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi) {
 			dimension = boardsize;
@@ -133,6 +134,10 @@ class board {
 		board *parent = nullptr;
 
 	private:
+		unsigned territory_flood(const coordinate& coord,
+		                         bool is_territory,
+		                         std::bitset<384>& traversed_map);
+
 		void set_coordinate(const coordinate& coord, point::color color);
 		bool reaches_iter(const coordinate& coord, point::color color, point::color target, std::bitset<384>& marked);
 		bool reaches(const coordinate& coord, point::color color, point::color target);
