@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <map>
 #include <memory>
+#include <bitset>
 
 namespace mcts_thing {
 
@@ -133,7 +134,7 @@ class board {
 
 	private:
 		void set_coordinate(const coordinate& coord, point::color color);
-		bool reaches_iter(const coordinate& coord, point::color color, point::color target, std::map<coordinate, bool>& marked);
+		bool reaches_iter(const coordinate& coord, point::color color, point::color target, std::bitset<384>& marked);
 		bool reaches(const coordinate& coord, point::color color, point::color target);
 		bool reaches_empty(const coordinate& coord, point::color color);
 		void clear_stones(const coordinate& coord, point::color color);

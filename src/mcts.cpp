@@ -122,33 +122,21 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	}
 }
 
-void mcts_node::map_set(unsigned index) {
-	unsigned top = index / 8;
-	unsigned bottom = index % 8;
-
-	move_map[top] |= (1 << bottom);
-}
-
 void mcts_node::map_set_coord(coordinate& coord, board *state) {
 	unsigned index = coord.second*state->dimension + coord.first;
 
-	if (!map_get(index)) {
-		map_set(index);
+	if (!move_map[index]) {
+		move_map[index] = true;
+		//map_set(index);
 		unique_traversed++;
 	}
-}
-
-bool mcts_node::map_get(unsigned index) {
-	unsigned top = index / 8;
-	unsigned bottom = index % 8;
-
-	return !!(move_map[top] & (1 << bottom));
 }
 
 bool mcts_node::map_get_coord(coordinate& coord, board *state) {
 	unsigned index = coord.second*state->dimension + coord.first;
 
-	return map_get(index);
+	return move_map[index];
+	//return map_get(index);
 }
 
 bool mcts_node::fully_visited(board *state) {

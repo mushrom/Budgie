@@ -5,6 +5,7 @@
 #include <utility>
 #include <map>
 #include <memory>
+#include <bitset>
 
 #define MCTS_UCT_C 0.35
 
@@ -31,8 +32,6 @@ class mcts_node {
 		unsigned terminal_nodes(void);
 		unsigned nodes(void);
 		bool fully_visited(board *state);
-		void map_set(unsigned index);
-		bool map_get(unsigned index);
 		void map_set_coord(coordinate& coord, board *state);
 		bool map_get_coord(coordinate& coord, board *state);
 
@@ -44,8 +43,7 @@ class mcts_node {
 		unsigned traversals;
 		unsigned wins;
 
-		//bool move_map[512] = {0};
-		uint32_t move_map[16] = {0};
+		std::bitset<384> move_map = {0};
 		unsigned unique_traversed = 0;
 };
 

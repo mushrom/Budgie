@@ -2,6 +2,7 @@
 #include <mcts-gb/game.hpp>
 #include <map>
 #include <iostream>
+#include <bitset>
 
 namespace mcts_thing {
 
@@ -56,7 +57,8 @@ bool board::violates_ko(const coordinate& coord) {
 bool board::reaches_iter(const coordinate& coord,
                          point::color color,
                          point::color target,
-                         std::map<coordinate, bool>& marked)
+                         /*std::map<coordinate, bool>& marked*/
+						 std::bitset<384>& marked)
 {
 	bool ret = false;
 
@@ -65,10 +67,16 @@ bool board::reaches_iter(const coordinate& coord,
 	coordinate up    = {coord.first,     coord.second - 1};
 	coordinate down  = {coord.first,     coord.second + 1};
 
-	marked[coord] = true;
+	// TODO: Make this a general function
+	auto coord_index = [&](const coordinate& coord) {
+		return dimension*coord.second + coord.first;
+	};
 
-	for (auto thing : {left, right, up, down}) {
-		if (is_valid_coordinate(thing) && marked.find(thing) == marked.end()) {
+	//marked[coord] = true;
+	marked[coord_index(coord)] = true;
+
+	for (const auto& thing : {left, right, up, down}) {
+		if (is_valid_coordinate(thing) && !marked[coord_index(thing)]) {
 			point::color foo = get_coordinate(thing);
 
 			if (foo == target) {
@@ -87,7 +95,8 @@ bool board::reaches_iter(const coordinate& coord,
 
 bool board::reaches(const coordinate& coord, point::color color, point::color target) {
 	// XXX: map here is really bad, feels gross tbh
-	std::map<coordinate, bool> marked;
+	//std::map<coordinate, bool> marked;
+	std::bitset<384> marked = {0};
 
 	return reaches_iter(coord, color, target, marked);
 }
