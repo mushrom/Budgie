@@ -42,6 +42,7 @@ class pattern_db {
 		pattern read_pattern(std::ifstream& f);
 		void tree_load_pattern(pattern& pat);
 		void load_pattern(pattern& pat);
+		unsigned specificity(char c);
 		pattern_node tree;
 };
 

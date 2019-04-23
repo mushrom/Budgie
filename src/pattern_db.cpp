@@ -172,9 +172,15 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 		pattern_node *next = nullptr;
 
 		for (const auto& x : ptr->matchers) {
+			unsigned max_spec = 0;
+
+			if (specificity(x.second->exp) <= max_spec) {
+				continue;
+			}
+
 			if (test_match(state, x.second->exp, grid[i])) {
 				next = x.second;
-				break;
+				max_spec = specificity(x.second->exp);
 			}
 		}
 
@@ -194,6 +200,31 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	}
 
 	return ptr->weight;
+}
+
+unsigned pattern_db::specificity(char c) {
+	switch (c) {
+		case 'O':
+		case 'X':
+		case '.':
+		case '+':
+		case '|':
+		case '-':
+		case '*':
+			return 3;
+
+		case 'o':
+			return 2;
+
+		case 'x':
+			return 2;
+
+		case '?':
+			return 1;
+
+		default:
+			return 0;
+	}
 }
 
 bool pattern_db::test_match(board *state, char m, point::color c) {
