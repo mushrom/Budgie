@@ -3,6 +3,7 @@
 #include <mcts-gb/game.hpp>
 #include <list>
 #include <utility>
+#include <unordered_map>
 #include <map>
 #include <memory>
 #include <bitset>
@@ -37,7 +38,15 @@ class mcts_node {
 
 		void dump_node_statistics(const coordinate& coord, board *state, unsigned depth=0);
 
-		std::map<coordinate, nodeptr> leaves;
+		// TODO: maybe move this to the 'board' class
+		struct coord_hash {
+			std::size_t operator () (const coordinate& coord) const {
+				return (coord.first * 19937) + coord.first
+				     + (coord.second * 737) + coord.second;
+			}
+		};
+
+		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
 		mcts_node *parent;
 		unsigned color;
 		unsigned traversals;
