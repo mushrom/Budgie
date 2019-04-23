@@ -2,7 +2,7 @@
 
 #include <mcts-gb/game.hpp>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 #include <fstream>
 
@@ -10,7 +10,6 @@ namespace mcts_thing {
 
 class pattern {
 	public:
-		bool matches(board *state, coordinate coord);
 		void print(void);
 		char minigrid[9] = {0};
 		unsigned weight = 0;
@@ -18,15 +17,18 @@ class pattern {
 		int y_offset = 0;
 		bool valid = false;
 
-	private:
-		bool test_grid(board *state, point::color grid[9]);
-		void rotate_grid(point::color grid[9]);
-		void flip_horizontally(point::color grid[9]);
-		void flip_vertically(point::color grid[9]);
+		void rotate_grid(void);
+		void flip_horizontally(void);
+		void flip_vertically(void);
+};
 
-		void read_grid(board *state, coordinate coord, point::color grid[9]);
-		void print_grid(point::color grid[9]);
+class pattern_node {
+	public:
+		char exp;
+		unsigned weight;
 
+		std::unordered_map<char, pattern_node*> matchers;
+		void dump(unsigned depth=0);
 };
 
 class pattern_db {
@@ -35,9 +37,12 @@ class pattern_db {
 		unsigned search(board *state, coordinate coord);
 	
 	private:
+		void read_grid(board *state, coordinate coord, point::color grid[9]);
+		bool test_match(board *state, char m, point::color c);
 		pattern read_pattern(std::ifstream& f);
-
-		std::vector<pattern> patterns;
+		void tree_load_pattern(pattern& pat);
+		void load_pattern(pattern& pat);
+		pattern_node tree;
 };
 
 }
