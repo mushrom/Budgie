@@ -97,134 +97,68 @@ pattern_db::pattern_db(const std::string& db) {
 
 	while (pf.is_open()) {
 		pattern p = read_pattern(pf);
-
-		if (p.valid) {
-			load_pattern(p);
-		}
+		load_pattern(p);
 	}
 
-	tree.dump();
+	dump_patterns();
 }
 
-void pattern_node::dump(unsigned depth) {
-	for (unsigned i = 0; i < depth; i++) {
-		std::cerr << "  ";
-	}
-
-	fprintf(stderr, "'%c' : %u\n", exp, weight);
-
-	for (const auto& x : matchers) {
-		if (x.second != nullptr) {
-			x.second->dump(depth + 1);
-		}
+void pattern_db::dump_patterns(void) {
+	for (auto& thing : patterns) {
+		thing.print();
 	}
 }
 
 void pattern_db::load_pattern(pattern& pat) {
-	tree_load_pattern(pat);
+	if (!pat.valid) {
+		return;
+	}
 
-	// test different orientations of the grid which still match some pattern
+	patterns.push_back(pat);
+
 	pat.flip_horizontally();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_vertically();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_horizontally();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_vertically();
 	pat.rotate_grid();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_horizontally();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_vertically();
-	tree_load_pattern(pat);
+	patterns.push_back(pat);
 
 	pat.flip_horizontally();
-	tree_load_pattern(pat);
-}
-
-void pattern_db::tree_load_pattern(pattern& pat) {
-	pattern_node *ptr = &tree;
-
-	for (unsigned i = 0; i < 9 /* TODO: maybe make grid size variable? */; i++) {
-		char c = pat.minigrid[i];
-
-		if (ptr->matchers[c] == nullptr) {
-			ptr->matchers[c] = new pattern_node();
-		}
-
-		ptr->matchers[c]->exp = pat.minigrid[i];
-		ptr->matchers[c]->weight = pat.weight;
-		ptr = ptr->matchers[pat.minigrid[i]];
-	}
+	patterns.push_back(pat);
 }
 
 unsigned pattern_db::search(board *state, coordinate coord) {
-	pattern_node *ptr = &tree;
 	point::color grid[9];
 	read_grid(state, coord, grid);
 
-	for (unsigned i = 0; i < 9; i++) {
-		pattern_node *next = nullptr;
+	for (auto& x : patterns) {
+		bool matched = false;
 
-		for (const auto& x : ptr->matchers) {
-			unsigned max_spec = 0;
-
-			if (specificity(x.second->exp) <= max_spec) {
-				continue;
-			}
-
-			if (test_match(state, x.second->exp, grid[i])) {
-				next = x.second;
-				max_spec = specificity(x.second->exp);
+		for (unsigned i = 0; i < 9; i++) {
+			if ((matched = test_match(state, x.minigrid[i], grid[i])) == false) {
+				matched = false;
+				break;
 			}
 		}
 
-		if ((ptr = next) == nullptr) {
-			return 100;
+		if (matched) {
+			return x.weight;
 		}
 	}
 
-	// TODO: add 'unlikely()' here
-	if (!ptr) {
-		/*
-		std::cerr << "Hold up, we're supposed to have another pointer here!"
-			<< std::endl;
-			*/
-
-		return 100;
-	}
-
-	return ptr->weight;
-}
-
-unsigned pattern_db::specificity(char c) {
-	switch (c) {
-		case 'O':
-		case 'X':
-		case '.':
-		case '+':
-		case '|':
-		case '-':
-		case '*':
-			return 3;
-
-		case 'o':
-			return 2;
-
-		case 'x':
-			return 2;
-
-		case '?':
-			return 1;
-
-		default:
-			return 0;
-	}
+	return 100;
 }
 
 bool pattern_db::test_match(board *state, char m, point::color c) {

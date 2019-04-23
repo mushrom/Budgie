@@ -22,15 +22,6 @@ class pattern {
 		void flip_vertically(void);
 };
 
-class pattern_node {
-	public:
-		char exp;
-		unsigned weight;
-
-		std::unordered_map<char, pattern_node*> matchers;
-		void dump(unsigned depth=0);
-};
-
 class pattern_db {
 	public:
 		pattern_db(const std::string& db);
@@ -40,10 +31,9 @@ class pattern_db {
 		void read_grid(board *state, coordinate coord, point::color grid[9]);
 		bool test_match(board *state, char m, point::color c);
 		pattern read_pattern(std::ifstream& f);
-		void tree_load_pattern(pattern& pat);
 		void load_pattern(pattern& pat);
-		unsigned specificity(char c);
-		pattern_node tree;
+		void dump_patterns(void);
+		std::vector<pattern> patterns;
 };
 
 }
