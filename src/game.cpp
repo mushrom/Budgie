@@ -99,7 +99,8 @@ bool board::reaches_empty(const coordinate& coord, point::color color) {
 unsigned board::count_iter(const coordinate& coord,
                            point::color color,
                            point::color target,
-                           std::bitset<384>& marked)
+                           std::bitset<384>& marked,
+                           std::bitset<384>& traversed)
 {
 	unsigned ret = 0;
 
@@ -111,16 +112,19 @@ unsigned board::count_iter(const coordinate& coord,
 	marked[coord_to_index(coord)] = true;
 
 	for (const auto& thing : {left, right, up, down}) {
-		if (is_valid_coordinate(thing) && !marked[coord_to_index(thing)]) {
+		unsigned index = coord_to_index(thing);
+
+		if (is_valid_coordinate(thing) && !marked[index]) {
 			point::color foo = get_coordinate(thing);
 
 			if (foo == target) {
 				ret++;
-				marked[coord_to_index(thing)] = true;
+				marked[index] = true;
 			}
 
 			else if (foo == color) {
-				ret += count_iter(thing, color, target, marked);
+				traversed[index] = true;
+				ret += count_iter(thing, color, target, marked, traversed);
 			}
 		}
 	}
@@ -130,11 +134,12 @@ unsigned board::count_iter(const coordinate& coord,
 
 unsigned board::count_reachable(const coordinate& coord,
                                 point::color color,
-                                point::color target)
+                                point::color target,
+                                std::bitset<384>& traversed)
 {
 	std::bitset<384> marked = {0};
 
-	return count_iter(coord, color, target, marked);
+	return count_iter(coord, color, target, marked, traversed);
 }
 
 
@@ -345,6 +350,7 @@ void board::endgame_mark_captured(const coordinate& coord,
 //       ^ leaving the debug statements here for that
 void board::endgame_clear_captured(void) {
 	std::bitset<384> marked = {0};
+	std::bitset<384> traversed = {0};
 
 	// enumerate all stones immediately capturable
 	for (unsigned y = 1; y <= dimension; y++) {
@@ -353,17 +359,14 @@ void board::endgame_clear_captured(void) {
 			unsigned index = coord_to_index(coord);
 			point::color color = get_coordinate(coord);
 
-			if (color == point::color::Empty || marked[index]) {
+			if (color == point::color::Empty
+			   || traversed[index]
+			   || marked[index]) {
 				continue;
 			}
 
-			unsigned liberties = count_reachable(coord, color, point::color::Empty);
-
-			/*
-			if (count_reachable(coord, color, point::color::Empty) < 2) {
-				endgame_mark_captured(coord, color, marked);
-			}
-			*/
+			unsigned liberties = count_reachable(coord, color,
+			                                     point::color::Empty, traversed);
 
 			//std::cerr << "# group has " << liberties << " liberties" << std::endl;
 			if (liberties < 2) {
@@ -439,11 +442,9 @@ point::color board::determine_winner(void) {
 	/*
 	std::cerr << "# board before captures: " << std::endl;
 	print();
-	*/
 
 	endgame_clear_captured();
 
-	/*
 	std::cerr << "# board after captures: " << std::endl;
 	print();
 	*/

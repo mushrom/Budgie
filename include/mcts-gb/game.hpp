@@ -147,11 +147,15 @@ class board {
 		bool reaches(const coordinate& coord, point::color color, point::color target);
 		bool reaches_empty(const coordinate& coord, point::color color);
 
-		unsigned count_iter(const coordinate& coord, point::color color,
-		                    point::color target, std::bitset<384>& marked);
+		unsigned count_iter(const coordinate& coord,
+		                    point::color color,
+		                    point::color target,
+		                    std::bitset<384>& marked,
+		                    std::bitset<384>& traversed);
 		unsigned count_reachable(const coordinate& coord,
 		                         point::color color,
-		                         point::color target);
+		                         point::color target,
+		                         std::bitset<384>& traversed);
 
 		void clear_stones(const coordinate& coord, point::color color);
 		bool clear_enemy_stones(const coordinate& coord, point::color color);

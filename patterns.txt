@@ -18,7 +18,7 @@ O*O
 # avoid playing dumb self-ataris
 ?.?
 X*X
-?X?
+xX?
 :0
 
 |.?
