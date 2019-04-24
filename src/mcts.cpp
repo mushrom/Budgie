@@ -24,17 +24,19 @@ coordinate random_coord(board *b) {
 coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 	// fully visit root node
 	for (auto& x : state->available_moves()) {
-		root->explore(x, state, use_patterns);
+		board scratch(state);
+		root->explore(x, &scratch, use_patterns);
 	}
 
 	while (root->traversals < playouts) {
-		coordinate coord = root->max_utc(state, use_patterns);
+		board scratch(state);
+		coordinate coord = root->max_utc(&scratch, use_patterns);
 
 		if (coord == coordinate(0, 0)) {
 			return {0, 0};
 		}
 
-		root->explore(coord, state, use_patterns);
+		root->explore(coord, &scratch, use_patterns);
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
@@ -68,9 +70,7 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	}
 
 	mcts_node *leaf = leaves[coord].get();
-
-	board foo(state);
-	foo.make_move(coord);
+	state->make_move(coord);
 
 	/*
 	printf("\e[1;1H");
@@ -79,15 +79,14 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	*/
 
 	if (leaf->fully_visited(state)) {
-		//fprintf(stderr, "# fully visited node at (%u, %u) : (%u)\n", coord.first, coord.second, leaf->traversals);
-		coordinate next = leaf->max_utc(&foo, use_patterns);
+		coordinate next = leaf->max_utc(state, use_patterns);
 
 		if (next == coordinate(0, 0)) {
-			leaf->update(foo.determine_winner());
+			leaf->update(state->determine_winner());
 			return;
 		}
 
-		leaf->explore(next, &foo, use_patterns);
+		leaf->explore(next, state, use_patterns);
 
 	} else {
 		coordinate next = {0, 0};
@@ -101,7 +100,7 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 
 			leaf->map_set_coord(temp, state);
 
-			if (!foo.is_valid_move(temp)) {
+			if (!state->is_valid_move(temp)) {
 				continue;
 			}
 
@@ -113,12 +112,12 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 			break;
 		}
 
-		if (!foo.is_valid_move(next)) {
-			leaf->update(foo.determine_winner());
+		if (!state->is_valid_move(next)) {
+			leaf->update(state->determine_winner());
 			return;
 		}
 
-		leaf->explore(next, &foo, use_patterns);
+		leaf->explore(next, state, use_patterns);
 	}
 }
 
@@ -127,7 +126,6 @@ void mcts_node::map_set_coord(coordinate& coord, board *state) {
 
 	if (!move_map[index]) {
 		move_map[index] = true;
-		//map_set(index);
 		unique_traversed++;
 	}
 }
@@ -136,7 +134,6 @@ bool mcts_node::map_get_coord(coordinate& coord, board *state) {
 	unsigned index = coord.second*state->dimension + coord.first;
 
 	return move_map[index];
-	//return map_get(index);
 }
 
 bool mcts_node::fully_visited(board *state) {
