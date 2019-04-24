@@ -20,7 +20,11 @@ bool board::is_valid_move(const coordinate& coord) {
 }
 
 bool board::violates_ko(const coordinate& coord) {
-	uint64_t hash = gen_hash(coord, current_player);
+	//uint64_t hash = gen_hash(coord, current_player);
+	// TODO: this kills performance, reaaaaaallly need a fast way to check
+	//       group liberties so we can check for captures instead...
+	board foo(this);
+	foo.make_move(coord);
 
 	// TODO: do we really need to do full superko checking?
 	unsigned k = 9;
@@ -29,7 +33,7 @@ bool board::violates_ko(const coordinate& coord) {
 	     ptr != nullptr && k;
 	     ptr = ptr->previous, k--)
 	{
-		if (hash == ptr->hash) {
+		if (foo.hash == ptr->hash) {
 			// TODO: check that it's not just a hash collision, although it's
 			//       pretty unlikely
 			return true;
@@ -245,7 +249,7 @@ point::color board::get_coordinate(const coordinate& coord) {
 }
 
 void board::make_move(const coordinate& coord) {
-	if (!is_valid_move(coord)) {
+	if (!is_valid_coordinate(coord)) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
 	}
 
