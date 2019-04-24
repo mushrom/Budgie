@@ -511,20 +511,22 @@ void board::set_coordinate(const coordinate& coord, point::color color) {
 void board::print(void) {
 	//printf("\e[1;1H");
 
-	for (unsigned y = 0; y < dimension; y++) {
-		printf("# %2d ", y + 1);
-		for (unsigned x = 0; x < dimension; x++) {
-			unsigned index = y * dimension + x;
-
-			printf("%c ", ". O#"[grid[index]]);
+	for (unsigned y = dimension; y > 0; y--) {
+		printf("# %2d ", y);
+		for (unsigned x = 1; x <= dimension; x++) {
+			//unsigned index = y * dimension + x;
+			coordinate coord = {x, y};
+			printf("%c ", ". O#"[get_coordinate(coord)]);
 		}
 
 		printf(" \n");
 	}
 
+	std::string letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
+
 	printf("#   ");
 	for (unsigned x = 0; x < dimension; x++) {
-		printf("%2d", x + 1);
+		printf("%2c", letters[x]);
 	}
 	printf(" \n");
 }
