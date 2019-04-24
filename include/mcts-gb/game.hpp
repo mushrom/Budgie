@@ -134,14 +134,25 @@ class board {
 		board *parent = nullptr;
 
 	private:
+		void endgame_mark_captured(const coordinate& coord, point::color color,
+		                           std::bitset<384>& marked);
+		void endgame_clear_captured(void);
 		unsigned territory_flood(const coordinate& coord,
 		                         bool is_territory,
 		                         std::bitset<384>& traversed_map);
 
 		void set_coordinate(const coordinate& coord, point::color color);
-		bool reaches_iter(const coordinate& coord, point::color color, point::color target, std::bitset<384>& marked);
+		bool reaches_iter(const coordinate& coord, point::color color,
+		                  point::color target, std::bitset<384>& marked);
 		bool reaches(const coordinate& coord, point::color color, point::color target);
 		bool reaches_empty(const coordinate& coord, point::color color);
+
+		unsigned count_iter(const coordinate& coord, point::color color,
+		                    point::color target, std::bitset<384>& marked);
+		unsigned count_reachable(const coordinate& coord,
+		                         point::color color,
+		                         point::color target);
+
 		void clear_stones(const coordinate& coord, point::color color);
 		bool clear_enemy_stones(const coordinate& coord, point::color color);
 		bool clear_own_stones(const coordinate& coord, point::color color);

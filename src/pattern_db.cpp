@@ -99,8 +99,6 @@ pattern_db::pattern_db(const std::string& db) {
 		pattern p = read_pattern(pf);
 		load_pattern(p);
 	}
-
-	dump_patterns();
 }
 
 void pattern_db::dump_patterns(void) {

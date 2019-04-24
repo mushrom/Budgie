@@ -57,8 +57,7 @@ bool board::violates_ko(const coordinate& coord) {
 bool board::reaches_iter(const coordinate& coord,
                          point::color color,
                          point::color target,
-                         /*std::map<coordinate, bool>& marked*/
-						 std::bitset<384>& marked)
+                         std::bitset<384>& marked)
 {
 	bool ret = false;
 
@@ -67,16 +66,10 @@ bool board::reaches_iter(const coordinate& coord,
 	coordinate up    = {coord.first,     coord.second - 1};
 	coordinate down  = {coord.first,     coord.second + 1};
 
-	// TODO: Make this a general function
-	auto coord_index = [&](const coordinate& coord) {
-		return dimension*coord.second + coord.first;
-	};
-
-	//marked[coord] = true;
-	marked[coord_index(coord)] = true;
+	marked[coord_to_index(coord)] = true;
 
 	for (const auto& thing : {left, right, up, down}) {
-		if (is_valid_coordinate(thing) && !marked[coord_index(thing)]) {
+		if (is_valid_coordinate(thing) && !marked[coord_to_index(thing)]) {
 			point::color foo = get_coordinate(thing);
 
 			if (foo == target) {
@@ -94,8 +87,6 @@ bool board::reaches_iter(const coordinate& coord,
 }
 
 bool board::reaches(const coordinate& coord, point::color color, point::color target) {
-	// XXX: map here is really bad, feels gross tbh
-	//std::map<coordinate, bool> marked;
 	std::bitset<384> marked = {0};
 
 	return reaches_iter(coord, color, target, marked);
@@ -104,6 +95,48 @@ bool board::reaches(const coordinate& coord, point::color color, point::color ta
 bool board::reaches_empty(const coordinate& coord, point::color color) {
 	return reaches(coord, color, point::color::Empty);
 }
+
+unsigned board::count_iter(const coordinate& coord,
+                           point::color color,
+                           point::color target,
+                           std::bitset<384>& marked)
+{
+	unsigned ret = 0;
+
+	coordinate left  = {coord.first - 1, coord.second};
+	coordinate right = {coord.first + 1, coord.second};
+	coordinate up    = {coord.first,     coord.second - 1};
+	coordinate down  = {coord.first,     coord.second + 1};
+
+	marked[coord_to_index(coord)] = true;
+
+	for (const auto& thing : {left, right, up, down}) {
+		if (is_valid_coordinate(thing) && !marked[coord_to_index(thing)]) {
+			point::color foo = get_coordinate(thing);
+
+			if (foo == target) {
+				ret++;
+				marked[coord_to_index(thing)] = true;
+			}
+
+			else if (foo == color) {
+				ret += count_iter(thing, color, target, marked);
+			}
+		}
+	}
+
+	return ret;
+}
+
+unsigned board::count_reachable(const coordinate& coord,
+                                point::color color,
+                                point::color target)
+{
+	std::bitset<384> marked = {0};
+
+	return count_iter(coord, color, target, marked);
+}
+
 
 void board::clear_stones(const coordinate& coord, point::color color) {
 	coordinate left  = {coord.first - 1, coord.second};
@@ -285,6 +318,75 @@ unsigned board::territory_flood(const coordinate& coord,
 	}
 }
 
+void board::endgame_mark_captured(const coordinate& coord,
+                                  point::color color,
+                                  std::bitset<384>& marked)
+{
+	coordinate left  = {coord.first - 1, coord.second};
+	coordinate right = {coord.first + 1, coord.second};
+	coordinate up    = {coord.first,     coord.second - 1};
+	coordinate down  = {coord.first,     coord.second + 1};
+
+	marked[coord_to_index(coord)] = true;
+
+	for (const auto& thing : {left, right, up, down}) {
+		if (is_valid_coordinate(thing)
+		    && !marked[coord_to_index(thing)]
+		    && get_coordinate(thing) == color)
+		{
+			endgame_mark_captured(thing, color, marked);
+		}
+	}
+}
+
+// TODO: we could reuse the 'count reachable' map for faster traversal,
+//       as a future optimization
+//
+//       ^ leaving the debug statements here for that
+void board::endgame_clear_captured(void) {
+	std::bitset<384> marked = {0};
+
+	// enumerate all stones immediately capturable
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 1; x <= dimension; x++) {
+			coordinate coord = {x, y};
+			unsigned index = coord_to_index(coord);
+			point::color color = get_coordinate(coord);
+
+			if (color == point::color::Empty || marked[index]) {
+				continue;
+			}
+
+			unsigned liberties = count_reachable(coord, color, point::color::Empty);
+
+			/*
+			if (count_reachable(coord, color, point::color::Empty) < 2) {
+				endgame_mark_captured(coord, color, marked);
+			}
+			*/
+
+			//std::cerr << "# group has " << liberties << " liberties" << std::endl;
+			if (liberties < 2) {
+				endgame_mark_captured(coord, color, marked);
+			}
+		}
+	}
+
+	// then clear them
+	// NOTE: we clear after marking so that seki situations
+	//       end up being counted correctly
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 1; x <= dimension; x++) {
+			coordinate coord = {x, y};
+			unsigned index = coord_to_index(coord);
+
+			if (marked[index]) {
+				set_coordinate(coord, point::color::Empty);
+			}
+		}
+	}
+}
+
 unsigned board::coord_to_index(const coordinate& coord) {
 	return dimension*coord.second + coord.first;
 }
@@ -334,6 +436,18 @@ std::vector<coordinate> board::available_moves(void) {
 #include <unistd.h>
 
 point::color board::determine_winner(void) {
+	/*
+	std::cerr << "# board before captures: " << std::endl;
+	print();
+	*/
+
+	endgame_clear_captured();
+
+	/*
+	std::cerr << "# board after captures: " << std::endl;
+	print();
+	*/
+
 	int white_stones = count_stones(point::color::White) + komi;
 	int black_stones = count_stones(point::color::Black);
 
@@ -345,7 +459,7 @@ point::color board::determine_winner(void) {
 
 	/*
 	// TODO: maybe add an option to show predicted score and most likely playout
-	print();
+	//print();
 	printf(
 		"game result: %d points black, %d points white\n"
 		"             black: %d territory, %d stones\n"
