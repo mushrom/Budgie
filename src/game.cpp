@@ -501,10 +501,61 @@ uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
+/*
 void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
 		unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
 		grid[index] = color;
+	}
+}
+*/
+
+void board::place_stone(const coordinate& coord, point::color color) {
+	stone_group::ptr neighbors[4];
+	unsigned friendly = 0;
+	unsigned enemies = 0;
+	unsigned edges = 0;
+
+	coordinate left  = {coord.first - 1, coord.second};
+	coordinate right = {coord.first + 1, coord.second};
+	coordinate up    = {coord.first,     coord.second - 1};
+	coordinate down  = {coord.first,     coord.second + 1};
+
+	unsigned i = 0;
+	for (auto& x : {left, right, up, down}) {
+		if (get_coordinate(x) == point::color::Invalid) {
+			edges++;
+			// edges aren't point of stone groups, just continue
+			continue;
+		}
+
+		neighbors[i] = groups[x];
+
+		if (neighbors[i] != nullptr) {
+			friendly += neighbors[i]->color == color;
+			enemies  += neighbors[i]->color == other_player(color);
+		}
+
+		i++;
+	}
+
+	unsigned liberties = 4 - friendly - enemies;
+	stone_group::ptr self(new stone_group);
+
+	self->liberties = liberties;
+
+	for (auto& x : neighbors) {
+		if (x == nullptr) {
+			continue;
+		}
+
+		if (x->color == color) {
+			// TODO: link groups
+		}
+
+		else if (x->color == other_player(color)) {
+			// TODO: reduce enemy liberties
+		}
 	}
 }
 

@@ -7,10 +7,17 @@
 #include <map>
 #include <memory>
 #include <bitset>
+#include <unordered_map>
 
 namespace mcts_thing {
 
 typedef std::pair<unsigned, unsigned> coordinate;
+
+struct coord_hash {
+	std::size_t operator () (const coordinate& coord) const {
+		return (coord.first * 3313) + (coord.second * 797);
+	}
+};
 
 class point {
 	public:
@@ -49,6 +56,16 @@ class move {
 		coordinate coord;
 		point::color color;
 		uint64_t hash;
+};
+
+class stone_group {
+	public:
+		typedef std::shared_ptr<stone_group> ptr;
+
+		std::vector<coordinate> stones;
+		point::color color;
+
+		unsigned liberties = 0;
 };
 
 class board {
@@ -133,6 +150,8 @@ class board {
 		coordinate last_move;
 		board *parent = nullptr;
 
+		std::unordered_map<coordinate, stone_group::ptr, coord_hash> groups;
+
 	private:
 		void endgame_mark_captured(const coordinate& coord, point::color color,
 		                           std::bitset<384>& marked);
@@ -141,7 +160,10 @@ class board {
 		                         bool is_territory,
 		                         std::bitset<384>& traversed_map);
 
-		void set_coordinate(const coordinate& coord, point::color color);
+		// TODO: remove set_coordinate
+		void set_coordinate(const coordinate& coord, point::color color) {};
+		void place_stone(const coordinate& coord, point::color color);
+
 		bool reaches_iter(const coordinate& coord, point::color color,
 		                  point::color target, std::bitset<384>& marked);
 		bool reaches(const coordinate& coord, point::color color, point::color target);
