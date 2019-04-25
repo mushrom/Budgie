@@ -269,13 +269,7 @@ void board::make_move(const coordinate& coord) {
 		hash = gen_hash(coord, current_player);
 
 	} else {
-		hash = InitialHash;
-
-		for (unsigned i = 0; i < dimension * dimension; i++) {
-			if (grid[i] != point::color::Empty) {
-				hash = gen_hash(coord, grid[i]);
-			}
-		}
+		regen_hash();
 	}
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
@@ -504,6 +498,21 @@ uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	//       hash for uniquely identifying games though
 	//return (hash << 12) + hash + foo;
 	return hash + (uint64_t)InitialHash * (uint64_t)foo;
+}
+
+void board::regen_hash(void) {
+	hash = InitialHash;
+
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 0; x <= dimension; x++) {
+			coordinate coord = {x, y};
+			point::color color = get_coordinate(coord);
+
+			if (color != point::color::Empty) {
+				hash = gen_hash(coord, color);
+			}
+		}
+	}
 }
 
 void board::set_coordinate(const coordinate& coord, point::color color) {

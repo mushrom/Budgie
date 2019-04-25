@@ -134,6 +134,7 @@ class board {
 		board *parent = nullptr;
 
 	private:
+		void regen_hash(void);
 		void endgame_mark_captured(const coordinate& coord, point::color color,
 		                           std::bitset<384>& marked);
 		void endgame_clear_captured(void);
