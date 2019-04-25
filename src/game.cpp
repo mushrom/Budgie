@@ -7,16 +7,18 @@
 namespace mcts_thing {
 
 bool board::is_valid_move(const coordinate& coord) {
+	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
+
 	if (!is_valid_coordinate(coord)
+		|| grid[index] != point::color::Empty
 		|| violates_ko(coord)
 		|| is_suicide(coord))
 	{
 		return false;
 	}
 
-	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
-
-	return grid[index] == point::color::Empty;
+	//return grid[index] == point::color::Empty;
+	return true;
 }
 
 bool board::violates_ko(const coordinate& coord) {
@@ -24,6 +26,7 @@ bool board::violates_ko(const coordinate& coord) {
 	if (!captures_enemy(coord)) {
 		return false;
 	}
+	return false;
 
 	// TODO: this kills performance, reaaaaaallly need a fast way to check
 	//       group liberties so we can check for captures instead...
@@ -591,12 +594,6 @@ stone_group::ptr board::link_friendly(stone_group::ptr neighbors[4]) {
 				root = neighbors[i];
 			}
 
-			// TODO
-			else if (root == neighbors[i]) {
-				// part of the same group, already linked
-				continue;
-			}
-
 			else {
 				// move stones from the group with the least members
 				stone_group::ptr min =
@@ -608,18 +605,30 @@ stone_group::ptr board::link_friendly(stone_group::ptr neighbors[4]) {
 
 				max->liberties += min->liberties;
 
+				for (const auto &x : min->stones) {
+					groups[coord_to_index(x)] = max;
+				}
+
 				auto it = max->stones.end();
 				max->stones.splice(it, min->stones);
 
 				// make sure we don't point to the old stone group...
+				for (unsigned k = i + 1; k < 4; k++) {
+					if (neighbors[k] == min) {
+						neighbors[k] = max;
+					}
+				}
+
 				neighbors[i] = root = max;
 			}
 		}
 	}
 
+	/*
 	for (const auto &x : root->stones) {
 		groups[coord_to_index(x)] = root;
 	}
+	*/
 
 	return root;
 }
