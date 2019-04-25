@@ -256,6 +256,7 @@ point::color board::get_coordinate(const coordinate& coord) {
 void board::make_move(const coordinate& coord) {
 	if (!is_valid_coordinate(coord)) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
+		return;
 	}
 
 	bool any_captured = false;
@@ -265,12 +266,16 @@ void board::make_move(const coordinate& coord) {
 	any_captured = clear_enemy_stones(coord, current_player);
 	any_captured = any_captured || clear_own_stones(coord, current_player);
 
+	/*
 	if (!any_captured) {
-		hash = gen_hash(coord, current_player);
+		//hash = gen_hash(coord, current_player);
+		regen_hash();
 
 	} else {
 		regen_hash();
 	}
+	*/
+	regen_hash();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
 	last_move = coord;
