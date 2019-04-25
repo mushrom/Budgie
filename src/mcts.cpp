@@ -73,9 +73,10 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	state->make_move(coord);
 
 	/*
-	printf("\e[1;1H");
-	foo.print();
-	usleep(10000);
+	//printf("\e[1;1H");
+	state->print();
+	//usleep(1000000);
+	getchar();
 	*/
 
 	if (leaf->fully_visited(state)) {

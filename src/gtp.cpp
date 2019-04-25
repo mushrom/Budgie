@@ -160,7 +160,7 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 				continue;
 			}
 
-			if (game.is_suicide(coord, game.current_player)) {
+			if (game.is_suicide(coord)) {
 				std::cout << "= pass\n\n";
 				continue;
 			}
@@ -186,7 +186,9 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 		}
 
 		else if (args[0] == "showboard") {
+			std::cout << "= ";
 			game.print();
+			std::cout << "\n\n";
 		}
 
 		else if (args[0] == "quit") {

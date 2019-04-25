@@ -9,7 +9,7 @@ namespace mcts_thing {
 bool board::is_valid_move(const coordinate& coord) {
 	if (!is_valid_coordinate(coord)
 		|| violates_ko(coord)
-		/*|| is_suicide(coord, current_player)*/)
+		|| is_suicide(coord))
 	{
 		return false;
 	}
@@ -21,6 +21,10 @@ bool board::is_valid_move(const coordinate& coord) {
 
 bool board::violates_ko(const coordinate& coord) {
 	//uint64_t hash = gen_hash(coord, current_player);
+	if (!captures_enemy(coord)) {
+		return false;
+	}
+
 	// TODO: this kills performance, reaaaaaallly need a fast way to check
 	//       group liberties so we can check for captures instead...
 	board foo(this);
@@ -29,7 +33,7 @@ bool board::violates_ko(const coordinate& coord) {
 	// TODO: do we really need to do full superko checking?
 	unsigned k = 9;
 
-	for (move::moveptr ptr = move_list;
+	for (move::moveptr ptr = foo.move_list;
 	     ptr != nullptr && k;
 	     ptr = ptr->previous, k--)
 	{
@@ -146,7 +150,7 @@ unsigned board::count_reachable(const coordinate& coord,
 	return count_iter(coord, color, target, marked, traversed);
 }
 
-
+/*
 void board::clear_stones(const coordinate& coord, point::color color) {
 	coordinate left  = {coord.first - 1, coord.second};
 	coordinate right = {coord.first + 1, coord.second};
@@ -199,40 +203,7 @@ bool board::clear_own_stones(const coordinate& coord, point::color color) {
 
 	return false;
 }
-
-bool board::captures_enemy(const coordinate& coord, point::color color) {
-	if (get_coordinate(coord) != point::color::Empty) {
-		return false;
-	}
-
-	// XXX: pretend to place a stone there, we could make the initial coord in
-	//      reaches_empty() be filled though...
-	set_coordinate(coord, color);
-	bool ret = false;
-
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
-	point::color enemy = (color == point::color::Black)
-	                     ? point::color::White
-	                     : point::color::Black;
-
-	for (auto thing : {left, right, up, down}) {
-		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
-			ret = true;
-			break;
-		}
-	}
-
-	set_coordinate(coord, point::color::Empty);
-	return ret;
-}
-
-bool board::is_suicide(const coordinate& coord, point::color color) {
-	return !(reaches_empty(coord, color) || captures_enemy(coord, color));
-}
+*/
 
 bool board::is_valid_coordinate(const coordinate& coord) {
 	return !(coord.first < 1 || coord.second < 1
@@ -253,12 +224,19 @@ void board::make_move(const coordinate& coord) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
 	}
 
+	/*
 	bool any_captured = false;
 	//unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 	//grid[index] = current_player;
 	set_coordinate(coord, current_player);
 	any_captured = clear_enemy_stones(coord, current_player);
 	any_captured = any_captured || clear_own_stones(coord, current_player);
+	*/
+
+	bool any_captured = captures_enemy(coord);
+	place_stone(coord, current_player);
+
+	if (any_captured) capture_enemy_stones(coord);
 
 	if (!any_captured) {
 		hash = gen_hash(coord, current_player);
@@ -268,6 +246,10 @@ void board::make_move(const coordinate& coord) {
 
 		for (unsigned i = 0; i < dimension * dimension; i++) {
 			if (grid[i] != point::color::Empty) {
+				// TODO: duh, we need to regen the hash of coords from
+				//       all coords on the board, not the coord argument...
+				//
+				// TODO: also put this in it's own function
 				hash = gen_hash(coord, grid[i]);
 			}
 		}
@@ -395,7 +377,7 @@ void board::endgame_clear_captured(void) {
 }
 
 unsigned board::coord_to_index(const coordinate& coord) {
-	return dimension*coord.second + coord.first;
+	return dimension*(coord.second - 1) + (coord.first - 1);
 }
 
 // TODO: Right now the bot the bot doesn't count stones in atari as being dead,
@@ -431,7 +413,7 @@ std::vector<coordinate> board::available_moves(void) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 
-			if (is_valid_move(coord) && !is_suicide(coord, current_player)) {
+			if (is_valid_move(coord) && !is_suicide(coord)) {
 				ret.push_back(coord);
 			}
 		}
@@ -501,61 +483,224 @@ uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
-/*
 void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
 		unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
 		grid[index] = color;
 	}
 }
-*/
 
-void board::place_stone(const coordinate& coord, point::color color) {
-	stone_group::ptr neighbors[4];
-	unsigned friendly = 0;
-	unsigned enemies = 0;
-	unsigned edges = 0;
-
+unsigned board::get_neighbors(const coordinate& coord, stone_group::ptr buf[4]) {
 	coordinate left  = {coord.first - 1, coord.second};
 	coordinate right = {coord.first + 1, coord.second};
 	coordinate up    = {coord.first,     coord.second - 1};
 	coordinate down  = {coord.first,     coord.second + 1};
 
+	unsigned liberties = 4;
 	unsigned i = 0;
+
 	for (auto& x : {left, right, up, down}) {
 		if (get_coordinate(x) == point::color::Invalid) {
-			edges++;
-			// edges aren't point of stone groups, just continue
+			// edges aren't part of stone groups, just continue
+			liberties -= 1;
+			buf[i++] = nullptr;
 			continue;
 		}
 
-		neighbors[i] = groups[x];
-
-		if (neighbors[i] != nullptr) {
-			friendly += neighbors[i]->color == color;
-			enemies  += neighbors[i]->color == other_player(color);
-		}
-
+		// empty spaces have null pointers
+		buf[i] = groups[coord_to_index(x)];
+		liberties -= buf[i] != nullptr;
 		i++;
 	}
 
-	unsigned liberties = 4 - friendly - enemies;
-	stone_group::ptr self(new stone_group);
+	return liberties;
+}
 
-	self->liberties = liberties;
+unsigned board::friendly_neighbors(stone_group::ptr buf[4]) {
+	unsigned ret = 0;
 
-	for (auto& x : neighbors) {
-		if (x == nullptr) {
-			continue;
+	for (unsigned i = 0; i < 4; i++) {
+		ret += buf[i] != nullptr && buf[i]->color == current_player;
+	}
+
+	return ret;
+}
+
+unsigned board::enemy_neighbors(stone_group::ptr buf[4]) {
+	unsigned ret = 0;
+
+	for (unsigned i = 0; i < 4; i++) {
+		ret += buf[i] != nullptr && buf[i]->color == other_player(current_player);
+	}
+
+	return ret;
+}
+
+// NOTE: this doesn't check for for neighbors in the same group, 
+unsigned board::neighbor_liberties(stone_group::ptr neighbors[4], point::color color) {
+	unsigned liberties = 0;
+
+	for (unsigned i = 0; i < 4; i++) {
+		if (neighbors[i] && neighbors[i]->color == color) {
+			liberties += neighbors[i]->liberties;
 		}
+	}
 
-		if (x->color == color) {
-			// TODO: link groups
-		}
+	return liberties;
+}
 
-		else if (x->color == other_player(color)) {
-			// TODO: reduce enemy liberties
+// TODO: we can remove the pointless color argument
+bool board::captures_enemy(const coordinate& coord) {
+	stone_group::ptr neighbors[4];
+	unsigned enemies = enemy_neighbors(neighbors);
+
+	// TODO: this doesn't quiiiite work... need to check each group individually
+	return neighbor_liberties(neighbors, other_player(current_player)) - enemies == 0;
+}
+
+// TODO: we can remove the pointless color argument
+bool board::is_suicide(const coordinate& coord) {
+	//return !(reaches_empty(coord, color) || captures_enemy(coord, color));
+	stone_group::ptr neighbors[4];
+	unsigned liberties = get_neighbors(coord, neighbors);
+	unsigned friendly = friendly_neighbors(neighbors);
+
+	if (liberties > 0) {
+		return false;
+	}
+
+	else if (captures_enemy(coord)) {
+		return false;
+	}
+	
+	else if (friendly == 0) {
+		return true;
+	}
+
+	else {
+		return neighbor_liberties(neighbors, current_player) - friendly == 0;
+	}
+}
+
+stone_group::ptr board::link_friendly(stone_group::ptr neighbors[4]) {
+	stone_group::ptr root = nullptr;
+
+	for (unsigned i = 0; i < 4; i++) {
+		if (neighbors[i] && neighbors[i]->color == current_player) {
+			if (root == nullptr) {
+				root = neighbors[i];
+			}
+
+			// TODO
+			else if (root == neighbors[i]) {
+				// part of the same group, already linked
+				continue;
+			}
+
+			else {
+				// move stones from the group with the least members
+				stone_group::ptr min =
+				    (root->stones.size() < neighbors[i]->stones.size())
+				        ? root
+				        : neighbors[i];
+
+				stone_group::ptr max = (min == root)? neighbors[i] : root;
+
+				max->liberties += min->liberties;
+
+				auto it = max->stones.end();
+				max->stones.splice(it, min->stones);
+
+				// make sure we don't point to the old stone group...
+				neighbors[i] = root = max;
+			}
 		}
+	}
+
+	for (const auto &x : root->stones) {
+		groups[coord_to_index(x)] = root;
+	}
+
+	return root;
+}
+
+
+void board::place_stone(const coordinate& coord, point::color color) {
+	stone_group::ptr neighbors[4];
+	unsigned liberties = get_neighbors(coord, neighbors);
+
+	// XXX: assumes that is_suicide() has been called before this, this doesn't
+	//      avoid (or handle) suicide plays
+
+	if (friendly_neighbors(neighbors) == 0) {
+		stone_group::ptr self(new stone_group);
+		self->liberties = liberties;
+		self->color = current_player;
+		self->stones.push_back(coord);
+
+		groups[coord_to_index(coord)] = self;
+	}
+
+	else {
+		stone_group::ptr frens = link_friendly(neighbors);
+		frens->stones.push_back(coord);
+		groups[coord_to_index(coord)] = frens;
+
+		// adjust group liberties
+		//frens->liberties -= 4 - liberties;
+		frens->liberties += liberties;
+		frens->liberties -= friendly_neighbors(neighbors);
+	}
+
+	// reduce enemy group liberties
+	for (unsigned i = 0; i < 4; i++) {
+		if (neighbors[i] && neighbors[i]->color == other_player(current_player)) {
+			neighbors[i]->liberties -= 1;
+		}
+	}
+
+	set_coordinate(coord, current_player);
+}
+
+void board::capture_enemy_stones(const coordinate& coord) {
+	// XXX: assumes that place_stone() was called before this, captured enemy
+	//      groups should already have their liberty count reduced to 0
+
+	stone_group::ptr neighbors[4];
+	unsigned liberties = get_neighbors(coord, neighbors);
+	bool captured = false;
+
+	for (unsigned i = 0; i < 4; i++) {
+		if (neighbors[i]
+		    && neighbors[i]->color == other_player(current_player)
+		    && neighbors[i]->liberties == 0)
+		{
+			for (const auto &x : neighbors[i]->stones) {
+				groups[coord_to_index(x)] = nullptr;
+				set_coordinate(x, point::color::Empty);
+			}
+
+			neighbors[i]->stones.clear();
+			neighbors[i] = nullptr;
+			captured = true;
+
+			/*
+			while (!neighbors[i]->stones.empty()) {
+				coordinate coord = neighbors[i]->stones.back();
+				neighbors[i]->stones.pop_back();
+
+				// nullptr for empty spaces
+				groups[coord_to_index(coord)] = nullptr;
+				set_coordinate(coord, point::color::Empty);
+			}
+			*/
+		}
+	}
+
+	if (captured) {
+		// XXX
+		std::bitset<384> traversed;
+		groups[coord_to_index(coord)]->liberties = count_reachable(coord, current_player, point::color::Empty, traversed);
 	}
 }
 
