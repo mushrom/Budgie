@@ -504,7 +504,7 @@ void board::regen_hash(void) {
 	hash = InitialHash;
 
 	for (unsigned y = 1; y <= dimension; y++) {
-		for (unsigned x = 0; x <= dimension; x++) {
+		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 			point::color color = get_coordinate(coord);
 
