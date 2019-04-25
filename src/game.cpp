@@ -7,19 +7,24 @@
 namespace mcts_thing {
 
 bool board::is_valid_move(const coordinate& coord) {
+	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
+
 	if (!is_valid_coordinate(coord)
-		|| violates_ko(coord)
-		/*|| is_suicide(coord, current_player)*/)
+		|| grid[index] != point::color::Empty
+		|| is_suicide(coord, current_player)
+		|| violates_ko(coord))
 	{
 		return false;
 	}
 
-	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
-
-	return grid[index] == point::color::Empty;
+	return true;
 }
 
 bool board::violates_ko(const coordinate& coord) {
+	if (!captures_enemy(coord, other_player(current_player))) {
+		return false;
+	}
+
 	//uint64_t hash = gen_hash(coord, current_player);
 	// TODO: this kills performance, reaaaaaallly need a fast way to check
 	//       group liberties so we can check for captures instead...
