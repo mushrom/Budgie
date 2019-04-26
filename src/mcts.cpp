@@ -33,6 +33,8 @@ coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 		coordinate coord = root->max_utc(&scratch, use_patterns);
 
 		if (coord == coordinate(0, 0)) {
+			std::cerr << "# no valid moves?" << std::endl;
+			root->dump_node_statistics(coord, state);
 			return {0, 0};
 		}
 
@@ -65,6 +67,8 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 
 	if (leaves[coord] == nullptr) {
 		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
+		leaves[coord]->self_coord = coord;
+		leaves[coord]->rave = rave;
 
 		map_set_coord(coord, state);
 	}
@@ -78,6 +82,7 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 	usleep(10000);
 	*/
 
+	// TODO: split these into seperate functions
 	if (leaf->fully_visited(state)) {
 		coordinate next = leaf->max_utc(state, use_patterns);
 
@@ -115,6 +120,11 @@ void mcts_node::explore(coordinate& coord, board *state, bool use_patterns)
 		if (!state->is_valid_move(next)) {
 			leaf->update(state->determine_winner());
 			return;
+		}
+
+		// create a new rave map for this
+		if (leaf->fully_visited(state) && leaf->rave == rave) {
+			leaf->rave = rave_map::ptr(new rave_map(rave.get()));
 		}
 
 		leaf->explore(next, state, use_patterns);
@@ -186,6 +196,10 @@ double mcts_node::win_rate(void){
 	return (double)wins / (double)traversals;
 }
 
+// low exploration constant with rave
+#define MCTS_UCT_C       0.05
+#define MCTS_RAVE_WEIGHT 1000.0
+
 double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) {
 	if (leaves[coord] == nullptr) {
 		return 0;
@@ -201,13 +215,33 @@ double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) 
 		return 0;
 	}
 
+	double rave_est = rave->leaves[coord].win_rate();
+	double mcts_est = leaves[coord]->win_rate();
+	double B = traversals/MCTS_RAVE_WEIGHT;
+
+	B = (B > 1)? 1 : B;
+
+	// weighted sum to prefer rave estimations initially, then later
+	// prefer mcts playout rates
+	double foo = (rave_est * (1-B)) + (mcts_est * B);
+	double uct = MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
+
+	return weight*foo + uct;
+
+	/*
 	return weight*leaves[coord]->win_rate()
 		+ MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
+		*/
 }
 
 void mcts_node::update(point::color winner) {
 	traversals++;
-	wins += color == winner;
+	rave->leaves[self_coord].traversals++;
+
+	if (color == winner) {
+		wins += 1;
+		rave->leaves[self_coord].wins += 1;
+	}
 
 	if (parent != nullptr) {
 		parent->update(winner);

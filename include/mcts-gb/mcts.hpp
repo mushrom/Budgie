@@ -8,9 +8,36 @@
 #include <memory>
 #include <bitset>
 
-#define MCTS_UCT_C 0.35
-
 namespace mcts_thing {
+
+// TODO: maybe move this to the 'board' class
+struct coord_hash {
+	std::size_t operator () (const coordinate& coord) const {
+		return (coord.first * 3313) + (coord.second * 797);
+	}
+};
+
+class rave_map {
+	public:
+		rave_map(rave_map *par = nullptr) {
+			parent = par;
+		};
+
+		class stats {
+			public:
+				unsigned wins = 0;
+				unsigned traversals = 0;
+				double win_rate(void) {
+					// TODO: we shouldn't have a state where traversals is 0, right?
+					return traversals? (double)wins / (double)traversals : 0.5;
+				};
+		};
+
+		typedef std::shared_ptr<rave_map> ptr;
+
+		rave_map *parent = nullptr;
+		std::unordered_map<coordinate, stats, coord_hash> leaves;
+};
 
 class mcts_node {
 	public:
@@ -38,15 +65,10 @@ class mcts_node {
 
 		void dump_node_statistics(const coordinate& coord, board *state, unsigned depth=0);
 
-		// TODO: maybe move this to the 'board' class
-		struct coord_hash {
-			std::size_t operator () (const coordinate& coord) const {
-				return (coord.first * 19937) + coord.first
-				     + (coord.second * 737) + coord.second;
-			}
-		};
-
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
+		rave_map::ptr rave;
+		coordinate self_coord;
+
 		mcts_node *parent;
 		unsigned color;
 		unsigned traversals;
@@ -59,7 +81,8 @@ class mcts_node {
 class mcts {
 	public:
 		mcts() {
-			root = new mcts_node(nullptr, point::color::Empty);
+			//root = new mcts_node(nullptr, point::color::Empty);
+			reset();
 		};
 
 		~mcts(){};
@@ -72,9 +95,10 @@ class mcts {
 		void reset() {
 			delete root;
 			root = new mcts_node(nullptr, point::color::Empty);
+			root->rave = rave_map::ptr(new rave_map(nullptr));
 		}
 
-		mcts_node *root;
+		mcts_node *root = nullptr;
 };
 
 // namespace mcts_thing

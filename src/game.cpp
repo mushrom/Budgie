@@ -206,9 +206,11 @@ bool board::clear_own_stones(const coordinate& coord, point::color color) {
 }
 
 bool board::captures_enemy(const coordinate& coord, point::color color) {
+	/*
 	if (get_coordinate(coord) != point::color::Empty) {
 		return false;
 	}
+	*/
 
 	// XXX: pretend to place a stone there, we could make the initial coord in
 	//      reaches_empty() be filled though...
@@ -224,7 +226,7 @@ bool board::captures_enemy(const coordinate& coord, point::color color) {
 	                     ? point::color::White
 	                     : point::color::Black;
 
-	for (auto thing : {left, right, up, down}) {
+	for (const auto& thing : {left, right, up, down}) {
 		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
 			ret = true;
 			break;
@@ -435,7 +437,7 @@ std::vector<coordinate> board::available_moves(void) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
 
-			if (is_valid_move(coord) && !is_suicide(coord, current_player)) {
+			if (is_valid_move(coord)) {
 				ret.push_back(coord);
 			}
 		}
