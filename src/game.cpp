@@ -21,7 +21,7 @@ bool board::is_valid_move(const coordinate& coord) {
 }
 
 bool board::violates_ko(const coordinate& coord) {
-	if (!captures_enemy(coord, other_player(current_player))) {
+	if (!captures_enemy(coord, current_player)) {
 		return false;
 	}
 
