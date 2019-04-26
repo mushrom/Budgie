@@ -452,9 +452,11 @@ point::color board::determine_winner(void) {
 	/*
 	std::cerr << "# board before captures: " << std::endl;
 	print();
+	*/
 
 	endgame_clear_captured();
 
+	/*
 	std::cerr << "# board after captures: " << std::endl;
 	print();
 	*/
