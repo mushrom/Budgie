@@ -186,7 +186,7 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 		}
 
 		else if (args[0] == "showboard") {
-			std::cout << "= ";
+			std::cout << "= \n";
 			game.print();
 			std::cout << "\n\n";
 		}
