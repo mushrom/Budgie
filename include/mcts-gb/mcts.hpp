@@ -53,6 +53,8 @@ class mcts_node {
 		//      it'll be removed... eventually
 		void explore(coordinate& coord, board *state, bool use_patterns);
 		void update(point::color winner);
+		coordinate pick_random_leaf(board *state, bool use_patterns);
+
 		double win_rate(void);
 		double uct(const coordinate& coord, board *state, bool use_patterns);
 		coordinate best_move(void);
