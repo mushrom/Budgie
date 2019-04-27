@@ -240,15 +240,21 @@ double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) 
 		*/
 }
 
+void mcts_node::update_rave(coordinate& coord, bool won) {
+	for (rave_map* ptr = rave.get(); ptr != nullptr; ptr = ptr->parent) {
+		ptr->leaves[coord].traversals++;
+		ptr->leaves[coord].wins += won;
+	}
+}
+
 void mcts_node::update(point::color winner) {
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
-		ptr->traversals++;
-		ptr->rave->leaves[ptr->self_coord].traversals++;
+		bool won = ptr->color == winner;
 
-		if (ptr->color == winner) {
-			ptr->wins += 1;
-			ptr->rave->leaves[ptr->self_coord].wins += 1;
-		}
+		ptr->traversals++;
+		ptr->wins += won;
+
+		ptr->update_rave(ptr->self_coord, won);
 	}
 }
 
