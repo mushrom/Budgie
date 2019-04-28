@@ -22,23 +22,9 @@ coordinate random_coord(board *b) {
 }
 
 coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
-	// fully visit root node
-	for (auto& x : state->available_moves()) {
-		board scratch(state);
-		root->explore(x, &scratch, use_patterns);
-	}
-
 	while (root->traversals < playouts) {
 		board scratch(state);
-		coordinate coord = root->max_utc(&scratch, use_patterns);
-
-		if (coord == coordinate(0, 0)) {
-			std::cerr << "# no valid moves?" << std::endl;
-			root->dump_node_statistics(coord, state);
-			return {0, 0};
-		}
-
-		root->explore(coord, &scratch, use_patterns);
+		root->explore(&scratch, use_patterns);
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
@@ -57,58 +43,84 @@ double mcts::win_rate(coordinate& coord) {
 	}
 }
 
-void mcts_node::explore(coordinate& coordref, board *state, bool use_patterns)
+void mcts_node::new_node(board *state, coordinate& coord) {
+	if (leaves[coord] == nullptr) {
+		// this node is unvisited, set up a new node
+		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
+		leaves[coord]->self_coord = coord;
+		leaves[coord]->rave = rave;
+
+		map_set_coord(coord, state);
+	}
+}
+
+void mcts_node::explore(board *state, bool use_patterns)
 {
+	mcts_node* ptr = tree_search(state, use_patterns);
+	ptr? ptr->random_playout(state, use_patterns) : nullptr;
+}
+
+mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 	mcts_node *ptr = this;
-	coordinate coord = coordref;
 
 	while (ptr) {
-		if (ptr->leaves[coord] == nullptr) {
-			// this node is unvisited, set up a new node
-			ptr->leaves[coord] = nodeptr(new mcts_node(ptr, state->current_player));
-			ptr->leaves[coord]->self_coord = coord;
-			ptr->leaves[coord]->rave = ptr->rave;
+		if (!ptr->fully_visited(state)) {
+			// TODO: we'll want to do this instead once we start adding only
+			//       one node per playout, getting rid of the new_node
+			//       calls in random_playout()
+			/*
+			coordinate next = ptr->pick_random_leaf(state, use_patterns);
+			ptr->new_node(state, next);
+			return ptr->leaves[next].get();
+			*/
 
-			ptr->map_set_coord(coord, state);
+			return ptr;
 		}
 
-		mcts_node *leaf = ptr->leaves[coord].get();
-		state->make_move(coord);
+		coordinate next = ptr->max_utc(state, use_patterns);
+
+		if (next == coordinate(0, 0)) {
+			ptr->update(state->determine_winner());
+			return nullptr;
+		}
+
+		state->make_move(next);
+		ptr = ptr->leaves[next].get();
 
 		/*
+		// debugging output
 		   printf("\e[1;1H");
 		   state->print();
 		   usleep(10000);
 		   */
-
-		if (leaf->fully_visited(state)) {
-			coordinate next = leaf->max_utc(state, use_patterns);
-
-			if (next == coordinate(0, 0)) {
-				leaf->update(state->determine_winner());
-				return;
-			}
-
-			ptr = leaf;
-			coord = next;
-
-		} else {
-			coordinate next = leaf->pick_random_leaf(state, use_patterns);
-
-			// create a new rave map for this if needed
-			if (leaf->fully_visited(state) && leaf->rave == ptr->rave) {
-				leaf->rave = rave_map::ptr(new rave_map(rave.get()));
-			}
-
-			if (!state->is_valid_move(next)) {
-				leaf->update(state->determine_winner());
-				return;
-			}
-
-			ptr = leaf;
-			coord = next;
-		}
 	}
+
+	return nullptr;
+}
+
+mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
+	mcts_node *ptr = this;
+
+	while (ptr) {
+		coordinate next = ptr->pick_random_leaf(state, use_patterns);
+
+		// create a new rave map for this if the node is now fully visited
+		if (ptr->fully_visited(state)) {
+			ptr->rave = rave_map::ptr(new rave_map(ptr->rave.get()));
+		}
+
+		if (!state->is_valid_move(next)) {
+			ptr->update(state->determine_winner());
+			return nullptr;
+		}
+
+		ptr->new_node(state, next);
+
+		state->make_move(next);
+		ptr = ptr->leaves[next].get();
+	}
+
+	return nullptr;
 }
 
 coordinate mcts_node::pick_random_leaf(board *state, bool use_patterns) {

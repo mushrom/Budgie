@@ -51,10 +51,14 @@ class mcts_node {
 
 		// XXX: toggleable patterns in UCT weighting for testing, good chance
 		//      it'll be removed... eventually
-		void explore(coordinate& coord, board *state, bool use_patterns);
+		void explore(board *state, bool use_patterns);
 		void update(point::color winner);
 		void update_rave(coordinate& coord, bool won);
 		coordinate pick_random_leaf(board *state, bool use_patterns);
+
+		mcts_node* tree_search(board *state, bool use_patterns);
+		mcts_node* random_playout(board *state, bool use_patterns);
+		void new_node(board *state, coordinate& coord);
 
 		double win_rate(void);
 		double uct(const coordinate& coord, board *state, bool use_patterns);
