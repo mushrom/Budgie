@@ -21,6 +21,15 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
+/*
+// keeping this here because we might use it later
+auto random_choice(auto& x) {
+	std::uniform_int_distribution<int> distribution(0, x.size() - 1);
+
+	return x[distribution(generator)];
+}
+*/
+
 coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 	while (root->traversals < playouts) {
 		board scratch(state);
@@ -65,16 +74,21 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 
 	while (ptr) {
 		if (!ptr->fully_visited(state)) {
-			// TODO: we'll want to do this instead once we start adding only
-			//       one node per playout, getting rid of the new_node
-			//       calls in random_playout()
-			/*
 			coordinate next = ptr->pick_random_leaf(state, use_patterns);
+
+			// no valid moves from here, just return
+			if (!state->is_valid_move(next)) {
+				ptr->update(state->determine_winner());
+				return nullptr;
+			}
+
+			// create a new rave map for this if the node is now fully visited
+			if (ptr->fully_visited(state)) {
+				ptr->rave = rave_map::ptr(new rave_map(ptr->rave.get()));
+			}
+
 			ptr->new_node(state, next);
 			return ptr->leaves[next].get();
-			*/
-
-			return ptr;
 		}
 
 		coordinate next = ptr->max_utc(state, use_patterns);
@@ -99,6 +113,7 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 }
 
 mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
+	/*
 	mcts_node *ptr = this;
 
 	while (ptr) {
@@ -118,6 +133,40 @@ mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
 
 		state->make_move(next);
 		ptr = ptr->leaves[next].get();
+	}
+	*/
+
+	unsigned boardsquares = state->dimension * state->dimension;
+
+	while (true) {
+		coordinate next = {0, 0};
+		std::bitset<384> map;
+
+		// TODO: this is just a slightly different form of pick_random_leaf(),
+		//       could make a more general function
+		while (map.count() != boardsquares) {
+			coordinate temp = random_coord(state);
+			unsigned index = state->coord_to_index(temp);
+
+			if (map[index]) continue;
+			map[index] = true;
+
+			if (!state->is_valid_move(temp)
+			   || (use_patterns && patterns.search(state, temp) == 0))
+			{
+				continue;
+			}
+
+			next = temp;
+			break;
+		}
+
+		if (next == coordinate(0, 0)) {
+			update(state->determine_winner());
+			return nullptr;
+		}
+
+		state->make_move(next);
 	}
 
 	return nullptr;

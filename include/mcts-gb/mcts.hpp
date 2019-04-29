@@ -81,7 +81,7 @@ class mcts_node {
 		unsigned traversals;
 		unsigned wins;
 
-		std::bitset<384> move_map = {0};
+		std::bitset<384> move_map;
 		unsigned unique_traversed = 0;
 };
 
