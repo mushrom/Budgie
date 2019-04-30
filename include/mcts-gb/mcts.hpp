@@ -17,30 +17,18 @@ struct coord_hash {
 	}
 };
 
-class rave_map {
+class mcts_node {
 	public:
-		rave_map(rave_map *par = nullptr) {
-			parent = par;
-		};
-
 		class stats {
 			public:
 				unsigned wins = 0;
 				unsigned traversals = 0;
 				double win_rate(void) {
 					// TODO: we shouldn't have a state where traversals is 0, right?
-					return traversals? (double)wins / (double)traversals : 0.5;
+					return traversals? (double)wins / (double)traversals : 0;
 				};
 		};
 
-		typedef std::shared_ptr<rave_map> ptr;
-
-		rave_map *parent = nullptr;
-		std::unordered_map<coordinate, stats, coord_hash> leaves;
-};
-
-class mcts_node {
-	public:
 		typedef std::unique_ptr<mcts_node> nodeptr;
 
 		mcts_node(mcts_node *n_parent = nullptr, point::color player = point::color::Empty) {
@@ -52,8 +40,8 @@ class mcts_node {
 		// XXX: toggleable patterns in UCT weighting for testing, good chance
 		//      it'll be removed... eventually
 		void explore(board *state, bool use_patterns);
-		void update(point::color winner);
-		void update_rave(coordinate& coord, bool won);
+		void update(board *state);
+		void update_rave(board *state, point::color winner);
 		coordinate pick_random_leaf(board *state, bool use_patterns);
 
 		mcts_node* tree_search(board *state, bool use_patterns);
@@ -73,8 +61,9 @@ class mcts_node {
 		void dump_node_statistics(const coordinate& coord, board *state, unsigned depth=0);
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
-		rave_map::ptr rave;
-		coordinate self_coord;
+
+		// rave stats
+		std::unordered_map<coordinate, stats, coord_hash> ravemap;
 
 		mcts_node *parent;
 		unsigned color;
@@ -102,7 +91,7 @@ class mcts {
 		void reset() {
 			delete root;
 			root = new mcts_node(nullptr, point::color::Empty);
-			root->rave = rave_map::ptr(new rave_map(nullptr));
+			//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
 		}
 
 		mcts_node *root = nullptr;

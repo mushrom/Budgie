@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <unistd.h>
+#include <assert.h>
 
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
@@ -31,6 +32,8 @@ auto random_choice(auto& x) {
 */
 
 coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
+	root->color = state->other_player(state->current_player);
+
 	while (root->traversals < playouts) {
 		board scratch(state);
 		root->explore(&scratch, use_patterns);
@@ -56,10 +59,6 @@ void mcts_node::new_node(board *state, coordinate& coord) {
 	if (leaves[coord] == nullptr) {
 		// this node is unvisited, set up a new node
 		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
-		leaves[coord]->self_coord = coord;
-		leaves[coord]->rave = rave;
-
-		map_set_coord(coord, state);
 	}
 }
 
@@ -78,13 +77,8 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 
 			// no valid moves from here, just return
 			if (!state->is_valid_move(next)) {
-				ptr->update(state->determine_winner());
+				ptr->update(state);
 				return nullptr;
-			}
-
-			// create a new rave map for this if the node is now fully visited
-			if (ptr->fully_visited(state)) {
-				ptr->rave = rave_map::ptr(new rave_map(ptr->rave.get()));
 			}
 
 			ptr->new_node(state, next);
@@ -94,7 +88,7 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 		coordinate next = ptr->max_utc(state, use_patterns);
 
 		if (next == coordinate(0, 0)) {
-			ptr->update(state->determine_winner());
+			ptr->update(state);
 			return nullptr;
 		}
 
@@ -162,7 +156,7 @@ mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
 		}
 
 		if (next == coordinate(0, 0)) {
-			update(state->determine_winner());
+			update(state);
 			return nullptr;
 		}
 
@@ -265,6 +259,7 @@ double mcts_node::win_rate(void){
 
 // low exploration constant with rave
 #define MCTS_UCT_C       0.05
+// how much to value rave estimations initially (in amount of playouts)
 #define MCTS_RAVE_WEIGHT 1000.0
 
 double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) {
@@ -282,18 +277,18 @@ double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) 
 		return 0;
 	}
 
-	double rave_est = rave->leaves[coord].win_rate();
+	double rave_est = ravemap[coord].win_rate();
 	double mcts_est = leaves[coord]->win_rate();
-	double B = traversals/MCTS_RAVE_WEIGHT;
+	double uct = MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
+	double mc_uct_est = weight*mcts_est + uct;
 
+	double B = traversals/MCTS_RAVE_WEIGHT;
 	B = (B > 1)? 1 : B;
 
 	// weighted sum to prefer rave estimations initially, then later
-	// prefer mcts playout rates
-	double foo = (rave_est * (1-B)) + (mcts_est * B);
-	double uct = MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
-
-	return weight*foo + uct;
+	// prefer uct+mcts playout rates
+	double foo = (rave_est * (1-B)) + (mc_uct_est * B);
+	return foo;
 
 	/*
 	return weight*leaves[coord]->win_rate()
@@ -301,21 +296,32 @@ double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) 
 		*/
 }
 
-void mcts_node::update_rave(coordinate& coord, bool won) {
-	for (rave_map* ptr = rave.get(); ptr != nullptr; ptr = ptr->parent) {
-		ptr->leaves[coord].traversals++;
-		ptr->leaves[coord].wins += won;
+void mcts_node::update_rave(board *state, point::color winner) {
+	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
+		for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
+			// node rave maps track the best moves for the oppenent
+			if (ptr->color == foo->color) {
+				continue;
+			}
+
+			bool won = foo->color == winner;
+
+			ptr->ravemap[foo->coord].wins += won;
+			ptr->ravemap[foo->coord].traversals++;
+		}
 	}
 }
 
-void mcts_node::update(point::color winner) {
+void mcts_node::update(board *state) {
+	point::color winner = state->determine_winner();
+
+	update_rave(state, winner);
+
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
 		bool won = ptr->color == winner;
 
 		ptr->traversals++;
 		ptr->wins += won;
-
-		ptr->update_rave(ptr->self_coord, won);
 	}
 }
 
@@ -355,18 +361,21 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 		}
 	};
 
-	if (depth >= 2) {
+	/*
+	if (depth >= 4) {
 		return;
 	}
+	*/
 
 	print_spaces();
 
-	fprintf(stderr, "%s coord (%u, %u), winrate: %g, traversals: %u\n",
+	fprintf(stderr, "%s: %s coord (%u, %u), winrate: %g, traversals: %u\n",
+		(color == point::color::Black)? "black" : "white",
 		fully_visited(state)? "fully visited" : "visited",
 		coord.first, coord.second, win_rate(), traversals);
 
 	for (auto& x : leaves) {
-		if (x.second == nullptr) {
+		if (x.second == nullptr || !x.second->fully_visited(state)) {
 			continue;
 		}
 
