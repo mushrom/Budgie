@@ -59,6 +59,7 @@ class mcts_node {
 		bool map_get_coord(coordinate& coord, board *state);
 
 		void dump_node_statistics(const coordinate& coord, board *state, unsigned depth=0);
+		void dump_best_move_statistics(board *state);
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
 

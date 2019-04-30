@@ -43,6 +43,11 @@ coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
 
 	coordinate temp = {1, 1};
 	root->dump_node_statistics(temp, state);
+
+	std::cerr << "# predicted playout: ";
+	root->dump_best_move_statistics(state);
+	std::cerr << std::endl;
+
 	return root->best_move();
 }
 
@@ -380,6 +385,27 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 		}
 
 		x.second->dump_node_statistics(x.first, state, depth + 1);
+	}
+}
+
+// defined in gtp.cpp
+// TODO: maybe move this to a utility function
+std::string coord_string(coordinate& coord);
+
+void mcts_node::dump_best_move_statistics(board *state) {
+	coordinate coord = best_move();
+
+	if (coord == coordinate(0, 0)) {
+		return;
+	}
+
+	std::cerr << coord_string(coord);
+	std::cerr << ((color == point::color::Black)? " (W)" : " (B)");
+
+	if (fully_visited(state) && leaves[coord]) {
+		//std::cerr << " => ";
+		std::cerr << ", ";
+		leaves[coord]->dump_best_move_statistics(state);
 	}
 }
 
