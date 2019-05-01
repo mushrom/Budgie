@@ -56,7 +56,7 @@ double mcts::win_rate(coordinate& coord) {
 		return root->leaves[coord]->win_rate();
 
 	} else {
-		return 0;
+		return 0.5;
 	}
 }
 

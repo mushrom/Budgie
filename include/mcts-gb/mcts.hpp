@@ -25,7 +25,7 @@ class mcts_node {
 				unsigned traversals = 0;
 				double win_rate(void) {
 					// TODO: we shouldn't have a state where traversals is 0, right?
-					return traversals? (double)wins / (double)traversals : 0;
+					return traversals? (double)wins / (double)traversals : 0.5;
 				};
 		};
 
