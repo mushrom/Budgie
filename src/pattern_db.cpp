@@ -49,6 +49,41 @@ void pattern::print(void) {
 	}
 }
 
+uint64_t pattern::hash(void) {
+	uint64_t ret = 1;
+
+	// XXX: only handling exact specifiers here
+	for (unsigned i = 0; i < 9; i++) {
+		switch (minigrid[i]) {
+			case '.':
+			case '*':
+				ret |= 0;
+				break;
+
+			case 'O':
+				ret |= 1;
+				break;
+
+			case 'X':
+				ret |= 2;
+				break;
+
+			case '-':
+			case '|':
+			case '+':
+				ret |= 3;
+				break;
+
+			default:
+				break;
+		}
+
+		ret <<= 2;
+	}
+
+	return ret;
+}
+
 pattern pattern_db::read_pattern(std::ifstream& f){
 	pattern ret;
 	std::string buf = "";
@@ -99,12 +134,18 @@ pattern_db::pattern_db(const std::string& db) {
 		pattern p = read_pattern(pf);
 		load_pattern(p);
 	}
+
+	dump_patterns();
+
+	std::cerr << "# total patterns loaded: " << patterns.size() << std::endl;
 }
 
 void pattern_db::dump_patterns(void) {
+	/*
 	for (auto& thing : patterns) {
 		thing.print();
 	}
+	*/
 }
 
 void pattern_db::load_pattern(pattern& pat) {
@@ -112,96 +153,128 @@ void pattern_db::load_pattern(pattern& pat) {
 		return;
 	}
 
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_horizontally();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_vertically();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_horizontally();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_vertically();
 	pat.rotate_grid();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_horizontally();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_vertically();
-	patterns.push_back(pat);
+	load_permutations(pat);
 
 	pat.flip_horizontally();
-	patterns.push_back(pat);
+	load_permutations(pat);
+}
+
+void pattern_db::load_permutations(pattern pat, unsigned index) {
+	if (index >= 9) {
+		// end of pattern grid
+		load_compile(pat);
+		return;
+	}
+
+	switch (pat.minigrid[index]) {
+		case 'X':
+		case 'O':
+		case '.':
+		case '|':
+		case '-':
+		case '+':
+		case '*':
+			// nothing to do for exact pattern specifiers, so we continue onwards
+			load_permutations(pat, index + 1);
+			break;
+
+		case 'x':
+			// load patterns with and without an enemy stone
+			pat.minigrid[index] = '.';
+			load_permutations(pat, index + 1);
+			pat.minigrid[index] = 'X';
+			load_permutations(pat, index + 1);
+			break;
+
+		case 'o':
+			// same with own stones
+			pat.minigrid[index] = '.';
+			load_permutations(pat, index + 1);
+			pat.minigrid[index] = 'O';
+			load_permutations(pat, index + 1);
+			break;
+
+		case '?':
+			// true wildcard, generate all possible combinations
+			pat.minigrid[index] = '.';
+			load_permutations(pat, index + 1);
+			pat.minigrid[index] = 'O';
+			load_permutations(pat, index + 1);
+			pat.minigrid[index] = 'X';
+			load_permutations(pat, index + 1);
+			pat.minigrid[index] = '+';
+			load_permutations(pat, index + 1);
+
+			break;
+
+		default:
+			// we shouldn't get here, maybe print an error
+			load_permutations(pat, index + 1);
+			break;
+	}
+}
+
+void pattern_db::load_compile(pattern& pat) {
+	patterns[pat.hash()] = pat.weight;
 }
 
 unsigned pattern_db::search(board *state, coordinate coord) {
 	point::color grid[9];
 	read_grid(state, coord, grid);
 
-	for (auto& x : patterns) {
-		bool matched = false;
+	uint64_t hash = hash_grid(state, grid);
+	auto it = patterns.find(hash);
 
-		for (unsigned i = 0; i < 9; i++) {
-			if ((matched = test_match(state, x.minigrid[i], grid[i])) == false) {
-				matched = false;
-				break;
-			}
-		}
-
-		if (matched) {
-			return x.weight;
-		}
+	if (it == patterns.end()) {
+		return 100;
 	}
 
-	return 100;
+	return it->second;
 }
 
-bool pattern_db::test_match(board *state, char m, point::color c) {
-	switch (m) {
-		case 'O':
-			return c == state->current_player;
-			break;
+uint64_t pattern_db::hash_grid(board *state, point::color grid[9]) {
+	uint64_t ret = 1;
 
-		case 'o':
-			return c == state->current_player || c == point::color::Empty;
-			break;
+	for (unsigned i = 0; i < 9; i++) {
+		if (grid[i] == point::color::Empty) {
+			ret |= 0;
+		}
 
-		case 'X':
-			return c == state->other_player(state->current_player);
-			break;
+		if (grid[i] == state->current_player) {
+			ret |= 1;
+		}
 
-		case 'x':
-			return c == state->other_player(state->current_player)
-			    || c == point::color::Empty;
-			break;
+		if (grid[i] == state->other_player(state->current_player)) {
+			ret |= 2;
+		}
 
-		case '|':
-		case '-':
-		case '+':
-			return c == point::color::Invalid;
-			break;
+		if (grid[i] == point::color::Invalid) {
+			ret |= 3;
+		}
 
-		case '*':
-			return c == point::color::Empty;
-			break;
-
-		case '.':
-			// '*' will be matched as the point for the next move,
-			// so it can't be used as a matcher for empty space
-			return c == point::color::Empty;
-			break;
-
-		case '?':
-			return true;
-			break;
-
-		default:
-			return false;
-			break;
+		ret <<= 2;
 	}
+
+	return ret;
 }
 
 void pattern_db::read_grid(board *state, coordinate coord, point::color grid[9]) {
