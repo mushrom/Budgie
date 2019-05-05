@@ -1,3 +1,9 @@
+# template
+#???
+#?*?
+#???
+#:100
+
 # initial things to prevent the bot from filling their own eyes
 # and immediately being captured
 oOo
@@ -16,12 +22,73 @@ O*O
 :0
 
 # avoid playing dumb self-ataris
-?.?
-X*X
-xX?
-:0
+#?.?
+#X*X
+#xX?
+#:0
 
 ?Xx
 .*X
 ---
 :0
+
+# defensive moves
+## - respond to atari
+# - (more general, centered)
+X??
+O*o
+X??
+:120
+
+## cutting
+Xo?
+?*o
+?oX
+:120
+
+## hane
+?oO
+o*X
+??o
+:120
+
+# captures
+# - centered, more general
+
+?oO
+o*X
+---
+:130
+
+O??
+X*?
+o??
+:130
+
+X??
+?*O
+?OX
+:130
+
+# - poke shape points
+#.X.
+#o*o
+#XoX
+#:150
+
+#XoX
+#o*o
+#Xoo
+#:150
+
+# then offensive moves
+#oX?
+#O*o
+#oX?
+#:150
+
+### - peep
+#?oX
+#o*.
+#?oX
+#:120

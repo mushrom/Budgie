@@ -70,7 +70,8 @@ void mcts_node::new_node(board *state, coordinate& coord) {
 void mcts_node::explore(board *state, bool use_patterns)
 {
 	mcts_node* ptr = tree_search(state, use_patterns);
-	ptr? ptr->random_playout(state, use_patterns) : nullptr;
+	ptr = ptr? ptr->local_weighted_playout(state, use_patterns) : ptr;
+	ptr? ptr->random_playout(state, use_patterns) : ptr;
 }
 
 mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
@@ -165,6 +166,115 @@ mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
 			return nullptr;
 		}
 
+		state->make_move(next);
+	}
+
+	return nullptr;
+}
+
+mcts_node* mcts_node::weighted_playout(board *state, bool use_patterns) {
+	unsigned boardsquares = state->dimension * state->dimension;
+
+	while (true) {
+		coordinate next = {0, 0};
+		unsigned best = 0;
+
+		for (unsigned i = 0; i < boardsquares/2; i++) {
+			coordinate temp = random_coord(state);
+			unsigned weight = patterns.search(state, temp);
+
+			if (!weight || !state->is_valid_move(temp)) {
+				continue;
+			}
+
+			if (weight > best) {
+				next = temp;
+				best = weight;
+			}
+		}
+
+		/*
+		for (unsigned y = 1; y < state->dimension; y++) {
+			for (unsigned x = 1; x < state->dimension; x++) {
+				//coordinate temp = random_coord(state);
+				coordinate temp = {x, y};
+				unsigned weight = patterns.search(state, temp);
+
+				if (!weight || !state->is_valid_move(temp)) {
+					continue;
+				}
+
+				if (weight > best) {
+					next = temp;
+					best = weight;
+				}
+			}
+		}
+		*/
+
+		if (best == 0) {
+			//update(state);
+			// return a valid point to signal that we should continue to random playouts
+			return this;
+		}
+
+		state->make_move(next);
+	}
+
+	return nullptr;
+}
+
+mcts_node* mcts_node::local_weighted_playout(board *state, bool use_patterns) {
+	unsigned boardsquares = state->dimension * state->dimension;
+
+	while (true) {
+		coordinate next = {0, 0};
+		std::bitset<384> map;
+
+		unsigned best = 100;
+
+		for (int y = -1; y <= 1; y++) {
+			for (int x = -1; x <= 1; x++) {
+				coordinate foo = {
+					state->last_move.first  + x,
+					state->last_move.second + y
+				};
+
+				unsigned weight = patterns.search(state, foo);
+
+				if (weight > best && state->is_valid_move(foo)) {
+					best = weight;
+					next = foo;
+					goto asdf;
+				}
+			}
+		}
+
+		// TODO: this is just a slightly different form of pick_random_leaf(),
+		//       could make a more general function
+		while (map.count() != boardsquares) {
+			coordinate temp = random_coord(state);
+			unsigned index = state->coord_to_index(temp);
+
+			if (map[index]) continue;
+			map[index] = true;
+
+			if (!state->is_valid_move(temp)
+			   || (use_patterns && patterns.search(state, temp) == 0))
+			{
+				continue;
+			}
+
+			next = temp;
+			break;
+		}
+
+		if (next == coordinate(0, 0)) {
+			update(state);
+			return nullptr;
+		}
+
+asdf:
 		state->make_move(next);
 	}
 
@@ -285,7 +395,8 @@ double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) 
 	double rave_est = ravemap[coord].win_rate();
 	double mcts_est = leaves[coord]->win_rate();
 	double uct = MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
-	double mc_uct_est = weight*mcts_est + uct;
+	//double mc_uct_est = weight*mcts_est + uct;
+	double mc_uct_est = mcts_est + uct;
 
 	double B = traversals/MCTS_RAVE_WEIGHT;
 	B = (B > 1)? 1 : B;

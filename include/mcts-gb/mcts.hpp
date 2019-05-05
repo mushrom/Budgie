@@ -46,6 +46,8 @@ class mcts_node {
 
 		mcts_node* tree_search(board *state, bool use_patterns);
 		mcts_node* random_playout(board *state, bool use_patterns);
+		mcts_node* weighted_playout(board *state, bool use_patterns);
+		mcts_node* local_weighted_playout(board *state, bool use_patterns);
 		void new_node(board *state, coordinate& coord);
 
 		double win_rate(void);

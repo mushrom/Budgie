@@ -234,7 +234,19 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 }
 
 void pattern_db::load_compile(pattern& pat) {
-	patterns[pat.hash()] = pat.weight;
+	uint64_t hash = pat.hash();
+	auto it = patterns.find(hash);
+
+	if (it != patterns.end() && pat.weight > it->second) {
+		/*
+		std::cerr << "# have overlapping pattern with higher weight, ignoring...\n";
+		std::cerr << "# " << std::hex << hash << std::dec << std::endl;;
+		pat.print();
+		*/
+		return;
+	}
+
+	patterns[hash] = pat.weight;
 }
 
 unsigned pattern_db::search(board *state, coordinate coord) {
