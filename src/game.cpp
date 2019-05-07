@@ -505,8 +505,8 @@ uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	// note: we need an associative hash here, since the board hash
 	//       will need to be rebuilt outside of move order, this is a good
 	//       hash for uniquely identifying games though
-	//return (hash << 12) + hash + foo;
-	return hash + (uint64_t)InitialHash * (uint64_t)foo;
+	return (hash << 12) + hash + foo;
+	//return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
 void board::regen_hash(void) {

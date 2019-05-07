@@ -30,6 +30,8 @@ class mcts_node {
 		};
 
 		typedef std::unique_ptr<mcts_node> nodeptr;
+		typedef std::unordered_map<coordinate, stats, coord_hash> ravestats;
+		typedef std::shared_ptr<ravestats> raveptr;
 
 		mcts_node(mcts_node *n_parent = nullptr, point::color player = point::color::Empty) {
 			color = player;
@@ -46,8 +48,8 @@ class mcts_node {
 
 		mcts_node* tree_search(board *state, bool use_patterns);
 		mcts_node* random_playout(board *state, bool use_patterns);
-		mcts_node* weighted_playout(board *state, bool use_patterns);
 		mcts_node* local_weighted_playout(board *state, bool use_patterns);
+		coordinate local_best(board *state);
 		void new_node(board *state, coordinate& coord);
 
 		double win_rate(void);
@@ -65,16 +67,15 @@ class mcts_node {
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
 
-		// rave stats
-		std::unordered_map<coordinate, stats, coord_hash> ravemap;
+		// rave stats for this level
+		raveptr rave;
+		// rave stats for children
+		raveptr child_rave;
 
 		mcts_node *parent;
 		unsigned color;
 		unsigned traversals;
 		unsigned wins;
-
-		std::bitset<384> move_map;
-		unsigned unique_traversed = 0;
 };
 
 class mcts {
@@ -95,6 +96,8 @@ class mcts {
 			delete root;
 			root = new mcts_node(nullptr, point::color::Empty);
 			//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
+			root->rave = mcts_node::raveptr(new mcts_node::ravestats);
+			root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
 		}
 
 		mcts_node *root = nullptr;

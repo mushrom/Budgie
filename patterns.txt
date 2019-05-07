@@ -27,10 +27,10 @@ O*O
 #xX?
 #:0
 
-?Xx
-.*X
----
-:0
+#?Xx
+#.*X
+#---
+#:0
 
 # defensive moves
 ## - respond to atari
