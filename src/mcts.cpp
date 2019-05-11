@@ -32,11 +32,13 @@ auto random_choice(auto& x) {
 */
 
 coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
+	// XXX: we'll want to check to make sure this is already the case once we
+	//      start reusing trees
 	root->color = state->other_player(state->current_player);
 
 	while (root->traversals < playouts) {
 		board scratch(state);
-		root->explore(&scratch, use_patterns);
+		explore(&scratch);
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
@@ -60,31 +62,17 @@ double mcts::win_rate(coordinate& coord) {
 	}
 }
 
-void mcts_node::new_node(board *state, coordinate& coord) {
-	// TODO: experimented with sharing rave stats between siblings but it seems to
-	//       be hit-or-miss, leaving the code here for now...
-	if (leaves[coord] == nullptr) {
-		// this node is unvisited, set up a new node
-		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
-		//leaves[coord]->rave = child_rave;
-		//leaves[coord]->child_rave = raveptr(new ravestats);
-		leaves[coord]->rave = raveptr(new ravestats);
-	}
-}
-
-void mcts_node::explore(board *state, bool use_patterns)
+void mcts::explore(board *state)
 {
-	mcts_node* ptr = tree_search(state, use_patterns);
+	mcts_node* ptr = tree_search(state, root);
 	//ptr = ptr? ptr->local_weighted_playout(state, use_patterns) : ptr;
-	ptr? ptr->random_playout(state, use_patterns) : ptr;
+	ptr = ptr? random_playout(state, ptr) : ptr;
 }
 
-mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
-	mcts_node *ptr = this;
-
+mcts_node* mcts::tree_search(board *state, mcts_node *ptr) {
 	while (ptr) {
 		if (!ptr->fully_visited(state)) {
-			coordinate next = ptr->pick_random_leaf(state, use_patterns);
+			coordinate next = pick_random_leaf(state);
 
 			// no valid moves from here, just return
 			if (!state->is_valid_move(next)) {
@@ -96,7 +84,7 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 			return ptr->leaves[next].get();
 		}
 
-		coordinate next = ptr->max_utc(state, use_patterns);
+		coordinate next = max_utc(state, ptr);
 
 		if (next == coordinate(0, 0)) {
 			ptr->update(state);
@@ -117,12 +105,70 @@ mcts_node* mcts_node::tree_search(board *state, bool use_patterns) {
 	return nullptr;
 }
 
-mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
+coordinate mcts::max_utc(board *state, mcts_node *ptr) {
+	double cur_max = 0;
+	coordinate ret = {0, 0};
+
+	for (auto& x : ptr->leaves) {
+		/*
+		if (x.second == nullptr) {
+			continue;
+		}
+		*/
+
+		double temp = uct(x.first, state, ptr);
+
+		if (temp > cur_max) {
+			cur_max = temp;
+			ret = x.first;
+		}
+	}
+
+	return ret;
+}
+
+// low exploration constant with rave
+#define MCTS_UCT_C       0.05
+// how much to value rave estimations initially (in amount of playouts)
+#define MCTS_RAVE_WEIGHT 2000.0
+
+double mcts::uct(const coordinate& coord, board *state, mcts_node *ptr) {
+	if (!state->is_valid_move(coord)) {
+		return 0;
+	}
+
+	double weight = patterns.search(state, coord) / 100.0;
+
+	if (weight == 0) {
+		return 0;
+	}
+
+	if (ptr->leaves[coord] == nullptr) {
+		// unexplored leaf
+		return 0.5;
+	}
+
+	double rave_est = (*ptr->rave)[coord].win_rate();
+	double mcts_est = ptr->leaves[coord]->win_rate();
+	double uct = MCTS_UCT_C
+		* sqrt(log(ptr->traversals) / ptr->leaves[coord]->traversals);
+	double mc_uct_est = mcts_est + uct;
+
+	double B = (ptr->leaves[coord]->traversals)/MCTS_RAVE_WEIGHT;
+	B = (B > 1)? 1 : B;
+
+	// weighted sum to prefer rave estimations initially, then later
+	// prefer uct+mcts playout rates
+	double foo = (rave_est * (1-B)) + (mc_uct_est * B);
+	return foo;
+}
+
+mcts_node* mcts::random_playout(board *state, mcts_node *ptr) {
 	while (true) {
-		coordinate next = pick_random_leaf(state, use_patterns);
+		coordinate next = pick_random_leaf(state);
 
 		if (next == coordinate(0, 0)) {
-			update(state);
+			ptr->update(state);
 			return nullptr;
 		}
 
@@ -132,7 +178,7 @@ mcts_node* mcts_node::random_playout(board *state, bool use_patterns) {
 	return nullptr;
 }
 
-coordinate mcts_node::local_best(board *state) {
+coordinate mcts::local_best(board *state) {
 	coordinate things[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
@@ -174,10 +220,7 @@ coordinate mcts_node::local_best(board *state) {
 	return coordinate(0, 0);
 }
 
-mcts_node* mcts_node::local_weighted_playout(board *state, bool use_patterns) {
-	unsigned boardsquares = state->dimension * state->dimension;
-
-
+mcts_node* mcts::local_weighted_playout(board *state, mcts_node *ptr) {
 	while (true) {
 		coordinate next = {0, 0};
 		std::bitset<384> map;
@@ -188,10 +231,10 @@ mcts_node* mcts_node::local_weighted_playout(board *state, bool use_patterns) {
 			goto asdf;
 		}
 
-		next = pick_random_leaf(state, use_patterns);
+		next = pick_random_leaf(state);
 
 		if (next == coordinate(0, 0)) {
-			update(state);
+			ptr->update(state);
 			return nullptr;
 		}
 
@@ -210,7 +253,7 @@ asdf:
 	return nullptr;
 }
 
-coordinate mcts_node::pick_random_leaf(board *state, bool use_patterns) {
+coordinate mcts::pick_random_leaf(board *state) {
 	coordinate ret = {0, 0};
 	unsigned boardsquares = state->dimension * state->dimension;
 	std::bitset<384> map;
@@ -222,9 +265,7 @@ coordinate mcts_node::pick_random_leaf(board *state, bool use_patterns) {
 		if (map[index]) continue;
 		map[index] = true;
 
-		if (!state->is_valid_move(temp)
-				|| (use_patterns && patterns.search(state, temp) == 0))
-		{
+		if (!state->is_valid_move(temp) || patterns.search(state, temp) == 0) {
 			continue;
 		}
 
@@ -233,6 +274,19 @@ coordinate mcts_node::pick_random_leaf(board *state, bool use_patterns) {
 	}
 
 	return ret;
+}
+
+
+void mcts_node::new_node(board *state, coordinate& coord) {
+	// TODO: experimented with sharing rave stats between siblings but it seems to
+	//       be hit-or-miss, leaving the code here for now...
+	if (leaves[coord] == nullptr) {
+		// this node is unvisited, set up a new node
+		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
+		//leaves[coord]->rave = child_rave;
+		//leaves[coord]->child_rave = raveptr(new ravestats);
+		leaves[coord]->rave = raveptr(new ravestats);
+	}
 }
 
 bool mcts_node::fully_visited(board *state) {
@@ -263,65 +317,8 @@ coordinate mcts_node::best_move(void) {
 	return max->first;
 }
 
-coordinate mcts_node::max_utc(board *state, bool use_patterns) {
-	double cur_max = 0;
-	coordinate ret = {0, 0};
-
-	for (auto& x : leaves) {
-		/*
-		if (x.second == nullptr) {
-			continue;
-		}
-		*/
-
-		double temp = uct(x.first, state, use_patterns);
-
-		if (temp > cur_max) {
-			cur_max = temp;
-			ret = x.first;
-		}
-	}
-
-	return ret;
-}
-
 double mcts_node::win_rate(void){
 	return (double)wins / (double)traversals;
-}
-
-// low exploration constant with rave
-#define MCTS_UCT_C       0.05
-// how much to value rave estimations initially (in amount of playouts)
-#define MCTS_RAVE_WEIGHT 2000.0
-
-double mcts_node::uct(const coordinate& coord, board *state, bool use_patterns) {
-	if (!state->is_valid_move(coord)) {
-		return 0;
-	}
-
-	double weight = use_patterns? patterns.search(state, coord) / 100.0 : 1;
-
-	if (weight == 0) {
-		return 0;
-	}
-
-	if (leaves[coord] == nullptr) {
-		// unexplored leaf
-		return 0.5;
-	}
-
-	double rave_est = (*rave)[coord].win_rate();
-	double mcts_est = leaves[coord]->win_rate();
-	double uct = MCTS_UCT_C * sqrt(log(traversals) / leaves[coord]->traversals);
-	double mc_uct_est = mcts_est + uct;
-
-	double B = (leaves[coord]->traversals)/MCTS_RAVE_WEIGHT;
-	B = (B > 1)? 1 : B;
-
-	// weighted sum to prefer rave estimations initially, then later
-	// prefer uct+mcts playout rates
-	double foo = (rave_est * (1-B)) + (mc_uct_est * B);
-	return foo;
 }
 
 void mcts_node::update_rave(board *state, point::color winner) {
