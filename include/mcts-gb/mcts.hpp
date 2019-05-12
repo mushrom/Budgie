@@ -68,29 +68,72 @@ class mcts_node {
 		unsigned wins;
 };
 
+// TODO: Maybe make this a part of the board class somewhere, since it's game-specific
+coordinate pick_random_leaf(board *state);
+
+class tree_policy {
+	public:
+		virtual mcts_node* search(board *state, mcts_node *ptr) = 0;
+};
+
+class playout_policy {
+	public:
+		virtual mcts_node* playout(board *state, mcts_node *ptr) = 0;
+};
+
+// MC+UCT+RAVE tree exploration policy
+class uct_rave_tree_policy : public tree_policy {
+	public:
+		uct_rave_tree_policy(
+			// UCT exploration weight
+			double uct_c=0.05,
+			// RAVE estimation weight
+			double rave_c=2000.0)
+		{
+			uct_weight  = uct_c;
+			rave_weight = rave_c;
+		}
+
+		virtual mcts_node* search(board *state, mcts_node *ptr);
+
+	private:
+		double uct_weight;
+		double rave_weight;
+
+		coordinate max_utc(board *state, mcts_node *ptr);
+		double uct(const coordinate& coord, board *state, mcts_node *ptr);
+};
+
+class random_playout : public playout_policy {
+	public:
+		virtual mcts_node* playout(board *state, mcts_node *ptr);
+};
+
+class local_weighted_playout : public playout_policy {
+	public:
+		virtual mcts_node* playout(board *state, mcts_node *ptr);
+		coordinate local_best(board *state);
+};
+
 class mcts {
 	public:
-		mcts() {
-			//root = new mcts_node(nullptr, point::color::Empty);
+		mcts(tree_policy *tp = new uct_rave_tree_policy(),
+		     playout_policy *pp = new random_playout())
+		{
+			tree = tp;
+			policy = pp;
 			reset();
 		};
 
 		~mcts(){};
 
-		coordinate do_search(board *state,
-		                     unsigned playouts=20000,
-		                     bool use_patterns=true);
+		coordinate do_search(board *state, unsigned playouts=10000);
 		double win_rate(coordinate& coord);
 
 		void explore(board *state);
-		mcts_node* tree_search(board *state, mcts_node *ptr);
-		mcts_node* random_playout(board *state, mcts_node *ptr);
-		mcts_node* local_weighted_playout(board *state, mcts_node *ptr);
-		coordinate local_best(board *state);
-		coordinate pick_random_leaf(board *state);
 
-		coordinate max_utc(board *state, mcts_node *ptr);
-		double uct(const coordinate& coord, board *state, mcts_node *ptr);
+		tree_policy *tree;
+		playout_policy *policy;
 
 		void reset() {
 			delete root;

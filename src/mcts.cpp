@@ -22,6 +22,30 @@ coordinate random_coord(board *b) {
 	return coordinate(distribution(generator), distribution(generator));
 }
 
+// TODO: also maybe move this
+coordinate pick_random_leaf(board *state) {
+	coordinate ret = {0, 0};
+	unsigned boardsquares = state->dimension * state->dimension;
+	std::bitset<384> map;
+
+	while (map.count() != boardsquares) {
+		coordinate temp = random_coord(state);
+		unsigned index = state->coord_to_index(temp);
+
+		if (map[index]) continue;
+		map[index] = true;
+
+		if (!state->is_valid_move(temp) || patterns.search(state, temp) == 0) {
+			continue;
+		}
+
+		ret = temp;
+		break;
+	}
+
+	return ret;
+}
+
 /*
 // keeping this here because we might use it later
 auto random_choice(auto& x) {
@@ -31,7 +55,7 @@ auto random_choice(auto& x) {
 }
 */
 
-coordinate mcts::do_search(board *state, unsigned playouts, bool use_patterns) {
+coordinate mcts::do_search(board *state, unsigned playouts) {
 	// XXX: we'll want to check to make sure this is already the case once we
 	//      start reusing trees
 	root->color = state->other_player(state->current_player);
@@ -64,12 +88,11 @@ double mcts::win_rate(coordinate& coord) {
 
 void mcts::explore(board *state)
 {
-	mcts_node* ptr = tree_search(state, root);
-	//ptr = ptr? ptr->local_weighted_playout(state, use_patterns) : ptr;
-	ptr = ptr? random_playout(state, ptr) : ptr;
+	mcts_node* ptr = tree->search(state, root);
+	ptr = ptr? policy->playout(state, ptr) : ptr;
 }
 
-mcts_node* mcts::tree_search(board *state, mcts_node *ptr) {
+mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 	while (ptr) {
 		if (!ptr->fully_visited(state)) {
 			coordinate next = pick_random_leaf(state);
@@ -105,7 +128,7 @@ mcts_node* mcts::tree_search(board *state, mcts_node *ptr) {
 	return nullptr;
 }
 
-coordinate mcts::max_utc(board *state, mcts_node *ptr) {
+coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
@@ -127,12 +150,7 @@ coordinate mcts::max_utc(board *state, mcts_node *ptr) {
 	return ret;
 }
 
-// low exploration constant with rave
-#define MCTS_UCT_C       0.05
-// how much to value rave estimations initially (in amount of playouts)
-#define MCTS_RAVE_WEIGHT 2000.0
-
-double mcts::uct(const coordinate& coord, board *state, mcts_node *ptr) {
+double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_node *ptr) {
 	if (!state->is_valid_move(coord)) {
 		return 0;
 	}
@@ -150,11 +168,11 @@ double mcts::uct(const coordinate& coord, board *state, mcts_node *ptr) {
 
 	double rave_est = (*ptr->rave)[coord].win_rate();
 	double mcts_est = ptr->leaves[coord]->win_rate();
-	double uct = MCTS_UCT_C
+	double uct = uct_weight
 		* sqrt(log(ptr->traversals) / ptr->leaves[coord]->traversals);
 	double mc_uct_est = mcts_est + uct;
 
-	double B = (ptr->leaves[coord]->traversals)/MCTS_RAVE_WEIGHT;
+	double B = (ptr->leaves[coord]->traversals)/rave_weight;
 	B = (B > 1)? 1 : B;
 
 	// weighted sum to prefer rave estimations initially, then later
@@ -163,7 +181,7 @@ double mcts::uct(const coordinate& coord, board *state, mcts_node *ptr) {
 	return foo;
 }
 
-mcts_node* mcts::random_playout(board *state, mcts_node *ptr) {
+mcts_node* random_playout::playout(board *state, mcts_node *ptr) {
 	while (true) {
 		coordinate next = pick_random_leaf(state);
 
@@ -178,7 +196,7 @@ mcts_node* mcts::random_playout(board *state, mcts_node *ptr) {
 	return nullptr;
 }
 
-coordinate mcts::local_best(board *state) {
+coordinate local_weighted_playout::local_best(board *state) {
 	coordinate things[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
@@ -220,7 +238,7 @@ coordinate mcts::local_best(board *state) {
 	return coordinate(0, 0);
 }
 
-mcts_node* mcts::local_weighted_playout(board *state, mcts_node *ptr) {
+mcts_node* local_weighted_playout::playout(board *state, mcts_node *ptr) {
 	while (true) {
 		coordinate next = {0, 0};
 		std::bitset<384> map;
@@ -252,30 +270,6 @@ asdf:
 
 	return nullptr;
 }
-
-coordinate mcts::pick_random_leaf(board *state) {
-	coordinate ret = {0, 0};
-	unsigned boardsquares = state->dimension * state->dimension;
-	std::bitset<384> map;
-
-	while (map.count() != boardsquares) {
-		coordinate temp = random_coord(state);
-		unsigned index = state->coord_to_index(temp);
-
-		if (map[index]) continue;
-		map[index] = true;
-
-		if (!state->is_valid_move(temp) || patterns.search(state, temp) == 0) {
-			continue;
-		}
-
-		ret = temp;
-		break;
-	}
-
-	return ret;
-}
-
 
 void mcts_node::new_node(board *state, coordinate& coord) {
 	// TODO: experimented with sharing rave stats between siblings but it seems to

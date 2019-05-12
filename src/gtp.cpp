@@ -136,7 +136,7 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 			game.current_player = string_to_color(args[1]);
 			search_tree.reset();
-			coordinate coord = search_tree.do_search(&game, playouts, use_patterns);
+			coordinate coord = search_tree.do_search(&game, playouts);
 
 			if (!game.is_valid_coordinate(coord)) {
 				std::cerr << "# no valid moves, passing" << std::endl;
