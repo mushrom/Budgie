@@ -45,8 +45,18 @@ point::color string_to_color(std::string& str) {
 }
 
 void gtp_client::repl(std::map<std::string, std::string> options) {
+	// TODO: we should have an AI instance class that handles
+	//       all of the board/mcts interaction
 	unsigned playouts = stoi(options["playouts"]);
-	unsigned use_patterns = stoi(options["use_patterns"]);
+	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
+
+	// only have this tree policy right now
+	tree_policy *tree_pol = new uct_rave_tree_policy(db);
+	playout_policy *playout_pol = (options["playout_policy"] == "local_weighted")
+		? (playout_policy *)(new local_weighted_playout(db))
+		: (playout_policy *)(new random_playout(db));
+
+	search_tree = std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
 
 	std::string s;
 
@@ -135,8 +145,8 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 			//       game state from here
 
 			game.current_player = string_to_color(args[1]);
-			search_tree.reset();
-			coordinate coord = search_tree.do_search(&game, playouts);
+			search_tree->reset();
+			coordinate coord = search_tree->do_search(&game, playouts);
 
 			if (!game.is_valid_coordinate(coord)) {
 				std::cerr << "# no valid moves, passing" << std::endl;
@@ -145,17 +155,17 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 			}
 
 			std::cerr << "# coord: (" << coord.first << ", " << coord.second
-				<< "), win rate: " << search_tree.win_rate(coord)
+				<< "), win rate: " << search_tree->win_rate(coord)
 				<< ", traversals: "
-				<< std::dec << search_tree.root->leaves[coord]->traversals
+				<< std::dec << search_tree->root->leaves[coord]->traversals
 				<< std::endl;
 
-			if (search_tree.win_rate(coord) < 0.15) {
+			if (search_tree->win_rate(coord) < 0.15) {
 				std::cout << "= resign\n\n";
 				continue;
 			}
 
-			if (search_tree.win_rate(coord) == 1) {
+			if (search_tree->win_rate(coord) == 1) {
 				std::cout << "= pass\n\n";
 				continue;
 			}

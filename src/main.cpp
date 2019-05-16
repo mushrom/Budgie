@@ -4,9 +4,12 @@
 #include <iostream>
 
 std::map<std::string, std::string> default_options = {
-	{"playouts",     "10000"},
-	{"use_patterns", "1"},
-	{"mode",         "gtp"},
+	{"playouts",       "10000"},
+	{"use_patterns",   "1"},
+	{"mode",           "gtp"},
+	{"tree_policy",    "uct-rave"},
+	{"playout_policy", "random"},
+	{"patterns",       "patterns.txt"},
 };
 
 class args_parser {

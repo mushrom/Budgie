@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mcts-gb/game.hpp>
+#include <mcts-gb/pattern_db.hpp>
 #include <list>
 #include <utility>
 #include <unordered_map>
@@ -71,24 +72,36 @@ class mcts_node {
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
 coordinate pick_random_leaf(board *state);
 
+// TODO: maybe move this to pattern_db.hpp
+typedef std::shared_ptr<pattern_db> pattern_dbptr;
+
 class tree_policy {
 	public:
+		tree_policy(pattern_dbptr db) { patterns = db; };
 		virtual mcts_node* search(board *state, mcts_node *ptr) = 0;
+
+	protected:
+		pattern_dbptr patterns;
 };
 
 class playout_policy {
 	public:
+		playout_policy(pattern_dbptr db) { patterns = db; }
 		virtual mcts_node* playout(board *state, mcts_node *ptr) = 0;
+
+	protected:
+		pattern_dbptr patterns;
 };
 
 // MC+UCT+RAVE tree exploration policy
 class uct_rave_tree_policy : public tree_policy {
 	public:
 		uct_rave_tree_policy(
+			pattern_dbptr db,
 			// UCT exploration weight
 			double uct_c=0.05,
 			// RAVE estimation weight
-			double rave_c=2000.0)
+			double rave_c=2000.0) : tree_policy(db)
 		{
 			uct_weight  = uct_c;
 			rave_weight = rave_c;
@@ -106,19 +119,20 @@ class uct_rave_tree_policy : public tree_policy {
 
 class random_playout : public playout_policy {
 	public:
+		random_playout(pattern_dbptr db) : playout_policy(db) { };
 		virtual mcts_node* playout(board *state, mcts_node *ptr);
 };
 
 class local_weighted_playout : public playout_policy {
 	public:
+		local_weighted_playout(pattern_dbptr db) : playout_policy(db) { };
 		virtual mcts_node* playout(board *state, mcts_node *ptr);
 		coordinate local_best(board *state);
 };
 
 class mcts {
 	public:
-		mcts(tree_policy *tp = new uct_rave_tree_policy(),
-		     playout_policy *pp = new random_playout())
+		mcts(tree_policy *tp, playout_policy *pp)
 		{
 			tree = tp;
 			policy = pp;
