@@ -186,17 +186,6 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 	}
 
 	switch (pat.minigrid[index]) {
-		case 'X':
-		case 'O':
-		case '.':
-		case '|':
-		case '-':
-		case '+':
-		case '*':
-			// nothing to do for exact pattern specifiers, so we continue onwards
-			load_permutations(pat, index + 1);
-			break;
-
 		case 'x':
 			// load patterns with and without an enemy stone
 			pat.minigrid[index] = '.';
@@ -214,20 +203,17 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 			break;
 
 		case '?':
-			// true wildcard, generate all possible combinations
+			// wildcard, generate all possible combinations
 			pat.minigrid[index] = '.';
 			load_permutations(pat, index + 1);
 			pat.minigrid[index] = 'O';
 			load_permutations(pat, index + 1);
 			pat.minigrid[index] = 'X';
 			load_permutations(pat, index + 1);
-			pat.minigrid[index] = '+';
-			load_permutations(pat, index + 1);
-
 			break;
 
+		// exact specifier, continue onwards
 		default:
-			// we shouldn't get here, maybe print an error
 			load_permutations(pat, index + 1);
 			break;
 	}
