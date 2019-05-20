@@ -25,7 +25,7 @@ coordinate string_to_coord(std::string& str) {
 	return {x, y};
 }
 
-std::string coord_string(coordinate& coord) {
+std::string coord_string(const coordinate& coord) {
 	std::string asdf = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
 	std::string ret = asdf[coord.first - 1] + std::to_string(coord.second);
 

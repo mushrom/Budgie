@@ -58,7 +58,7 @@ class board {
 			dimension = size;
 
 			for (unsigned i = 0; i < size*size; i++){
-				grid[i] = point::color::Empty;
+				ownership[i] = grid[i] = point::color::Empty;
 			}
 		};
 
@@ -83,6 +83,7 @@ class board {
 
 			for (unsigned i = 0; i < dimension * dimension; i++) {
 				grid[i] = other->grid[i];
+				ownership[i] = point::color::Empty;
 			}
 		}
 
@@ -132,6 +133,9 @@ class board {
 		point::color current_player = point::color::Black;
 		coordinate last_move;
 		board *parent = nullptr;
+
+		bool owns(const coordinate& coord, point::color color);
+		point::color ownership[384];
 
 	private:
 		void regen_hash(void);

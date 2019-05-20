@@ -30,9 +30,35 @@ class mcts_node {
 				};
 		};
 
+		class crit_stats {
+			public:
+				unsigned total_wins = 0;
+				unsigned traversals = 0;
+
+				unsigned black_wins = 0;
+				unsigned white_wins = 0;
+
+				unsigned black_owns = 0;
+				unsigned white_owns = 0;
+
+				double win_rate(void) {
+					double uwin = total_wins / (1. * traversals);
+					double ubx  = black_owns / (1. * traversals);
+					double ub   = black_wins / (1. * traversals);
+					double uwx  = white_owns / (1. * traversals);
+					double uw   = white_wins / (1. * traversals);
+
+					double ret = uwin - (ubx*ub + uwx*uw);
+
+					return (ret < 0)? -ret : ret;
+				};
+		};
+
 		typedef std::unique_ptr<mcts_node> nodeptr;
 		typedef std::unordered_map<coordinate, stats, coord_hash> ravestats;
+		typedef std::unordered_map<coordinate, crit_stats, coord_hash> critmap;
 		typedef std::shared_ptr<ravestats> raveptr;
+		typedef std::shared_ptr<critmap> critptr;
 
 		mcts_node(mcts_node *n_parent = nullptr,
 		          point::color player = point::color::Empty)
@@ -43,7 +69,7 @@ class mcts_node {
 		};
 
 		void update(board *state);
-		void update_rave(board *state, point::color winner);
+		void update_stats(board *state, point::color winner);
 		void new_node(board *state, coordinate& coord);
 
 		double win_rate(void);
@@ -57,6 +83,10 @@ class mcts_node {
 		void dump_best_move_statistics(board *state);
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
+		std::unordered_map<coordinate, stats, coord_hash> ownership;
+		//std::unordered_map<coordinate, crit_stats, coord_hash> criticality;
+
+		critptr criticality;
 
 		// rave stats for this level
 		raveptr rave;
@@ -64,7 +94,7 @@ class mcts_node {
 		raveptr child_rave;
 
 		mcts_node *parent;
-		unsigned color;
+		point::color color;
 		unsigned traversals;
 		unsigned wins;
 };
@@ -155,6 +185,7 @@ class mcts {
 			//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
 			root->rave = mcts_node::raveptr(new mcts_node::ravestats);
 			root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
+			root->criticality = mcts_node::critptr(new mcts_node::critmap);
 		}
 
 		mcts_node *root = nullptr;

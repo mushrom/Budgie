@@ -102,11 +102,13 @@ void mcts_node::new_node(board *state, coordinate& coord) {
 		//leaves[coord]->rave = child_rave;
 		//leaves[coord]->child_rave = raveptr(new ravestats);
 		leaves[coord]->rave = raveptr(new ravestats);
+		leaves[coord]->criticality = criticality;
 	}
 }
 
 bool mcts_node::fully_visited(board *state) {
 	return traversals >= state->dimension * state->dimension;
+	//return traversals >= state->dimension * state->dimension;
 	//return traversals > state->dimension * 2;
 	//return traversals > 2;
 }
@@ -137,15 +139,31 @@ double mcts_node::win_rate(void){
 	return (double)wins / (double)traversals;
 }
 
-void mcts_node::update_rave(board *state, point::color winner) {
+void mcts_node::update_stats(board *state, point::color winner) {
 	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
+		// update criticality maps
+		auto& x = (*criticality)[foo->coord];
+		x.traversals++;
+
+		x.total_wins += state->owns(foo->coord, winner);
+		x.black_wins += winner == point::color::Black;
+		x.black_owns += state->owns(foo->coord, point::color::Black);
+		x.white_wins += winner == point::color::White;
+		x.white_owns += state->owns(foo->coord, point::color::White);
+
 		for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
+			bool won = foo->color == winner;
+
+			/*
+			ptr->criticality[foo->coord].wins += won && state->owns(foo->coord, foo->color);
+			ptr->criticality[foo->coord].traversals += 1;
+			*/
+
+
 			// node rave maps track the best moves for the oppenent
 			if (ptr->color == foo->color) {
 				continue;
 			}
-
-			bool won = foo->color == winner;
 
 			(*ptr->rave)[foo->coord].wins += won;
 			(*ptr->rave)[foo->coord].traversals++;
@@ -156,7 +174,7 @@ void mcts_node::update_rave(board *state, point::color winner) {
 void mcts_node::update(board *state) {
 	point::color winner = state->determine_winner();
 
-	update_rave(state, winner);
+	update_stats(state, winner);
 
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
 		bool won = ptr->color == winner;
@@ -195,6 +213,11 @@ unsigned mcts_node::nodes(void){
 	return ret;
 }
 
+// defined in gtp.cpp
+// TODO: maybe move this to a utility function
+std::string coord_string(const coordinate& coord);
+
+
 void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsigned depth) {
 	auto print_spaces = [&](){
 		for (unsigned i = 0; i < depth*2; i++) {
@@ -210,12 +233,13 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 
 	print_spaces();
 
-	fprintf(stderr, "%s: %s coord (%u, %u), winrate: %g, rave: %g, traversals: %u\n",
-		(color == point::color::Black)? "black" : "white",
-		fully_visited(state)? "fully visited" : "visited",
-		coord.first, coord.second,
+	fprintf(stderr, "%s: %s, winrate: %.2f, rave: %.2f, criticality: %.2f, traversals: %u\n",
+		(color == point::color::Black)? "B" : "W",
+		coord_string(coord).c_str(),
 		win_rate(),
-		parent? (*parent->rave)[coord].win_rate() : 0, traversals);
+		parent? (*parent->rave)[coord].win_rate() : 0,
+		parent? (*criticality)[coord].win_rate() : 0,
+		traversals);
 
 	for (auto& x : leaves) {
 		if (x.second == nullptr || !x.second->fully_visited(state)) {
@@ -225,10 +249,6 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 		x.second->dump_node_statistics(x.first, state, depth + 1);
 	}
 }
-
-// defined in gtp.cpp
-// TODO: maybe move this to a utility function
-std::string coord_string(coordinate& coord);
 
 void mcts_node::dump_best_move_statistics(board *state) {
 	coordinate coord = best_move();

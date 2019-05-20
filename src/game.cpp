@@ -401,7 +401,7 @@ void board::endgame_clear_captured(void) {
 }
 
 unsigned board::coord_to_index(const coordinate& coord) {
-	return dimension*coord.second + coord.first;
+	return dimension*(coord.second - 1) + (coord.first - 1);
 }
 
 // TODO: Right now the bot the bot doesn't count stones in atari as being dead,
@@ -422,7 +422,8 @@ unsigned board::count_territory(point::color player) {
 				continue;
 			}
 
-			bool is_territory = !reaches(coord, point::color::Empty, other_player(player));
+			bool is_territory = !reaches(coord, point::color::Empty,
+			                             other_player(player));
 			territory += territory_flood(coord, is_territory, bitmap);
 		}
 	}
@@ -498,6 +499,10 @@ point::color board::determine_winner(void) {
 	return (black > white)? point::color::Black : point::color::White;
 }
 
+bool board::owns(const coordinate& coord, point::color color) {
+	return grid[coord_to_index(coord)] == color;
+}
+
 uint64_t board::gen_hash(const coordinate& coord, point::color color) {
 	// generate 12 bit identifier for this move
 	uint16_t foo = (color << 10) | (coord.first << 5) | coord.second;
@@ -526,8 +531,9 @@ void board::regen_hash(void) {
 
 void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
-		unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
-		grid[index] = color;
+		//unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
+		//grid[index] = color;
+		grid[coord_to_index(coord)] = color;
 	}
 }
 
