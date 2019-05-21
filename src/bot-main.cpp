@@ -1,7 +1,10 @@
 #include <mcts-gb/mcts.hpp>
 #include <mcts-gb/gtp.hpp>
+#include <mcts-gb/args_parser.hpp>
 #include <stdio.h>
 #include <iostream>
+
+using namespace mcts_thing;
 
 std::map<std::string, std::string> default_options = {
 	{"playouts",       "10000"},
@@ -12,43 +15,8 @@ std::map<std::string, std::string> default_options = {
 	{"patterns",       "patterns.txt"},
 };
 
-class args_parser {
-	public:
-		args_parser() { options = default_options; }
-		args_parser(int argc, char *argv[]) : args_parser() {
-			parse_args(argc, argv);
-		}
-
-		void parse_args(int argc, char *argv[]);
-
-		std::map<std::string, std::string> options;
-		std::vector<std::string> arguments;
-};
-
-void args_parser::parse_args(int argc, char *argv[]){
-	for (int i = 1; i < argc; i++) {
-		/*
-		if (argv[i][0] != '-') {
-		}
-		*/
-		arguments.push_back(std::string(argv[i]));
-
-		char *arg = argv[i];
-
-		// remove leading hyphens and check to see if there's anything left afterwards
-		while (*arg && *arg == '-') arg++;
-		if (!*arg) continue;
-
-		for (auto &x : options) {
-			if (arg == x.first){
-				options[x.first] = argv[++i];
-			}
-		}
-	}
-}
-
 int main(int argc, char *argv[]) {
-	args_parser args(argc, argv);
+	args_parser args(argc, argv, default_options);
 
 	for (auto& arg : args.arguments){
 		if (arg == "--help" || arg == "-h") {
@@ -63,7 +31,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (args.options["mode"] == "gtp") {
-		mcts_thing::gtp_client gtp;
+		gtp_client gtp;
 		gtp.repl(args.options);
 
 	} else {
