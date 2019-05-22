@@ -19,6 +19,7 @@ class gtp_client {
 
 		int komi = 5;
 		int boardsize = 9;
+		bool passed = false;
 
 		board game;
 		std::unique_ptr<mcts> search_tree;

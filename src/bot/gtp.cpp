@@ -119,9 +119,15 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 
 			coordinate coord = string_to_coord(args[2]);
 
-			// TODO: same todo as below
-			game.current_player = player;
-			game.make_move(coord);
+			if (args[2] == "pass" || args[2] == "PASS") {
+				passed = true;
+
+			} else {
+				// TODO: same todo as below
+				passed = false;
+				game.current_player = player;
+				game.make_move(coord);
+			}
 
 			std::cout << "=\n\n";
 		}
@@ -165,10 +171,17 @@ void gtp_client::repl(std::map<std::string, std::string> options) {
 				continue;
 			}
 
+			if (passed || !game.is_valid_move(coord)) {
+				std::cout << "= pass\n\n";
+				continue;
+			}
+
+			/*
 			if (search_tree->win_rate(coord) == 1) {
 				std::cout << "= pass\n\n";
 				continue;
 			}
+			*/
 
 			if (game.is_suicide(coord, game.current_player)) {
 				std::cout << "= pass\n\n";
