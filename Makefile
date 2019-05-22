@@ -8,9 +8,19 @@ sdl-ui-src =
 sdl-ui-obj = $(sdl-ui-src:.cpp=.o)
 sdl-ui-main = src/sdl-main.o
 
-thing: $(bot-obj) $(bot-main)
+bin/thing: dir-structure $(bot-obj) $(bot-main)
 	$(CXX) $(CXXFLAGS) -o $@ $(bot-obj) $(bot-main)
+
+bin/sdl-thing: dir-structure $(bot-obj) $(sdl-ui-main)
+	$(CXX) $(CXXFLAGS) -o $@ $(bot-obj) $(sdl-ui-main)
+
+all: bin/thing bin/sdl-thing
+
+.PHONY: dir-structure
+dir-structure:
+	mkdir -p ./bin
 
 .PHONY: clean
 clean:
-	-rm -f $(bot-obj) $(bot-main) $(sdl-ui-obj) $(sdl-ui-main) thing
+	-rm -f $(bot-obj) $(bot-main) $(sdl-ui-obj) $(sdl-ui-main)
+	-rm -rf ./bin
