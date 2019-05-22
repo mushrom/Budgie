@@ -67,7 +67,8 @@ gui_state::gui_state() {
 	// XXX: need to make some sort of AI instance class
 	pattern_dbptr db = pattern_dbptr(new pattern_db("patterns.txt"));
 	tree_policy *tree_pol = new uct_rave_tree_policy(db);
-	playout_policy *playout_pol = new random_playout(db);
+	//playout_policy *playout_pol = new random_playout(db);
+	playout_policy *playout_pol = new local_weighted_playout(db);
 
 	search_tree = std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
 }
@@ -135,6 +136,9 @@ void gui_state::draw_overlays(void) {
 		double meh = 500.0 / (game.dimension - 1);
 		double asdf = 51 - (meh/2);
 
+		unsigned off = 0x40;
+		unsigned range = (0xff - off);
+
 		rect.x = asdf + (foo.first  - 1) * meh;
 		rect.y = asdf + (foo.second - 1) * meh;
 		rect.h = rect.w = meh;
@@ -142,18 +146,26 @@ void gui_state::draw_overlays(void) {
 		double traversals = move.second->traversals / (1.*search_tree->root->traversals);
 
 		traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
-		unsigned b = 0xff - 0x80 * traversals;
+		unsigned b = off + range * traversals;
 
 		double rave_est = (*search_tree->root->rave)[foo].win_rate();
 		rave_est = (rave_est - min_rave) / (max_rave - min_rave);
-		unsigned g = 0xff - 0x80 * rave_est;
+		unsigned g = off + range * rave_est;
 
 		double crit_est = (*search_tree->root->criticality)[foo].win_rate();
 		crit_est = (crit_est - min_crit) / (max_crit - min_crit);
-		unsigned r = 0xff - 0x80 * crit_est;
+		unsigned r = off + range * crit_est;
 
 		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-		//SDL_SetRenderDrawColor(renderer, 0xdd, 0xbb, b, 0);
+
+		/*
+		auto& x = (*search_tree->root->criticality)[foo];
+		double r = off + range * (x.black_owns / (1. * x.traversals));
+		double g = off + range * (x.white_owns / (1. * x.traversals));
+		unsigned b = 0x66;
+
+		SDL_SetRenderDrawColor(renderer, 0xdd, 0xbb, b, 0);
+		*/
 		SDL_RenderFillRect(renderer, &rect);
 	}
 

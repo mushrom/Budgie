@@ -65,14 +65,15 @@ class mcts_node {
 		{
 			color = player;
 			parent = n_parent;
-			traversals = wins = 0;
+			//traversals = wins = 0;
+			traversals = 0;
 		};
 
 		void update(board *state);
 		void update_stats(board *state, point::color winner);
 		void new_node(board *state, coordinate& coord);
 
-		double win_rate(void);
+		//double win_rate(void);
 		coordinate best_move(void);
 		bool fully_visited(board *state);
 
@@ -84,6 +85,7 @@ class mcts_node {
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
 		std::unordered_map<coordinate, stats, coord_hash> ownership;
+		std::unordered_map<coordinate, stats, coord_hash> nodestats;
 		//std::unordered_map<coordinate, crit_stats, coord_hash> criticality;
 
 		critptr criticality;
@@ -96,7 +98,10 @@ class mcts_node {
 		mcts_node *parent;
 		point::color color;
 		unsigned traversals;
+		coordinate coord;
+		/*
 		unsigned wins;
+		*/
 };
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific

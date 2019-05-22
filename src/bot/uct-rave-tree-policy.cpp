@@ -25,6 +25,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 			return nullptr;
 		}
 
+		ptr->new_node(state, next);
 		state->make_move(next);
 		ptr = ptr->leaves[next].get();
 
@@ -44,7 +45,8 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
-	for (auto& x : ptr->leaves) {
+	//for (auto& x : ptr->leaves) {
+	for (auto& x : (*ptr->rave)) {
 		/*
 		if (x.second == nullptr) {
 			continue;
@@ -73,26 +75,41 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0;
 	}
 
+	/*
+	if (ptr->nodestats[coord].traversals == 0) {
+		// unexplored leaf
+		return 0.5;
+	}
+	*/
+
+	/*
 	if (ptr->leaves[coord] == nullptr) {
 		// unexplored leaf
 		return 0.5;
 	}
+	*/
 
 	double rave_est = (*ptr->rave)[coord].win_rate();
-	double mcts_est = ptr->leaves[coord]->win_rate();
+	//double mcts_est = ptr->leaves[coord]->win_rate();
+	double mcts_est = ptr->nodestats[coord].win_rate();
 	double crit_est = (*ptr->criticality)[coord].win_rate();
 
+	/*
 	double uct = uct_weight
 		* sqrt(log(ptr->traversals) / ptr->leaves[coord]->traversals);
+		* */
+	double uct = 0;
 	double mc_uct_est = mcts_est + uct;
 
-	double B = (ptr->leaves[coord]->traversals)/rave_weight;
+	double B = (ptr->nodestats[coord].traversals)/rave_weight;
+	//double B = (ptr->leaves[coord]->traversals)/rave_weight;
+//	double B = (ptr->leaves[coord]->traversals)/rave_weight;
 	//double B = (ptr->traversals / rave_weight);
 	B = (B > 1)? 1 : B;
 
 	double meh = 0;
 
-	if (ptr->traversals >= 200) {
+	if (ptr->traversals >= 100) {
 	//if ((*ptr->criticality)[coord].traversals >= 100) {
 		//meh = crit_est*(1-B) + rave_est*(1-B);
 		meh = (crit_est + rave_est) * (1-B);

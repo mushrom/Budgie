@@ -79,8 +79,17 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 }
 
 double mcts::win_rate(coordinate& coord) {
+	/*
 	if (root->leaves[coord] != nullptr) {
 		return root->leaves[coord]->win_rate();
+
+	} else {
+		return 0.5;
+	}
+	*/
+
+	if (root->nodestats.find(coord) != root->nodestats.end()) {
+		return root->nodestats[coord].win_rate();
 
 	} else {
 		return 0.5;
@@ -103,6 +112,7 @@ void mcts_node::new_node(board *state, coordinate& coord) {
 		//leaves[coord]->child_rave = raveptr(new ravestats);
 		leaves[coord]->rave = raveptr(new ravestats);
 		leaves[coord]->criticality = criticality;
+		leaves[coord]->coord = coord;
 	}
 }
 
@@ -135,9 +145,11 @@ coordinate mcts_node::best_move(void) {
 	return max->first;
 }
 
+/*
 double mcts_node::win_rate(void){
 	return (double)wins / (double)traversals;
 }
+*/
 
 void mcts_node::update_stats(board *state, point::color winner) {
 	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
@@ -177,10 +189,16 @@ void mcts_node::update(board *state) {
 	update_stats(state, winner);
 
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
+		//bool won = ptr->color == winner;
 		bool won = ptr->color == winner;
 
+		if (ptr->parent) {
+			ptr->parent->nodestats[ptr->coord].wins += won;
+			ptr->parent->nodestats[ptr->coord].traversals++;
+		}
+
 		ptr->traversals++;
-		ptr->wins += won;
+		//ptr->wins += won;
 	}
 }
 
@@ -236,7 +254,7 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 	fprintf(stderr, "%s: %s, winrate: %.2f, rave: %.2f, criticality: %.2f, traversals: %u\n",
 		(color == point::color::Black)? "B" : "W",
 		coord_string(coord).c_str(),
-		win_rate(),
+		parent? parent->nodestats[coord].win_rate() : 0,
 		parent? (*parent->rave)[coord].win_rate() : 0,
 		parent? (*criticality)[coord].win_rate() : 0,
 		traversals);
