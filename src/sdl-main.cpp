@@ -22,6 +22,7 @@ class gui_state {
 		void draw_overlays(void);
 		void draw_grid(void);
 		void draw_stones(void);
+		void draw_circle(unsigned x, unsigned y, int radius);
 
 	private:
 		SDL_Window   *window;
@@ -141,7 +142,7 @@ void gui_state::draw_overlays(void) {
 
 		rect.x = asdf + (foo.first  - 1) * meh;
 		rect.y = asdf + (foo.second - 1) * meh;
-		rect.h = rect.w = meh;
+		rect.h = rect.w = meh + 1;
 
 		double traversals = move.second->traversals / (1.*search_tree->root->traversals);
 
@@ -156,16 +157,14 @@ void gui_state::draw_overlays(void) {
 		crit_est = (crit_est - min_crit) / (max_crit - min_crit);
 		unsigned r = off + range * crit_est;
 
-		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-
 		/*
 		auto& x = (*search_tree->root->criticality)[foo];
 		double r = off + range * (x.black_owns / (1. * x.traversals));
 		double g = off + range * (x.white_owns / (1. * x.traversals));
 		unsigned b = 0x66;
-
-		SDL_SetRenderDrawColor(renderer, 0xdd, 0xbb, b, 0);
 		*/
+
+		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
 		SDL_RenderFillRect(renderer, &rect);
 	}
 
@@ -175,13 +174,13 @@ void gui_state::draw_grid(void) {
 	for (unsigned i = 0; i < game.dimension; i++) {
 		SDL_Rect r;
 
-		r.h = 2;
+		r.h = 1;
 		//r.w = foo * (game.dimension - 1);
 		r.w = 500;
 		r.x = 50;
 		r.y = 50 + (500.0 / (game.dimension - 1) * i);
 
-		SDL_SetRenderDrawColor(renderer, 0x40, 0x40, 0x40, 0);
+		SDL_SetRenderDrawColor(renderer, 0x40, 0x40, 0x30, 0);
 		SDL_RenderFillRect(renderer, &r);
 
 		auto k = r.x;
@@ -204,8 +203,8 @@ void gui_state::draw_stones(void) {
 			SDL_Rect r;
 
 			double meh = 500.0 / (game.dimension - 1);
-			double blarg = meh - (meh/8);
-			double asdf = 51 - (blarg/2);
+			double blarg = meh - (meh/12);
+			double asdf = 52 - (blarg/2);
 
 			r.y = asdf + (y - 1) * meh;
 			r.x = asdf + (x - 1) * meh;
@@ -214,18 +213,32 @@ void gui_state::draw_stones(void) {
 			switch (game.get_coordinate(foo)) {
 				case point::color::Black:
 					SDL_SetRenderDrawColor(renderer, 0x10, 0x10, 0x10, 0);
-					SDL_RenderFillRect(renderer, &r);
+					draw_circle(r.x, r.y, r.h/2);
 					break;
 
 				case point::color::White:
-					SDL_SetRenderDrawColor(renderer, 0xf0, 0xf0, 0xf0, 0);
-					SDL_RenderFillRect(renderer, &r);
+					SDL_SetRenderDrawColor(renderer, 0xf8, 0xf8, 0xf8, 0);
+					draw_circle(r.x, r.y, r.h/2);
+
 					break;
 
 				default:
 					break;
 			}
 		}
+	}
+}
+
+void gui_state::draw_circle(unsigned x, unsigned y, int radius) {
+	for (int i = -radius; i <= radius; i++) {
+		double a = i/(1.*radius);
+		double c = radius * sqrt(1 - (a * a));
+
+		int x1 = x + radius - c;
+		int x2 = x + radius + c;
+		int y1 = y + radius + i;
+
+		SDL_RenderDrawLine(renderer, x1, y1, x2, y1);
 	}
 }
 
