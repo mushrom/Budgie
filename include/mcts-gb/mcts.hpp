@@ -180,6 +180,8 @@ class mcts {
 		double win_rate(coordinate& coord);
 
 		void explore(board *state);
+		std::string serialize(void);
+		void deserialize(std::string& serialized);
 
 		tree_policy *tree;
 		playout_policy *policy;
@@ -194,6 +196,9 @@ class mcts {
 		}
 
 		mcts_node *root = nullptr;
+
+	private:
+		std::string serialize_node(const mcts_node* ptr, unsigned depth=1);
 };
 
 // namespace mcts_thing

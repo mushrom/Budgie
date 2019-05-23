@@ -102,6 +102,51 @@ void mcts::explore(board *state)
 	ptr = ptr? policy->playout(state, ptr) : ptr;
 }
 
+std::string mcts::serialize_node(const mcts_node* ptr, unsigned depth) {
+	if (ptr == nullptr) {
+		return "";
+	}
+
+	std::string color = (ptr->color == point::color::Black)? "black" : "white";
+	std::string childs = "";
+
+	for (const auto& x : ptr->leaves) {
+		childs += serialize_node(x.second.get(), depth + 1);
+	}
+
+	return (std::string)
+		"(node" +
+		" (coordinate (0, 0))" +
+		" (color " + color + ")" +
+		" (leaves " + childs + ")) ";
+
+	/*
+	// XXX: pretty-printed, need to make this toggleable
+	std::string indent(depth, '\t');
+
+	return
+		indent+"(node\n" +
+		indent+"  (coordinate (0, 0))\n" +
+		indent+"  (color " + color + ")\n" +
+		indent+"  (leaves\n" + childs +
+		indent+"  ))\n";
+		*/
+};
+
+
+std::string mcts::serialize(void) {
+	std::string ret = "";
+
+	//ret = (std::string)"(budgie-tree\n" + serialize_node(root) + ")\n";
+	ret = (std::string)"(budgie-tree " + serialize_node(root) + ")";
+
+	return ret;
+}
+
+void mcts::deserialize(std::string& serialized) {
+
+}
+
 void mcts_node::new_node(board *state, coordinate& coord) {
 	// TODO: experimented with sharing rave stats between siblings but it seems to
 	//       be hit-or-miss, leaving the code here for now...
