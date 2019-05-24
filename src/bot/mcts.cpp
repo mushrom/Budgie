@@ -68,12 +68,18 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
 
+	/*
+	// TODO: re-add this once we have a logger
+	//       Actually, once we have a logger we'll probably also have an
+	//       AI instance class so we should just put debugging stuff there.
+
 	coordinate temp = {1, 1};
 	root->dump_node_statistics(temp, state);
 
 	std::cerr << "# predicted playout: ";
 	root->dump_best_move_statistics(state);
 	std::cerr << std::endl;
+	*/
 
 	return root->best_move();
 }
