@@ -14,15 +14,20 @@ class gui_state {
 		gui_state();
 		~gui_state();
 		int run(void);
+		void handle_events(void);
 
 		void clear(void);
 		void present(void);
 		void redraw(void);
 
-		void draw_overlays(void);
-		void draw_grid(void);
-		void draw_stones(void);
+		void draw_board(unsigned x, unsigned y, unsigned width);
+		void draw_stats(unsigned x, unsigned y, unsigned width, unsigned height);
+
+		void draw_overlays(unsigned x, unsigned y, unsigned width);
+		void draw_grid(unsigned x, unsigned y, unsigned width);
+		void draw_stones(unsigned x, unsigned y, unsigned width);
 		void draw_circle(unsigned x, unsigned y, int radius);
+		void draw_text(unsigned x, unsigned y, std::string str);
 
 	private:
 		SDL_Window   *window;
@@ -47,7 +52,7 @@ gui_state::gui_state() {
 	                          SDL_WINDOWPOS_UNDEFINED,
 	                          SDL_WINDOWPOS_UNDEFINED,
 	                          1024, 600,
-	                          SDL_WINDOW_SHOWN);
+	                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
 	if (!window) {
 		throw "SDL_CreateWindow()";
@@ -90,7 +95,7 @@ void gui_state::clear(void) {
 	SDL_RenderFillRect(renderer, NULL);
 }
 
-void gui_state::draw_overlays(void) {
+void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 	double min_traversals = 1.0;
 	double max_traversals = 0;
 
@@ -134,8 +139,8 @@ void gui_state::draw_overlays(void) {
 		coordinate foo = move.first;
 		SDL_Rect rect;
 
-		double meh = 500.0 / (game.dimension - 1);
-		double asdf = 51 - (meh/2);
+		double meh = (1.*width) / (game.dimension - 1);
+		double asdf = (x + 1) - (meh/2);
 
 		unsigned off = 0x40;
 		unsigned range = (0xff - off);
@@ -167,18 +172,17 @@ void gui_state::draw_overlays(void) {
 		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
 		SDL_RenderFillRect(renderer, &rect);
 	}
-
 }
 
-void gui_state::draw_grid(void) {
+void gui_state::draw_grid(unsigned x, unsigned y, unsigned width) {
 	for (unsigned i = 0; i < game.dimension; i++) {
 		SDL_Rect r;
 
 		r.h = 1;
 		//r.w = foo * (game.dimension - 1);
-		r.w = 500;
-		r.x = 50;
-		r.y = 50 + (500.0 / (game.dimension - 1) * i);
+		r.w = width;
+		r.x = x;
+		r.y = y + ((1.*width) / (game.dimension - 1) * i);
 
 		SDL_SetRenderDrawColor(renderer, 0x40, 0x40, 0x30, 0);
 		SDL_RenderFillRect(renderer, &r);
@@ -192,22 +196,21 @@ void gui_state::draw_grid(void) {
 		r.w = k;
 		SDL_RenderFillRect(renderer, &r);
 	}
-
-
 }
 
-void gui_state::draw_stones(void) {
+void gui_state::draw_stones(unsigned x, unsigned y, unsigned width) {
+	double meh = (1.*width) / (game.dimension - 1);
+	double blarg = meh - (meh/12);
+	double x_off = (x + 1) - (blarg/2);
+	double y_off = (y + 1) - (blarg/2);
+
 	for (unsigned y = 1; y <= game.dimension; y++) {
 		for (unsigned x = 1; x <= game.dimension; x++) {
 			coordinate foo = {x, y};
 			SDL_Rect r;
 
-			double meh = 500.0 / (game.dimension - 1);
-			double blarg = meh - (meh/12);
-			double asdf = 52 - (blarg/2);
-
-			r.y = asdf + (y - 1) * meh;
-			r.x = asdf + (x - 1) * meh;
+			r.x = x_off + (x - 1) * meh;
+			r.y = y_off + (y - 1) * meh;
 			r.h = r.w = blarg;
 
 			switch (game.get_coordinate(foo)) {
@@ -242,29 +245,112 @@ void gui_state::draw_circle(unsigned x, unsigned y, int radius) {
 	}
 }
 
-void gui_state::redraw(void) {
-	clear();
+void gui_state::draw_text(unsigned x, unsigned y, std::string str) {
+	SDL_Color color = {0xff, 0xff, 0xff};
+	SDL_Surface *text_surface;
 
-	// TODO: dynamic sizes
+	if (!(text_surface = TTF_RenderText_Blended(font, str.c_str(), color))) {
+		throw "TTF_RenderText_Blended()";
+	}
 
+	SDL_Texture *text = SDL_CreateTextureFromSurface(renderer, text_surface);
+	SDL_Rect rect;
+
+	rect.x = x;
+	rect.y = y;
+	rect.w = text_surface->w;
+	rect.h = text_surface->h;
+
+	SDL_RenderCopy(renderer, text, NULL, &rect);
+
+	// free stuff
+	SDL_DestroyTexture(text);
+	SDL_FreeSurface(text_surface);
+}
+
+void gui_state::draw_board(unsigned x, unsigned y, unsigned width) {
+	unsigned padding = 25;
+	unsigned sub_width = width - (padding * 2);
+
+	// draw blank rectangle
 	SDL_Rect r;
-	r.h = 550;
-	r.w = 550;
-	r.x = 25;
-	r.y = 25;
+	r.h = r.w = width;
+	r.x = x;
+	r.y = y;
 
 	SDL_SetRenderDrawColor(renderer, 0xdd, 0xbb, 0x66, 0);
 	SDL_RenderFillRect(renderer, &r);
 
-	draw_overlays();
-	draw_grid();
-	draw_stones();
+	draw_overlays(x + padding, y + padding, sub_width);
+	draw_grid(x + padding, y + padding, sub_width);
+	draw_stones(x + padding, y + padding, sub_width);
+}
+
+void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned height) {
+	SDL_Rect r;
+	r.w = width;
+	r.h = height;
+	r.x = x;
+	r.y = y;
+
+	SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0);
+	SDL_RenderFillRect(renderer, &r);
+
+	draw_text(x, y, "testing");
+	draw_text(x, y + height/2, "this");
+}
+
+void gui_state::redraw(void) {
+	clear();
+
+	int x, y;
+	SDL_GetWindowSize(window, &x, &y);
+
+	if (x < y) {
+		unsigned padding = x / 20;
+		unsigned width = x - 2*padding;
+
+		draw_board(padding, padding, width);
+
+		// TODO: draw stats below
+		if (y - width > 4*padding) {
+			draw_stats(padding, x, x - 2*padding, (y - width) - 3*padding);
+		}
+	}
+
+	else {
+		unsigned padding = y / 20;
+		unsigned width = y - 2*padding;
+
+		draw_board(padding, padding, width);
+
+		// TODO: draw stats on right
+		if (x - width > 4*padding) {
+			draw_stats(y, padding, (x - width) - 3*padding, y - 2*padding);
+		}
+	}
 
 	present();
 }
 
 void gui_state::present(void) {
 	SDL_RenderPresent(renderer);
+}
+
+void gui_state::handle_events(void) {
+	SDL_Event e;
+	while (SDL_PollEvent(&e) != 0) {
+		if (e.type == SDL_QUIT) {
+			running = false;
+			break;
+		}
+
+		/*
+		   if (e.type == SDL_KEYDOWN) {
+		   break;
+		   }
+		   */
+	}
 }
 
 int gui_state::run(void) {
@@ -274,27 +360,13 @@ int gui_state::run(void) {
 		search_tree->reset();
 		coordinate coord;
 
-
-		for (unsigned i = 250; i <= 10000; i += 250) {
+		for (unsigned i = 100; running && i <= 10000; i += 100) {
 			coord = search_tree->do_search(&game, i);
+			handle_events();
 			redraw();
 		}
 
 		game.make_move(coord);
-
-		while (true) {
-			SDL_Event e;
-			SDL_WaitEvent(&e);
-
-			if (e.type == SDL_QUIT) {
-				running = false;
-				break;
-			}
-
-			if (e.type == SDL_KEYDOWN) {
-				break;
-			}
-		}
 	}
 
 	return 0;
