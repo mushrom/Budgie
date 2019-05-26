@@ -73,8 +73,8 @@ gui_state::gui_state() {
 	// XXX: need to make some sort of AI instance class
 	pattern_dbptr db = pattern_dbptr(new pattern_db("patterns.txt"));
 	tree_policy *tree_pol = new uct_rave_tree_policy(db);
-	//playout_policy *playout_pol = new random_playout(db);
-	playout_policy *playout_pol = new local_weighted_playout(db);
+	playout_policy *playout_pol = new random_playout(db);
+	//playout_policy *playout_pol = new local_weighted_playout(db);
 
 	search_tree = std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
 }
