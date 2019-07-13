@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mcts-gb/game.hpp>
-#include <mcts-gb/mcts.hpp>
+#include <budgie/game.hpp>
+#include <budgie/mcts.hpp>
 #include <map>
 #include <memory>
 

@@ -1,5 +1,5 @@
-#include <mcts-gb/mcts.hpp>
-#include <mcts-gb/pattern_db.hpp>
+#include <budgie/mcts.hpp>
+#include <budgie/pattern_db.hpp>
 #include <random>
 #include <chrono>
 #include <algorithm>

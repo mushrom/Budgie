@@ -1,4 +1,4 @@
-#include <mcts-gb/mcts.hpp>
+#include <budgie/mcts.hpp>
 #include <math.h>
 
 namespace mcts_thing {

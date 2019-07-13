@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <mcts-gb/game.hpp>
+#include <budgie/game.hpp>
 #include <map>
 #include <iostream>
 #include <bitset>

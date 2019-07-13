@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mcts-gb/game.hpp>
+#include <budgie/game.hpp>
 #include <vector>
 #include <unordered_map>
 #include <iostream>

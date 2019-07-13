@@ -1,4 +1,4 @@
-#include <mcts-gb/pattern_db.hpp>
+#include <budgie/pattern_db.hpp>
 #include <stdlib.h>
 
 namespace mcts_thing {

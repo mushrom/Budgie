@@ -1,6 +1,6 @@
-#include <mcts-gb/args_parser.hpp>
-#include <mcts-gb/game.hpp>
-#include <mcts-gb/mcts.hpp>
+#include <budgie/args_parser.hpp>
+#include <budgie/game.hpp>
+#include <budgie/mcts.hpp>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>

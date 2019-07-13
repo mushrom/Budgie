@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mcts-gb/game.hpp>
-#include <mcts-gb/pattern_db.hpp>
+#include <budgie/game.hpp>
+#include <budgie/pattern_db.hpp>
 #include <list>
 #include <utility>
 #include <unordered_map>

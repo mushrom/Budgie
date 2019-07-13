@@ -1,6 +1,6 @@
-#include <mcts-gb/mcts.hpp>
-#include <mcts-gb/gtp.hpp>
-#include <mcts-gb/args_parser.hpp>
+#include <budgie/mcts.hpp>
+#include <budgie/gtp.hpp>
+#include <budgie/args_parser.hpp>
 #include <stdio.h>
 #include <iostream>
 

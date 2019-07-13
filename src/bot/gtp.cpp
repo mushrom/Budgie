@@ -1,4 +1,4 @@
-#include <mcts-gb/gtp.hpp>
+#include <budgie/gtp.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
