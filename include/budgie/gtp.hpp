@@ -2,6 +2,7 @@
 
 #include <budgie/game.hpp>
 #include <budgie/mcts.hpp>
+#include <budgie/args_parser.hpp>
 #include <map>
 #include <memory>
 
@@ -13,7 +14,7 @@ class gtp_client {
 			game = board(9);
 		}
 
-		void repl(std::map<std::string, std::string> options);
+		void repl(args_parser::option_map& options);
 		void clear_board(void);
 		void set_board_size(void);
 

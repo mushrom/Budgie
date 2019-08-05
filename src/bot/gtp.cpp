@@ -44,7 +44,7 @@ point::color string_to_color(std::string& str) {
 	return point::color::White;
 }
 
-void gtp_client::repl(std::map<std::string, std::string> options) {
+void gtp_client::repl(args_parser::option_map& options) {
 	// TODO: we should have an AI instance class that handles
 	//       all of the board/mcts interaction
 	unsigned playouts = stoi(options["playouts"]);
