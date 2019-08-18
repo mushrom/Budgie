@@ -1,5 +1,6 @@
 #include <budgie/mcts.hpp>
 #include <budgie/pattern_db.hpp>
+#include <anserial/anserial.hpp>
 #include <random>
 #include <chrono>
 #include <algorithm>
@@ -108,50 +109,69 @@ void mcts::explore(board *state)
 	ptr = ptr? policy->playout(state, ptr) : ptr;
 }
 
-std::string mcts::serialize_node(const mcts_node* ptr, unsigned depth) {
+// TODO: we could add a 'generation' parameter to the node class that tracks when
+//       nodes were last updated, so that we can serialize only nodes that have
+//       been touched since the client last recieved the tree.
+uint32_t mcts::serialize_node(anserial::serializer& ser,
+                              uint32_t parent,
+                              const mcts_node* ptr,
+                              unsigned depth)
+{
 	if (ptr == nullptr) {
-		return "";
+		return 0;
 	}
-
-	std::string color = (ptr->color == point::color::Black)? "black" : "white";
-	std::string childs = "";
-
-	for (const auto& x : ptr->leaves) {
-		childs += serialize_node(x.second.get(), depth + 1);
-	}
-
-	return (std::string)
-		"(node" +
-		" (coordinate (0, 0))" +
-		" (color " + color + ")" +
-		" (leaves " + childs + ")) ";
 
 	/*
-	// XXX: pretty-printed, need to make this toggleable
-	std::string indent(depth, '\t');
+	std::string color = (ptr->color == point::color::Black)? "black" : "white";
+	std::string childs = "";
+	std::string ravestr = "";
+	*/
 
-	return
-		indent+"(node\n" +
-		indent+"  (coordinate (0, 0))\n" +
-		indent+"  (color " + color + ")\n" +
-		indent+"  (leaves\n" + childs +
-		indent+"  ))\n";
-		*/
+	uint32_t self = ser.add_entities(parent,
+		{"node",
+			{"color", ptr->color},
+			{"coordinate", {ptr->coord.first, ptr->coord.second}},
+			{"traversals", ptr->traversals}});
+
+	uint32_t leaves = ser.add_entities(self, {"leaves"});
+
+	for (const auto& x : ptr->leaves) {
+		serialize_node(ser, leaves, x.second.get(), depth + 1);
+	}
+
+	uint32_t ravestats = ser.add_entities(self, {"rave-stats"});
+
+	for (const auto& x : (*ptr->rave)) {
+		if (x.second.traversals > 50) {
+			ser.add_entities(ravestats,
+				{"stats",
+					{"coordinate", {x.first.first, x.first.second}},
+					{"wins", x.second.wins},
+					{"traversals", x.second.traversals}});
+		}
+	}
+
+	return 0;
 };
 
 
-std::string mcts::serialize(void) {
-	std::string ret = "";
+std::vector<uint32_t> mcts::serialize(void) {
+	anserial::serializer ret;
 
-	//ret = (std::string)"(budgie-tree\n" + serialize_node(root) + ")\n";
-	ret = (std::string)"(budgie-tree " + serialize_node(root) + ")";
+	ret.add_version(0);
+	uint32_t tree = ret.add_entities(0, {"budgie-tree"});
+	serialize_node(ret, tree, root);
+	ret.add_symtab(0);
 
-	return ret;
+	return ret.serialize();
 }
 
+/*
+// TODO
 void mcts::deserialize(std::string& serialized) {
 
 }
+*/
 
 void mcts_node::new_node(board *state, coordinate& coord) {
 	// TODO: experimented with sharing rave stats between siblings but it seems to

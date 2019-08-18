@@ -191,7 +191,13 @@ void gtp_client::repl(args_parser::option_map& options) {
 			std::cout << "= " << coord_string(coord) << "\n\n";
 
 			game.make_move(coord);
-			std::cerr << "# board hash: " << std::hex << game.hash << std::endl;
+			std::cerr << "# board hash: " << std::hex << game.hash << std::dec << std::endl;
+
+			//std::string k = search_tree->serialize();
+			std::vector<uint32_t> k = search_tree->serialize();
+			std::cerr << "serialized length: " << 4*k.size()
+				<< " (" << 4*k.size() / 1024 << "KiB)"<< std::endl;
+
 		}
 
 		else if (args[0] == "move_history") {

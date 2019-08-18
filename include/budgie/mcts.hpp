@@ -2,6 +2,8 @@
 
 #include <budgie/game.hpp>
 #include <budgie/pattern_db.hpp>
+#include <anserial/anserial.hpp>
+#include <stdint.h>
 #include <list>
 #include <utility>
 #include <unordered_map>
@@ -180,8 +182,10 @@ class mcts {
 		double win_rate(coordinate& coord);
 
 		void explore(board *state);
-		std::string serialize(void);
-		void deserialize(std::string& serialized);
+		//std::string serialize(void);
+		//void deserialize(std::string& serialized);
+		// TODO: should anserial have a typedef for the return type?
+		std::vector<uint32_t> serialize();
 
 		tree_policy *tree;
 		playout_policy *policy;
@@ -198,7 +202,10 @@ class mcts {
 		mcts_node *root = nullptr;
 
 	private:
-		std::string serialize_node(const mcts_node* ptr, unsigned depth=1);
+		uint32_t serialize_node(anserial::serializer& ser,
+		                        uint32_t parent,
+		                        const mcts_node* ptr,
+		                        unsigned depth=1);
 };
 
 // namespace mcts_thing

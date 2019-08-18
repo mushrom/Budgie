@@ -1,10 +1,10 @@
-CXXFLAGS += -g -I./include -std=c++17 -Wall -O3 -march=native
+CXXFLAGS += -g -I./include -I./libs/anserial/include -std=c++17 -Wall -O3 -march=native
 SDL2_FLAGS = `sdl2-config --cflags --libs` -lSDL2_ttf
 
 #OBJ = src/main.o src/mcts.o src/game.o src/gtp.o src/pattern_db.o
 bot-src = $(wildcard src/bot/*.cpp)
 bot-obj = $(bot-src:.cpp=.o)
-bot-main = src/bot-main.o
+bot-main = libs/anserial/build/lib/anserial.a src/bot-main.o
 
 sdl-ui-src =
 sdl-ui-obj = $(sdl-ui-src:.cpp=.o)
@@ -15,6 +15,9 @@ bin/thing: dir-structure $(bot-obj) $(bot-main)
 
 bin/sdl-thing: dir-structure $(bot-obj) $(sdl-ui-main)
 	$(CXX) $(CXXFLAGS) $(SDL2_FLAGS) -o $@ $(bot-obj) $(sdl-ui-main)
+
+libs/anserial/build/lib/anserial.a:
+	cd libs/anserial; make libs
 
 all: bin/thing bin/sdl-thing
 
