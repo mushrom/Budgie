@@ -176,12 +176,12 @@ class mcts {
 			reset();
 		};
 
-		~mcts(){};
+		virtual ~mcts(){};
 
 		coordinate do_search(board *state, unsigned playouts=10000);
 		double win_rate(coordinate& coord);
 
-		void explore(board *state);
+		virtual void explore(board *state);
 		//std::string serialize(void);
 		//void deserialize(std::string& serialized);
 		// TODO: should anserial have a typedef for the return type?

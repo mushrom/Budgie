@@ -14,7 +14,8 @@ class gtp_client {
 			game = board(9);
 		}
 
-		void repl(args_parser::option_map& options);
+		void repl(std::unique_ptr<mcts> search_tree,
+		          args_parser::option_map& options);
 		void clear_board(void);
 		void set_board_size(void);
 
@@ -23,7 +24,7 @@ class gtp_client {
 		bool passed = false;
 
 		board game;
-		std::unique_ptr<mcts> search_tree;
+		//std::unique_ptr<mcts> search_tree;
 };
 
 }

@@ -44,20 +44,10 @@ point::color string_to_color(std::string& str) {
 	return point::color::White;
 }
 
-void gtp_client::repl(args_parser::option_map& options) {
-	// TODO: we should have an AI instance class that handles
-	//       all of the board/mcts interaction
+void gtp_client::repl(std::unique_ptr<mcts> search_tree,
+                      args_parser::option_map& options)
+{
 	unsigned playouts = stoi(options["playouts"]);
-	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
-
-	// only have this tree policy right now
-	tree_policy *tree_pol = new uct_rave_tree_policy(db);
-	playout_policy *playout_pol = (options["playout_policy"] == "local_weighted")
-		? (playout_policy *)(new local_weighted_playout(db))
-		: (playout_policy *)(new random_playout(db));
-
-	search_tree = std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
-
 	std::string s;
 
 	while (std::getline(std::cin, s)) {
