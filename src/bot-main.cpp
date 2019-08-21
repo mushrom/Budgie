@@ -1,5 +1,6 @@
 #include <budgie/mcts.hpp>
 #include <budgie/distributed_mcts.hpp>
+#include <budgie/distributed_client.hpp>
 #include <budgie/gtp.hpp>
 #include <budgie/args_parser.hpp>
 #include <stdio.h>
@@ -10,7 +11,7 @@ using namespace mcts_thing;
 args_parser::default_map default_options = {
 	{"mode",
 		{"gtp", "Interface mode to use",
-			{"gtp", "distributed-gtp", "distributed-worker"}}},
+			{"gtp", "distributed-gtp", "distributed-client"}}},
 	{"playouts",
 		{"10000", "Number of playouts to use per move",
 			{"<any unsigned integer>"}}},
@@ -27,13 +28,10 @@ args_parser::default_map default_options = {
 		{"patterns.txt", "Local pattern database file (gnugo format)",
 			{"patterns.txt"}}},
 	{"server-host",
-		{"localhost", "Master server using the distributed mode",
-			{"<Valid hostname/IP address"}}},
-	{"server-port",
-		{"5555", "Master server port when using distributed mode",
-			{"<TCP port>"}}},
+		{"tcp://localhost:5555", "Master server using the distributed mode",
+			{"<ZMQ socket string>"}}},
 	{"worker-threads",
-		{"0", "Number of workers to start as a distributed worker",
+		{"0", "Number of workers to start as a distributed client",
 			{"0 for auto", "<any unsigned integer>"}}},
 };
 
@@ -97,7 +95,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	else if (args.options["mode"] == "distributed-worker") {
-		std::cout << "TODO: worker mode" << std::endl;
+		distributed_client client(init_mcts(args.options), args.options);
+		client.run();
 	}
 
 	else {

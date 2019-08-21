@@ -103,6 +103,19 @@ double mcts::win_rate(coordinate& coord) {
 	}
 }
 
+void mcts::reset() {
+	delete root;
+
+	uint32_t temp = id;
+	while ((id = rand()) == temp);
+
+	root = new mcts_node(nullptr, point::color::Empty);
+	//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
+	root->rave = mcts_node::raveptr(new mcts_node::ravestats);
+	root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
+	root->criticality = mcts_node::critptr(new mcts_node::critmap);
+}
+
 void mcts::explore(board *state)
 {
 	mcts_node* ptr = tree->search(state, root);

@@ -177,28 +177,20 @@ class mcts {
 		};
 
 		virtual ~mcts(){};
+		virtual void explore(board *state);
 
 		coordinate do_search(board *state, unsigned playouts=10000);
 		double win_rate(coordinate& coord);
+		void reset();
 
-		virtual void explore(board *state);
+		uint32_t id;
+
 		//std::string serialize(void);
 		//void deserialize(std::string& serialized);
 		// TODO: should anserial have a typedef for the return type?
 		std::vector<uint32_t> serialize();
-
 		tree_policy *tree;
 		playout_policy *policy;
-
-		void reset() {
-			delete root;
-			root = new mcts_node(nullptr, point::color::Empty);
-			//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
-			root->rave = mcts_node::raveptr(new mcts_node::ravestats);
-			root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
-			root->criticality = mcts_node::critptr(new mcts_node::critmap);
-		}
-
 		mcts_node *root = nullptr;
 
 	private:

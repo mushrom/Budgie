@@ -1,5 +1,6 @@
 #pragma once
 
+#include <zmq.hpp>
 #include <budgie/game.hpp>
 #include <budgie/mcts.hpp>
 
@@ -10,6 +11,13 @@ class distributed_mcts : public mcts {
 		distributed_mcts(tree_policy *tp, playout_policy *pp);
 		virtual ~distributed_mcts();
 		virtual void explore(board *state);
+
+	private:
+		// XXX: we need unique pointers here because zmq::socket_t requires
+		//      an initialized context for it's own construction,
+		//      so we can't initialize a regular zmq::socket_t here
+		std::unique_ptr<zmq::context_t> ctx;
+		std::unique_ptr<zmq::socket_t> socket;
 };
 
 // namespace mcts_thing
