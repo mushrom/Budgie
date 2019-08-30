@@ -171,10 +171,16 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 std::vector<uint32_t> mcts::serialize(void) {
 	anserial::serializer ret;
 
+	uint32_t data_top = ret.default_layout();
+	uint32_t tree_top = ret.add_entities(data_top, {"budgie-tree"});
+	serialize_node(ret, tree_top, root);
+	ret.add_symtab(0);
+	/*
 	ret.add_version(0);
 	uint32_t tree = ret.add_entities(0, {"budgie-tree"});
 	serialize_node(ret, tree, root);
 	ret.add_symtab(0);
+	*/
 
 	return ret.serialize();
 }

@@ -11,7 +11,7 @@ using namespace mcts_thing;
 args_parser::default_map default_options = {
 	{"mode",
 		{"gtp", "Interface mode to use",
-			{"gtp", "distributed-gtp", "distributed-client"}}},
+			{"gtp", "distributed-gtp", "distributed-worker"}}},
 	{"playouts",
 		{"10000", "Number of playouts to use per move",
 			{"<any unsigned integer>"}}},

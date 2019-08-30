@@ -1,5 +1,6 @@
 #include <budgie/distributed_client.hpp>
 #include <anserial/anserial.hpp>
+#include <anserial/s_tree.hpp>
 #include <unistd.h>
 
 namespace mcts_thing {
@@ -29,9 +30,11 @@ void distributed_client::run() {
 
 		uint32_t *datas = static_cast<uint32_t*>(reply.data());
 
-		anserial::deserializer der;
-		auto foo = der.deserialize(datas, reply.size() / 8);
-		anserial::dump_nodes(foo, 0);
+		anserial::deserializer der(datas, reply.size() / 8);
+		anserial::s_tree bar(&der);
+		bar.dump_nodes();
+		//auto foo = der.deserialize(datas, reply.size() / 8);
+		//anserial::dump_nodes(foo, 0);
 
 		std::cout << reply.size() << " bytes\n";
 
