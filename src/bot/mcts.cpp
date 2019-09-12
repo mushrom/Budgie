@@ -4,6 +4,7 @@
 #include <random>
 #include <chrono>
 #include <algorithm>
+#include <stdexcept>
 #include <iostream>
 #include <unistd.h>
 #include <assert.h>
@@ -168,11 +169,13 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 };
 
 
-std::vector<uint32_t> mcts::serialize(void) {
+std::vector<uint32_t> mcts::serialize(board *state) {
 	anserial::serializer ret;
 
 	uint32_t data_top = ret.default_layout();
 	uint32_t tree_top = ret.add_entities(data_top, {"budgie-tree"});
+	ret.add_entities(tree_top, {"id", id});
+	state->serialize(ret, ret.add_entities(tree_top, {"board"}));
 	serialize_node(ret, tree_top, root);
 	ret.add_symtab(0);
 	/*
@@ -185,12 +188,25 @@ std::vector<uint32_t> mcts::serialize(void) {
 	return ret.serialize();
 }
 
-/*
-// TODO
-void mcts::deserialize(std::string& serialized) {
+void mcts::deserialize(std::vector<uint32_t>& serialized, board *state) {
+	anserial::s_node *nodes;
+	anserial::s_node *board_nodes;
+	uint32_t id;
 
+	anserial::deserializer der(serialized);
+	anserial::s_tree tree(&der);
+
+	if (!anserial::destructure(tree.data(),
+		{{"budgie-tree",
+			{"id", &id},
+			{"board", &board_nodes},
+			&nodes}}))
+	{
+		throw std::logic_error("mcts::deserialize(): invalid tree structure!");
+	}
+
+	state->deserialize(board_nodes);
 }
-*/
 
 void mcts_node::new_node(board *state, coordinate& coord) {
 	// TODO: experimented with sharing rave stats between siblings but it seems to

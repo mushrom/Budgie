@@ -18,6 +18,7 @@ class distributed_client {
 		std::unique_ptr<zmq::context_t> ctx;
 		std::unique_ptr<zmq::socket_t> socket;
 		std::unique_ptr<mcts> search_tree;
+		unsigned playouts;
 };
 
 // namespace mcts_thing

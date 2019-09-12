@@ -182,12 +182,6 @@ void gtp_client::repl(std::unique_ptr<mcts> search_tree,
 
 			game.make_move(coord);
 			std::cerr << "# board hash: " << std::hex << game.hash << std::dec << std::endl;
-
-			//std::string k = search_tree->serialize();
-			std::vector<uint32_t> k = search_tree->serialize();
-			std::cerr << "serialized length: " << 4*k.size()
-				<< " (" << 4*k.size() / 1024 << "KiB)"<< std::endl;
-
 		}
 
 		else if (args[0] == "move_history") {

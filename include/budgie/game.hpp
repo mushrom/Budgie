@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <bitset>
+#include <anserial/anserial.hpp>
 
 namespace mcts_thing {
 
@@ -112,6 +113,7 @@ class board {
 		point::color determine_winner(void);
 		uint64_t gen_hash(const coordinate& coord, point::color color);
 		unsigned coord_to_index(const coordinate& coord);
+
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi) {
 			dimension = boardsize;
@@ -123,6 +125,10 @@ class board {
 				grid[i] = point::color::Empty;
 			}
 		}
+
+		std::vector<uint32_t> serialize(void);
+		void serialize(anserial::serializer& ser, uint32_t parent);
+		void deserialize(anserial::s_node *node);
 
 		move::moveptr move_list;
 		std::vector<point::color> grid;

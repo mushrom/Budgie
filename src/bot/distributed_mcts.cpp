@@ -22,16 +22,19 @@ distributed_mcts::~distributed_mcts() {
 }
 
 void distributed_mcts::explore(board *state) {
+	// request counter, just for debugging output
+	static unsigned counter = 0;
+
 	std::cerr << "waiting for client..." << std::endl;
 
 	zmq::message_t request;
 
 	socket->recv(&request);
-	std::cerr << "recieved request" << std::endl;
+	std::cerr << "recieved request #" << counter++ << std::endl;
 
 	// TODO: merge tree
 
-	auto cur_tree = serialize();
+	auto cur_tree = serialize(state);
 
 	zmq::message_t reply(4*cur_tree.size());
 	memcpy(reply.data(), cur_tree.data(), 4*cur_tree.size());

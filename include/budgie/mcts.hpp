@@ -185,10 +185,10 @@ class mcts {
 
 		uint32_t id;
 
-		//std::string serialize(void);
-		//void deserialize(std::string& serialized);
 		// TODO: should anserial have a typedef for the return type?
-		std::vector<uint32_t> serialize();
+		std::vector<uint32_t> serialize(board *state);
+		void serialize(anserial::serializer& ser, uint32_t parent);
+		void deserialize(std::vector<uint32_t>& serialized, board *state);
 		tree_policy *tree;
 		playout_policy *policy;
 		mcts_node *root = nullptr;
