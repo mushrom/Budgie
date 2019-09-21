@@ -198,6 +198,8 @@ class mcts {
 		                        uint32_t parent,
 		                        const mcts_node* ptr,
 		                        unsigned depth=1);
+
+		mcts_node *deserialize_node(anserial::s_node *node, mcts_node *ptr);
 };
 
 // namespace mcts_thing

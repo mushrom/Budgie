@@ -148,12 +148,14 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 			{"traversals", ptr->traversals}});
 
 	uint32_t leaves = ser.add_entities(self, {"leaves"});
+	uint32_t leaves_cont = ser.add_entities(leaves, {});
 
 	for (const auto& x : ptr->leaves) {
-		serialize_node(ser, leaves, x.second.get(), depth + 1);
+		serialize_node(ser, leaves_cont, x.second.get(), depth + 1);
 	}
 
-	uint32_t ravestats = ser.add_entities(self, {"rave-stats"});
+	uint32_t rave = ser.add_entities(self, {"rave-stats"});
+	uint32_t ravestats = ser.add_entities(rave, {});
 
 	for (const auto& x : (*ptr->rave)) {
 		if (x.second.traversals > 50) {
@@ -168,6 +170,60 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 	return 0;
 };
 
+mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
+	point::color color;
+	coordinate coord;
+	uint32_t traversals;
+	anserial::s_node *leaves;
+	anserial::s_node *rave;
+
+	if (!node) {
+		return nullptr;
+	}
+
+	if (!ptr) {
+		return nullptr;
+	}
+
+	if (!anserial::destructure(node,
+		{"node",
+			{"color", (uint32_t*)&color},
+			{"coordinate", {&coord.first, &coord.second}},
+			{"traversals", &traversals},
+			{"leaves", &leaves},
+			{"rave-stats", &rave}}))
+	{
+		throw std::logic_error("mcts::deserialize_node(): invalid tree structure!");
+	}
+
+	// TODO: ok, so we will need a seperate merge function
+	ptr->color = color;
+	ptr->coord = coord;
+	ptr->traversals = traversals;
+
+	if (leaves) {
+		for (auto leaf : leaves->entities()) {
+			coordinate temp;
+
+			if (!anserial::destructure(leaf,
+				{"node", {}, {"coordinate", {&temp.first, &temp.second}}}))
+			{
+				std::cerr << "mcts::deserialize_node(): couldn't load leaf coordinate"
+					<< std::endl;
+				continue;
+			}
+
+			// XXX: just to get things working for now, we need to change
+			//      new_node to take a point::color to specify the node color,
+			//      rather than grabbing it from board state...
+			board xxx;
+			ptr->new_node(&xxx, temp);
+			deserialize_node(leaf, ptr->leaves[temp].get());
+		}
+	}
+
+	return nullptr;
+}
 
 std::vector<uint32_t> mcts::serialize(board *state) {
 	anserial::serializer ret;
@@ -191,21 +247,30 @@ std::vector<uint32_t> mcts::serialize(board *state) {
 void mcts::deserialize(std::vector<uint32_t>& serialized, board *state) {
 	anserial::s_node *nodes;
 	anserial::s_node *board_nodes;
-	uint32_t id;
+	uint32_t n_id;
 
 	anserial::deserializer der(serialized);
 	anserial::s_tree tree(&der);
 
 	if (!anserial::destructure(tree.data(),
 		{{"budgie-tree",
-			{"id", &id},
+			{"id", &n_id},
 			{"board", &board_nodes},
 			&nodes}}))
 	{
 		throw std::logic_error("mcts::deserialize(): invalid tree structure!");
 	}
 
+	if (n_id != id) {
+		printf("asdf");
+		reset();
+		id = n_id;
+		return;
+	}
+
 	state->deserialize(board_nodes);
+	//tree.dump_nodes(nodes);
+	deserialize_node(nodes, root);
 }
 
 void mcts_node::new_node(board *state, coordinate& coord) {

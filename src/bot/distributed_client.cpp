@@ -38,7 +38,7 @@ void distributed_client::run() {
 
 		anserial::deserializer der(datas, reply.size() / 8);
 		anserial::s_tree bar(&der);
-		bar.dump_nodes(bar.data());
+		//bar.dump_nodes(bar.data());
 		//auto foo = der.deserialize(datas, reply.size() / 8);
 		//anserial::dump_nodes(foo, 0);
 
@@ -47,10 +47,11 @@ void distributed_client::run() {
 
 		std::vector vec(datas, datas + reply.size()/4);
 		search_tree->deserialize(vec, &state);
+		search_tree->do_search(&state, search_tree->root->traversals + playouts);
 
 		//for (unsigned i = 0; )
 
-		usleep(100000);
+		//usleep(100000);
 	}
 }
 

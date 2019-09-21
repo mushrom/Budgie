@@ -30,9 +30,14 @@ void distributed_mcts::explore(board *state) {
 	zmq::message_t request;
 
 	socket->recv(&request);
-	std::cerr << "recieved request #" << counter++ << std::endl;
+	std::cerr << "recieved request #" << counter++
+		<< ", bytes: " << request.size() << std::endl;
 
 	// TODO: merge tree
+	uint32_t *dat = static_cast<uint32_t*>(request.data());
+	std::vector<uint32_t> vec(dat, dat + request.size()/4);
+	board temp;
+	deserialize(vec, &temp);
 
 	auto cur_tree = serialize(state);
 
