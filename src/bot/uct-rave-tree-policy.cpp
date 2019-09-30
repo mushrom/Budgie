@@ -14,7 +14,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 				return nullptr;
 			}
 
-			ptr->new_node(state, next);
+			ptr->new_node(next, state->current_player);
 			return ptr->leaves[next].get();
 		}
 
@@ -25,7 +25,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 			return nullptr;
 		}
 
-		ptr->new_node(state, next);
+		ptr->new_node(next, state->current_player);
 		state->make_move(next);
 		ptr = ptr->leaves[next].get();
 

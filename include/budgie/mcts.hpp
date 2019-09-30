@@ -73,7 +73,7 @@ class mcts_node {
 
 		void update(board *state);
 		void update_stats(board *state, point::color winner);
-		void new_node(board *state, coordinate& coord);
+		void new_node(coordinate& coord, point::color color);
 
 		//double win_rate(void);
 		coordinate best_move(void);
@@ -86,9 +86,8 @@ class mcts_node {
 		void dump_best_move_statistics(board *state);
 
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
-		std::unordered_map<coordinate, stats, coord_hash> ownership;
+		//std::unordered_map<coordinate, stats, coord_hash> ownership;
 		std::unordered_map<coordinate, stats, coord_hash> nodestats;
-		//std::unordered_map<coordinate, crit_stats, coord_hash> criticality;
 
 		critptr criticality;
 
@@ -167,8 +166,15 @@ class local_weighted_playout : public playout_policy {
 		coordinate local_best(board *state);
 };
 
+// TODO: should consider splitting mcts_node and mcts code
 class mcts {
 	public:
+		mcts() {
+			tree = nullptr;
+			policy = nullptr;
+			reset();
+		};
+
 		mcts(tree_policy *tp, playout_policy *pp)
 		{
 			tree = tp;
@@ -183,15 +189,23 @@ class mcts {
 		double win_rate(coordinate& coord);
 		void reset();
 
+		// TODO: we should use board hashes rather than tree IDs
 		uint32_t id;
+		// number of updates (merges) to this tree, used to do
+		// efficient delta updates in distributed mode
+		uint32_t updates;
 
 		// TODO: should anserial have a typedef for the return type?
 		std::vector<uint32_t> serialize(board *state);
 		void serialize(anserial::serializer& ser, uint32_t parent);
 		void deserialize(std::vector<uint32_t>& serialized, board *state);
+		bool merge(mcts *other);
+
 		tree_policy *tree;
 		playout_policy *policy;
-		mcts_node *root = nullptr;
+
+		// TODO: we need to change this to a shared pointer
+		mcts_node *root;
 
 	private:
 		uint32_t serialize_node(anserial::serializer& ser,
@@ -200,7 +214,10 @@ class mcts {
 		                        unsigned depth=1);
 
 		mcts_node *deserialize_node(anserial::s_node *node, mcts_node *ptr);
+		mcts_node *merge_node(mcts_node *own, mcts_node *other);
 };
+
+std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b);
 
 // namespace mcts_thing
 }

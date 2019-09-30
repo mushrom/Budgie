@@ -37,7 +37,8 @@ void distributed_mcts::explore(board *state) {
 	uint32_t *dat = static_cast<uint32_t*>(request.data());
 	std::vector<uint32_t> vec(dat, dat + request.size()/4);
 	board temp;
-	deserialize(vec, &temp);
+	mcts temp_tree(nullptr, nullptr);
+	temp_tree.deserialize(vec, &temp);
 
 	auto cur_tree = serialize(state);
 

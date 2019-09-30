@@ -113,7 +113,7 @@ void mcts::reset() {
 	root = new mcts_node(nullptr, point::color::Empty);
 	//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
 	root->rave = mcts_node::raveptr(new mcts_node::ravestats);
-	root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
+	//root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
 	root->criticality = mcts_node::critptr(new mcts_node::critmap);
 }
 
@@ -213,11 +213,9 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 				continue;
 			}
 
-			// XXX: just to get things working for now, we need to change
-			//      new_node to take a point::color to specify the node color,
-			//      rather than grabbing it from board state...
-			board xxx;
-			ptr->new_node(&xxx, temp);
+			// XXX: point::color::Empty since it should be overwritten
+			//      in the next level down
+			ptr->new_node(temp, point::color::Empty);
 			deserialize_node(leaf, ptr->leaves[temp].get());
 		}
 	}
@@ -261,24 +259,89 @@ void mcts::deserialize(std::vector<uint32_t>& serialized, board *state) {
 		throw std::logic_error("mcts::deserialize(): invalid tree structure!");
 	}
 
-	if (n_id != id) {
-		printf("asdf");
-		reset();
-		id = n_id;
-		return;
-	}
-
 	state->deserialize(board_nodes);
 	//tree.dump_nodes(nodes);
 	deserialize_node(nodes, root);
 }
 
-void mcts_node::new_node(board *state, coordinate& coord) {
+bool mcts::merge(mcts *other) {
+	if (!other || other->id != id) {
+		return false;
+	}
+
+	return true;
+}
+
+mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
+	// TODO: 'own' should never be null here, might be a good idea
+	//       to add a sanity check just in case
+	if (!own || !other) {
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
+	if (a && b) {
+		mcts_node *older = (a->traversals <= b->traversals)? a : b;
+		mcts_node *newer = (older == a)? b : a;
+
+		result->traversals = newer->traversals;
+
+		for (const auto& leaf : newer->leaves) {
+			coordinate coord = leaf.first;
+
+			if (older->leaves[coord] == nullptr
+				|| older->leaves[coord]->traversals < leaf.second->traversals)
+			{
+				// TODO: also clone rave stats
+				// TODO: diff
+				result->new_node(coord, leaf.second->color);
+				result->nodestats[coord] = newer->nodestats[coord];
+
+				mcts_diff_iter(result->leaves[coord].get(),
+				               older->leaves[coord].get(),
+				               newer->leaves[coord].get());
+			}
+		}
+	}
+	
+	else if (a || b) {
+		mcts_node *node = a? a : b;
+		result->traversals = node->traversals;
+
+		for (const auto& leaf : node->leaves) {
+			coordinate coord = leaf.first;
+
+			result->new_node(coord, leaf.second->color);
+			result->nodestats[coord] = node->nodestats[coord];
+			mcts_diff_iter(result->leaves[coord].get(),
+			               nullptr,
+			               node->leaves[coord].get());
+		}
+	}
+}
+
+std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
+	assert(a && b);
+	assert(a->id == b->id);
+
+	// TODO: mcts constructor without policies
+	mcts *result = new mcts();
+	result->id = a->id;
+	result->root = new mcts_node;
+	mcts_diff_iter(result->root, a->root, b->root);
+
+	return std::shared_ptr<mcts>(result);
+}
+
+void mcts_node::new_node(coordinate& coord, point::color color) {
 	// TODO: experimented with sharing rave stats between siblings but it seems to
 	//       be hit-or-miss, leaving the code here for now...
 	if (leaves[coord] == nullptr) {
 		// this node is unvisited, set up a new node
-		leaves[coord] = nodeptr(new mcts_node(this, state->current_player));
+		leaves[coord] = nodeptr(new mcts_node(this, color));
 		//leaves[coord]->rave = child_rave;
 		//leaves[coord]->child_rave = raveptr(new ravestats);
 		leaves[coord]->rave = raveptr(new ravestats);
