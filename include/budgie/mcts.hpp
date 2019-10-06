@@ -99,6 +99,9 @@ class mcts_node {
 		mcts_node *parent;
 		point::color color;
 		unsigned traversals;
+		// synced with mcts tree updates when merged, so we can
+		// send differential updates (in distributed mode)
+		unsigned updates;
 		coordinate coord;
 		/*
 		unsigned wins;
@@ -190,31 +193,34 @@ class mcts {
 		void reset();
 
 		// TODO: we should use board hashes rather than tree IDs
-		uint32_t id;
+		uint32_t id = 0;
 		// number of updates (merges) to this tree, used to do
 		// efficient delta updates in distributed mode
-		uint32_t updates;
+		uint32_t updates = 0;
 
 		// TODO: should anserial have a typedef for the return type?
-		std::vector<uint32_t> serialize(board *state);
+		std::vector<uint32_t> serialize(board *state, uint32_t since);
 		void serialize(anserial::serializer& ser, uint32_t parent);
 		void deserialize(std::vector<uint32_t>& serialized, board *state);
 		bool merge(mcts *other);
+		bool sync(mcts *other);
 
 		tree_policy *tree;
 		playout_policy *policy;
 
 		// TODO: we need to change this to a shared pointer
-		mcts_node *root;
+		//mcts_node *root = nullptr;
+		mcts_node::nodeptr root = nullptr;
 
 	private:
 		uint32_t serialize_node(anserial::serializer& ser,
 		                        uint32_t parent,
 		                        const mcts_node* ptr,
-		                        unsigned depth=1);
+		                        uint32_t since);
 
 		mcts_node *deserialize_node(anserial::s_node *node, mcts_node *ptr);
 		mcts_node *merge_node(mcts_node *own, mcts_node *other);
+		mcts_node *sync_node(mcts_node *own, mcts_node *other);
 };
 
 std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b);

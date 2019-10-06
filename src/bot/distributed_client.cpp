@@ -20,10 +20,18 @@ distributed_client::distributed_client(std::unique_ptr<mcts> tree,
 }
 
 void distributed_client::run() {
-	while (true) {
-		board state;
+	board state;
+	std::unique_ptr<mcts> sync_tree(new mcts);
+	sync_tree->id = search_tree->id;
 
-		auto temp = search_tree->serialize(&state);
+	// NOTE: when we get here, both search_tree and sync_tree should be empty
+
+	while (true) {
+		// do tree diff and send results to the server
+		// (when first starting, this is empty, so the server should send a full
+		// tree back)
+		auto difftree = mcts_diff(sync_tree.get(), search_tree.get());
+		auto temp = difftree->serialize(&state, 0);
 		zmq::message_t request(temp.size() * 4);
 
 		memcpy(request.data(), temp.data(), temp.size() * 4);
@@ -31,6 +39,10 @@ void distributed_client::run() {
 		socket->send(request);
 		std::cout << '.' << std::flush;
 
+		// merge updates into the sync tree
+		sync_tree->sync(difftree.get());
+
+		// get reply from server, deserialize
 		zmq::message_t reply;
 		socket->recv(&reply);
 
@@ -38,18 +50,41 @@ void distributed_client::run() {
 
 		anserial::deserializer der(datas, reply.size() / 8);
 		anserial::s_tree bar(&der);
+		std::vector<uint32_t> vec(datas, datas + reply.size()/4);
 		//bar.dump_nodes(bar.data());
-		//auto foo = der.deserialize(datas, reply.size() / 8);
-		//anserial::dump_nodes(foo, 0);
 
 		std::cout << reply.size() << " bytes\n";
 		std::cout << "trying to deserialize..." << std::endl;
 
-		std::vector vec(datas, datas + reply.size()/4);
-		search_tree->deserialize(vec, &state);
-		search_tree->do_search(&state, search_tree->root->traversals + playouts);
+		// update tree structures
+		//difftree->deserialize(vec, &state);
+		mcts update_tree;
+		update_tree.deserialize(vec, &state);
 
-		//for (unsigned i = 0; )
+		std::cerr << "recieved tree "
+			<< std::hex << update_tree.id << std::dec
+			<< " with "
+			<< update_tree.updates << " updates"
+			<< std::endl;
+
+		if (sync_tree->id != update_tree.id) {
+			std::cout << "discarding old tree..." << std::endl;
+			sync_tree->reset();
+			search_tree->reset();
+
+			sync_tree->deserialize(vec, &state);
+			search_tree->deserialize(vec, &state);
+
+		} else {
+			std::cout << "syncing..." << std::endl;
+			sync_tree->sync(&update_tree);
+			search_tree->sync(&update_tree);
+		}
+
+		std::cout << "working..." << std::endl;
+
+		// finally, explore on the working tree
+		search_tree->do_search(&state, search_tree->root->traversals + playouts);
 
 		//usleep(100000);
 	}

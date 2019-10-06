@@ -105,12 +105,14 @@ double mcts::win_rate(coordinate& coord) {
 }
 
 void mcts::reset() {
-	delete root;
+	//delete root;
 
 	uint32_t temp = id;
 	while ((id = rand()) == temp);
+	updates = 0;
 
-	root = new mcts_node(nullptr, point::color::Empty);
+	//root = new mcts_node(nullptr, point::color::Empty);
+	root = std::move(mcts_node::nodeptr(new mcts_node(nullptr, point::color::Empty)));
 	//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
 	root->rave = mcts_node::raveptr(new mcts_node::ravestats);
 	//root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
@@ -119,7 +121,7 @@ void mcts::reset() {
 
 void mcts::explore(board *state)
 {
-	mcts_node* ptr = tree->search(state, root);
+	mcts_node* ptr = tree->search(state, root.get());
 	ptr = ptr? policy->playout(state, ptr) : ptr;
 }
 
@@ -129,9 +131,15 @@ void mcts::explore(board *state)
 uint32_t mcts::serialize_node(anserial::serializer& ser,
                               uint32_t parent,
                               const mcts_node* ptr,
-                              unsigned depth)
+                              uint32_t since)
 {
 	if (ptr == nullptr) {
+		return 0;
+	}
+
+	if (ptr->updates < since) {
+		//ser.add_entities(parent, {});
+		// TODO: remove return maybe
 		return 0;
 	}
 
@@ -145,18 +153,20 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 		{"node",
 			{"color", ptr->color},
 			{"coordinate", {ptr->coord.first, ptr->coord.second}},
-			{"traversals", ptr->traversals}});
+			{"traversals", ptr->traversals},
+			{"updates", ptr->updates}});
 
 	uint32_t leaves = ser.add_entities(self, {"leaves"});
 	uint32_t leaves_cont = ser.add_entities(leaves, {});
 
 	for (const auto& x : ptr->leaves) {
-		serialize_node(ser, leaves_cont, x.second.get(), depth + 1);
+		serialize_node(ser, leaves_cont, x.second.get(), since);
 	}
 
 	uint32_t rave = ser.add_entities(self, {"rave-stats"});
 	uint32_t ravestats = ser.add_entities(rave, {});
 
+	/*
 	for (const auto& x : (*ptr->rave)) {
 		if (x.second.traversals > 50) {
 			ser.add_entities(ravestats,
@@ -166,6 +176,7 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 					{"traversals", x.second.traversals}});
 		}
 	}
+	*/
 
 	return 0;
 };
@@ -173,7 +184,9 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	point::color color;
 	coordinate coord;
-	uint32_t traversals;
+	uint32_t node_traversals;
+	uint32_t node_updates;
+
 	anserial::s_node *leaves;
 	anserial::s_node *rave;
 
@@ -189,7 +202,8 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 		{"node",
 			{"color", (uint32_t*)&color},
 			{"coordinate", {&coord.first, &coord.second}},
-			{"traversals", &traversals},
+			{"traversals", &node_traversals},
+			{"updates", &node_updates},
 			{"leaves", &leaves},
 			{"rave-stats", &rave}}))
 	{
@@ -199,7 +213,8 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	// TODO: ok, so we will need a seperate merge function
 	ptr->color = color;
 	ptr->coord = coord;
-	ptr->traversals = traversals;
+	ptr->traversals = node_traversals;
+	ptr->updates = node_updates;
 
 	if (leaves) {
 		for (auto leaf : leaves->entities()) {
@@ -223,14 +238,16 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	return nullptr;
 }
 
-std::vector<uint32_t> mcts::serialize(board *state) {
+std::vector<uint32_t> mcts::serialize(board *state, uint32_t since) {
 	anserial::serializer ret;
 
 	uint32_t data_top = ret.default_layout();
 	uint32_t tree_top = ret.add_entities(data_top, {"budgie-tree"});
 	ret.add_entities(tree_top, {"id", id});
+	ret.add_entities(tree_top, {"updates", updates});
 	state->serialize(ret, ret.add_entities(tree_top, {"board"}));
-	serialize_node(ret, tree_top, root);
+	uint32_t nodes = ret.add_entities(tree_top, {"nodes"});
+	serialize_node(ret, nodes, root.get(), since);
 	ret.add_symtab(0);
 	/*
 	ret.add_version(0);
@@ -245,32 +262,61 @@ std::vector<uint32_t> mcts::serialize(board *state) {
 void mcts::deserialize(std::vector<uint32_t>& serialized, board *state) {
 	anserial::s_node *nodes;
 	anserial::s_node *board_nodes;
-	uint32_t n_id;
 
 	anserial::deserializer der(serialized);
 	anserial::s_tree tree(&der);
 
 	if (!anserial::destructure(tree.data(),
 		{{"budgie-tree",
-			{"id", &n_id},
+			{"id", &id},
+			{"updates", &updates},
 			{"board", &board_nodes},
-			&nodes}}))
+			{"nodes", &nodes}}}))
 	{
+		tree.dump_nodes();
 		throw std::logic_error("mcts::deserialize(): invalid tree structure!");
 	}
 
 	state->deserialize(board_nodes);
 	//tree.dump_nodes(nodes);
-	deserialize_node(nodes, root);
+	
+	std::cerr << "deserialize: have tree with " << updates << " updates" << std::endl;
+
+	if (nodes) {
+		std::cerr << "deserializing nodes..." << std::endl;
+		deserialize_node(nodes, root.get());
+
+	} else {
+		std::cerr << "got no nodes eh" << std::endl;
+	}
 }
 
+// merges nodes in a differential tree generated by mcts_diff()
 bool mcts::merge(mcts *other) {
 	if (!other || other->id != id) {
 		return false;
 	}
 
+	// keep track of the number of tree updates so we can keep clients
+	// in sync with the master
+	updates++;
+	merge_node(root.get(), other->root.get());
+
 	return true;
 }
+
+// similar to merge, except it simply loads new nodes generated by mcts::serialize().
+bool mcts::sync(mcts *other) {
+	if (!other || other->id != id) {
+		return false;
+	}
+
+	updates = other->updates;
+	sync_node(root.get(), other->root.get());
+
+	return true;
+}
+
 
 mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 	// TODO: 'own' should never be null here, might be a good idea
@@ -279,7 +325,47 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 		return nullptr;
 	}
 
-	return nullptr;
+	own->updates = updates;
+	own->traversals += other->traversals;
+
+	for (const auto& leaf : other->leaves) {
+		coordinate coord = leaf.first;
+
+		own->nodestats[coord].wins += other->nodestats[coord].wins;
+		own->nodestats[coord].traversals += other->nodestats[coord].traversals;
+
+		own->new_node(coord, leaf.second->color);
+
+		merge_node(own->leaves[coord].get(),
+		           other->leaves[coord].get());
+	}
+
+	return own;
+}
+
+mcts_node *mcts::sync_node(mcts_node *own, mcts_node *other) {
+	// TODO: 'own' should never be null here, might be a good idea
+	//       to add a sanity check just in case
+	if (!own || !other) {
+		return nullptr;
+	}
+
+	own->updates = 0;
+	own->traversals = other->traversals;
+
+	for (const auto& leaf : other->leaves) {
+		coordinate coord = leaf.first;
+
+		own->nodestats[coord].wins = other->nodestats[coord].wins;
+		own->nodestats[coord].traversals = other->nodestats[coord].traversals;
+
+		own->new_node(coord, leaf.second->color);
+
+		sync_node(own->leaves[coord].get(),
+		          other->leaves[coord].get());
+	}
+
+	return own;
 }
 
 static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
@@ -287,7 +373,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 		mcts_node *older = (a->traversals <= b->traversals)? a : b;
 		mcts_node *newer = (older == a)? b : a;
 
-		result->traversals = newer->traversals;
+		result->traversals = newer->traversals - older->traversals;
 
 		for (const auto& leaf : newer->leaves) {
 			coordinate coord = leaf.first;
@@ -296,10 +382,15 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 				|| older->leaves[coord]->traversals < leaf.second->traversals)
 			{
 				// TODO: also clone rave stats
-				// TODO: diff
-				result->new_node(coord, leaf.second->color);
-				result->nodestats[coord] = newer->nodestats[coord];
+				mcts_node::stats sts;
+				sts.wins = newer->nodestats[coord].wins
+				           - older->nodestats[coord].wins;
+				sts.traversals = newer->nodestats[coord].traversals
+				                 - older->nodestats[coord].traversals;
 
+				result->new_node(coord, leaf.second->color);
+				result->nodestats[coord] = sts;
+				
 				mcts_diff_iter(result->leaves[coord].get(),
 				               older->leaves[coord].get(),
 				               newer->leaves[coord].get());
@@ -330,8 +421,10 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 	// TODO: mcts constructor without policies
 	mcts *result = new mcts();
 	result->id = a->id;
-	result->root = new mcts_node;
-	mcts_diff_iter(result->root, a->root, b->root);
+	// TODO: send max, although they should be the same for now
+	result->updates = a->updates;
+	result->root = mcts_node::nodeptr(new mcts_node);
+	mcts_diff_iter(result->root.get(), a->root.get(), b->root.get());
 
 	return std::shared_ptr<mcts>(result);
 }
