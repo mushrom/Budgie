@@ -5,6 +5,7 @@
 #include <budgie/args_parser.hpp>
 #include <stdio.h>
 #include <iostream>
+#include <thread>
 
 using namespace mcts_thing;
 
@@ -77,6 +78,34 @@ std::unique_ptr<mcts> init_mcts(args_parser::option_map& options) {
 	}
 }
 
+void run_workers(args_parser::option_map& options) {
+	unsigned concurrency = stoi(options["worker-threads"]);
+
+	if (concurrency == 0) {
+		unsigned supported = std::thread::hardware_concurrency();
+		concurrency = (supported > 0)? supported : 1;
+	}
+
+	std::thread workers[concurrency];
+	std::cerr << "run_workers(): starting " << concurrency
+	          << " threads" << std::endl;
+
+	for (unsigned i = 0; i < concurrency; i++) {
+		workers[i] = std::thread(
+			[&] () {
+				std::cerr << "run_workers(): thread " << i
+				          << ": Hello, world!" << std::endl;
+				distributed_client client(init_mcts(options), options);
+				client.run();
+			}
+		);
+	}
+
+	for (auto& t : workers) {
+		t.join();
+	}
+}
+
 int main(int argc, char *argv[]) {
 	args_parser args(argc, argv, default_options);
 
@@ -95,8 +124,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	else if (args.options["mode"] == "distributed-worker") {
-		distributed_client client(init_mcts(args.options), args.options);
-		client.run();
+		run_workers(args.options);
 	}
 
 	else {

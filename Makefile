@@ -1,4 +1,4 @@
-CXXFLAGS += -g -I./include -I./libs/anserial/include -std=c++17 -Wall -O3 -march=native -lzmq
+CXXFLAGS += -g -I./include -I./libs/anserial/include -std=c++17 -Wall -O3 -march=native -lzmq -pthread
 SDL2_FLAGS = `sdl2-config --cflags --libs` -lSDL2_ttf
 
 intree-libs = libs/anserial/build/lib/anserial.a
