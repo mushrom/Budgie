@@ -36,8 +36,9 @@ void distributed_client::run() {
 
 		memcpy(request.data(), temp.data(), temp.size() * 4);
 		//memset(request.data(), 'A', 1024);
+		std::cerr << " <-- sending " << request.size() << " bytes" << std::endl;
 		socket->send(request);
-		std::cout << '.' << std::flush;
+		std::cerr << '.' << std::flush;
 
 		// merge updates into the sync tree
 		sync_tree->sync(difftree.get());
@@ -53,22 +54,20 @@ void distributed_client::run() {
 		std::vector<uint32_t> vec(datas, datas + reply.size()/4);
 		//bar.dump_nodes(bar.data());
 
-		std::cout << reply.size() << " bytes\n";
-		std::cout << "trying to deserialize..." << std::endl;
+		std::cerr << "trying to deserialize..." << std::endl;
 
 		// update tree structures
 		//difftree->deserialize(vec, &state);
 		mcts update_tree;
 		update_tree.deserialize(vec, &state);
 
-		std::cerr << "recieved tree "
-			<< std::hex << update_tree.id << std::dec
-			<< " with "
-			<< update_tree.updates << " updates"
+		std::cerr << " --> recieved tree: "
+			<< "bytes: " << reply.size() << ", "
+			<< "id: " << std::hex << update_tree.id << std::dec << ", "
+			<< "updates: " << update_tree.updates
 			<< std::endl;
 
 		if (sync_tree->id != update_tree.id) {
-			std::cout << "discarding old tree..." << std::endl;
 			sync_tree->reset();
 			search_tree->reset();
 
@@ -76,17 +75,12 @@ void distributed_client::run() {
 			search_tree->deserialize(vec, &state);
 
 		} else {
-			std::cout << "syncing..." << std::endl;
 			sync_tree->sync(&update_tree);
 			search_tree->sync(&update_tree);
 		}
 
-		std::cout << "working..." << std::endl;
-
 		// finally, explore on the working tree
 		search_tree->do_search(&state, search_tree->root->traversals + playouts);
-
-		//usleep(100000);
 	}
 }
 

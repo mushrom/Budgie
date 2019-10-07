@@ -22,62 +22,40 @@ distributed_mcts::~distributed_mcts() {
 }
 
 void distributed_mcts::explore(board *state) {
-	// request counter, just for debugging output
-	static unsigned counter = 0;
-
-	std::cerr << "waiting for client..." << std::endl;
-
 	zmq::message_t request;
-
 	socket->recv(&request);
-	std::cerr << "recieved request #" << counter++
-		<< ", bytes: " << request.size() << std::endl;
 
-	// TODO: merge tree
 	uint32_t *dat = static_cast<uint32_t*>(request.data());
 	std::vector<uint32_t> vec(dat, dat + request.size()/4);
 	board temp;
 	mcts temp_tree(nullptr, nullptr);
 	temp_tree.deserialize(vec, &temp);
 
-	std::cerr << "recieved tree "
-		<< std::hex << temp_tree.id << std::dec
-		<< " with "
-		<< temp_tree.updates << " updates"
+	std::cerr << " --> recieved a tree: "
+		<< "bytes: " << request.size() << ", "
+		<< "id: " << std::hex << temp_tree.id << std::dec << ", "
+		<< "updates: " << temp_tree.updates << " (current: " << updates << ")"
 		<< std::endl;
 
 	std::vector<uint32_t> cur_tree;
+	bool merged;
 
-	if (merge(&temp_tree)) {
+	if ((merged = merge(&temp_tree))) {
 		cur_tree = serialize(state, temp_tree.updates + 2);
-
-		/*
-		std::cerr << "merged tree "
-			<< std::hex << temp_tree.id << std::dec
-			<< " with "
-			<< temp_tree.updates << " updates"
-			<< std::endl;
-			*/
 
 	} else {
 		cur_tree = serialize(state, 0);
-
-		/*
-		std::cerr << "couldn't merge tree "
-			<< std::hex << temp_tree.id << std::dec
-			<< " with "
-			<< temp_tree.updates << " updates"
-			<< std::endl;
-			*/
 	}
 
-	std::cerr << "current playouts: " << root->traversals << std::endl;
+	//std::cerr << "current playouts: " << root->traversals << std::endl;
 
 	zmq::message_t reply(4*cur_tree.size());
 	memcpy(reply.data(), cur_tree.data(), 4*cur_tree.size());
 	socket->send(reply);
 
-	std::cerr << "sent ~" << 4*cur_tree.size() << " bytes" << std::endl;
+	std::cerr << " <-- "
+		<< (merged? "merged, " : "rejected, ")
+		<< "sent " << 4*cur_tree.size() << " bytes" << std::endl;
 }
 
 // namespace mcts_thing

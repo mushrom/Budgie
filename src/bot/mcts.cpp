@@ -280,14 +280,8 @@ void mcts::deserialize(std::vector<uint32_t>& serialized, board *state) {
 	state->deserialize(board_nodes);
 	//tree.dump_nodes(nodes);
 	
-	std::cerr << "deserialize: have tree with " << updates << " updates" << std::endl;
-
 	if (nodes) {
-		std::cerr << "deserializing nodes..." << std::endl;
 		deserialize_node(nodes, root.get());
-
-	} else {
-		std::cerr << "got no nodes eh" << std::endl;
 	}
 }
 
