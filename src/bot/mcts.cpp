@@ -163,6 +163,20 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 		serialize_node(ser, leaves_cont, x.second.get(), since);
 	}
 
+	uint32_t nodestats = ser.add_entities(self, {"node-stats"});
+	uint32_t nodestats_cont = ser.add_entities(nodestats, {});
+
+	for (const auto& x : ptr->nodestats) {
+		coordinate coord = x.first;
+		mcts_node::stats sts = x.second;
+
+		ser.add_entities(nodestats_cont,
+			{"leaf",
+				{"traversals", sts.traversals},
+				{"wins", sts.wins},
+				{"coordinate", {coord.first, coord.second}}});
+	}
+
 	uint32_t rave = ser.add_entities(self, {"rave-stats"});
 	uint32_t ravestats = ser.add_entities(rave, {});
 
@@ -188,6 +202,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	uint32_t node_updates;
 
 	anserial::s_node *leaves;
+	anserial::s_node *node_stats;
 	anserial::s_node *rave;
 
 	if (!node) {
@@ -205,6 +220,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 			{"traversals", &node_traversals},
 			{"updates", &node_updates},
 			{"leaves", &leaves},
+			{"node-stats", &node_stats},
 			{"rave-stats", &rave}}))
 	{
 		throw std::logic_error("mcts::deserialize_node(): invalid tree structure!");
@@ -218,10 +234,11 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 
 	if (leaves) {
 		for (auto leaf : leaves->entities()) {
-			coordinate temp;
+			coordinate leaf_coord;
 
 			if (!anserial::destructure(leaf,
-				{"node", {}, {"coordinate", {&temp.first, &temp.second}}}))
+				{"node", {},
+					{"coordinate", {&leaf_coord.first, &leaf_coord.second}}}))
 			{
 				std::cerr << "mcts::deserialize_node(): couldn't load leaf coordinate"
 					<< std::endl;
@@ -230,8 +247,29 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 
 			// XXX: point::color::Empty since it should be overwritten
 			//      in the next level down
-			ptr->new_node(temp, point::color::Empty);
-			deserialize_node(leaf, ptr->leaves[temp].get());
+			ptr->new_node(leaf_coord, point::color::Empty);
+			deserialize_node(leaf, ptr->leaves[leaf_coord].get());
+		}
+	}
+
+	if (node_stats) {
+		for (auto leaf : node_stats->entities()) {
+			coordinate leaf_coord;
+			mcts_node::stats leaf_stats;
+			anserial::s_node *leaf_node;
+
+			if (!anserial::destructure(leaf,
+				{"leaf",
+					{"traversals", &leaf_stats.traversals},
+					{"wins", &leaf_stats.wins},
+					{"coordinate", {&leaf_coord.first, &leaf_coord.second}},
+					&leaf_node}))
+			{
+				std::cerr << "mcts::deserialize_node(): asdf should throw here"
+					<< std::endl;
+			}
+
+			ptr->nodestats[leaf_coord] = leaf_stats;
 		}
 	}
 
@@ -321,17 +359,27 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 
 	own->updates = updates;
 	own->traversals += other->traversals;
+	own->color = other->color;
 
 	for (const auto& leaf : other->leaves) {
 		coordinate coord = leaf.first;
-
-		own->nodestats[coord].wins += other->nodestats[coord].wins;
-		own->nodestats[coord].traversals += other->nodestats[coord].traversals;
-
 		own->new_node(coord, leaf.second->color);
 
 		merge_node(own->leaves[coord].get(),
 		           other->leaves[coord].get());
+	}
+
+	for (const auto& stat : other->nodestats) {
+		if (stat.second.traversals > 50) {
+			fprintf(stderr, "got diff: %u\n", stat.second.traversals);
+		}
+
+		if (stat.second.traversals > 1000) {
+			fprintf(stderr, "  ^ probably bogus, ignoring...\n");
+			continue;
+		}
+
+		own->nodestats[stat.first] += stat.second;
 	}
 
 	return own;
@@ -368,6 +416,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 		mcts_node *newer = (older == a)? b : a;
 
 		result->traversals = newer->traversals - older->traversals;
+		result->color = newer->color;
 
 		for (const auto& leaf : newer->leaves) {
 			coordinate coord = leaf.first;
@@ -375,20 +424,16 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 			if (older->leaves[coord] == nullptr
 				|| older->leaves[coord]->traversals < leaf.second->traversals)
 			{
-				// TODO: also clone rave stats
-				mcts_node::stats sts;
-				sts.wins = newer->nodestats[coord].wins
-				           - older->nodestats[coord].wins;
-				sts.traversals = newer->nodestats[coord].traversals
-				                 - older->nodestats[coord].traversals;
-
 				result->new_node(coord, leaf.second->color);
-				result->nodestats[coord] = sts;
 				
 				mcts_diff_iter(result->leaves[coord].get(),
 				               older->leaves[coord].get(),
 				               newer->leaves[coord].get());
 			}
+		}
+
+		for (const auto& stat : newer->nodestats) {
+			result->nodestats[stat.first] = stat.second - older->nodestats[stat.first];
 		}
 	}
 	
@@ -400,10 +445,13 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 			coordinate coord = leaf.first;
 
 			result->new_node(coord, leaf.second->color);
-			result->nodestats[coord] = node->nodestats[coord];
 			mcts_diff_iter(result->leaves[coord].get(),
 			               nullptr,
 			               node->leaves[coord].get());
+		}
+
+		for (const auto& stat : node->nodestats) {
+			result->nodestats[stat.first] = stat.second;
 		}
 	}
 }

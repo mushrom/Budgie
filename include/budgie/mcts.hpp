@@ -20,16 +20,24 @@ struct coord_hash {
 	}
 };
 
+// TODO: trim down this class
 class mcts_node {
 	public:
 		class stats {
 			public:
 				unsigned wins = 0;
 				unsigned traversals = 0;
+
 				double win_rate(void) {
 					// TODO: we shouldn't have a state where traversals is 0, right?
 					return traversals? (double)wins / (double)traversals : 0.5;
 				};
+
+				stats& operator+=(const stats& other) {
+					wins += other.wins;
+					traversals += other.traversals;
+					return *this;
+				}
 		};
 
 		class crit_stats {
@@ -107,6 +115,16 @@ class mcts_node {
 		unsigned wins;
 		*/
 };
+
+static inline mcts_node::stats
+operator-(const mcts_node::stats& a, const mcts_node::stats& b) {
+	mcts_node::stats ret;
+	ret.wins = a.wins - b.wins;
+	ret.traversals = a.traversals - b.traversals;
+
+	return ret;
+}
+
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
 coordinate pick_random_leaf(board *state);
