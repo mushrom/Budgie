@@ -433,7 +433,12 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 		}
 
 		for (const auto& stat : newer->nodestats) {
-			result->nodestats[stat.first] = stat.second - older->nodestats[stat.first];
+			//result->nodestats[stat.first] = stat.second - older->nodestats[stat.first];
+			mcts_node::stats sts = stat.second - older->nodestats[stat.first];
+
+			if (sts.traversals > 0) {
+				result->nodestats[stat.first] = sts;
+			}
 		}
 	}
 	
