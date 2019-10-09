@@ -41,7 +41,11 @@ void distributed_client::run() {
 		std::cerr << '.' << std::flush;
 
 		// merge updates into the sync tree
-		sync_tree->sync(difftree.get());
+		//sync_tree->sync(difftree.get());
+		//sync_tree->sync(search_tree.get());
+		sync_tree->merge(difftree.get());
+		// XXX : we should remove update increment in merge()
+		sync_tree->updates--;
 
 		// get reply from server, deserialize
 		zmq::message_t reply;
