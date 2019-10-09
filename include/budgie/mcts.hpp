@@ -67,7 +67,7 @@ class mcts_node {
 		typedef std::unique_ptr<mcts_node> nodeptr;
 		typedef std::unordered_map<coordinate, stats, coord_hash> ravestats;
 		typedef std::unordered_map<coordinate, crit_stats, coord_hash> critmap;
-		typedef std::shared_ptr<ravestats> raveptr;
+		//typedef std::shared_ptr<ravestats> raveptr;
 		typedef std::shared_ptr<critmap> critptr;
 
 		mcts_node(mcts_node *n_parent = nullptr,
@@ -99,10 +99,11 @@ class mcts_node {
 
 		critptr criticality;
 
+		ravestats rave;
 		// rave stats for this level
-		raveptr rave;
+		//raveptr rave;
 		// rave stats for children
-		raveptr child_rave;
+		//raveptr child_rave;
 
 		mcts_node *parent;
 		point::color color;

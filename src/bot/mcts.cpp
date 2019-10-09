@@ -114,7 +114,7 @@ void mcts::reset() {
 	//root = new mcts_node(nullptr, point::color::Empty);
 	root = std::move(mcts_node::nodeptr(new mcts_node(nullptr, point::color::Empty)));
 	//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
-	root->rave = mcts_node::raveptr(new mcts_node::ravestats);
+	//root->rave = mcts_node::raveptr(new mcts_node::ravestats);
 	//root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
 	root->criticality = mcts_node::critptr(new mcts_node::critmap);
 }
@@ -177,20 +177,18 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 				{"coordinate", {coord.first, coord.second}}});
 	}
 
-	uint32_t rave = ser.add_entities(self, {"rave-stats"});
-	uint32_t ravestats = ser.add_entities(rave, {});
+	uint32_t ravestats = ser.add_entities(self, {"rave-stats"});
+	uint32_t ravestats_cont = ser.add_entities(ravestats, {});
 
-	/*
-	for (const auto& x : (*ptr->rave)) {
-		if (x.second.traversals > 50) {
-			ser.add_entities(ravestats,
+	for (const auto& x : ptr->rave) {
+		//if (x.second.traversals > 50) {
+			ser.add_entities(ravestats_cont,
 				{"stats",
-					{"coordinate", {x.first.first, x.first.second}},
+					{"traversals", x.second.traversals},
 					{"wins", x.second.wins},
-					{"traversals", x.second.traversals}});
-		}
+					{"coordinate", {x.first.first, x.first.second}}});
+		//}
 	}
-	*/
 
 	return 0;
 };
@@ -270,6 +268,27 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 			}
 
 			ptr->nodestats[leaf_coord] = leaf_stats;
+		}
+	}
+
+	if (rave) {
+		for (auto stat : rave->entities()) {
+			coordinate leaf_coord;
+			mcts_node::stats leaf_stats;
+
+			if (!anserial::destructure(stat,
+				{"stats",
+					{"traversals", &leaf_stats.traversals},
+					{"wins", &leaf_stats.wins},
+					{"coordinate", {&leaf_coord.first, &leaf_coord.second}}}))
+			{
+				std::cerr << "mcts::deserialize_node(): asdf rave stats"
+					<< std::endl;
+
+				continue;
+			}
+
+			ptr->rave[leaf_coord] = leaf_stats;
 		}
 	}
 
@@ -382,6 +401,10 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 		own->nodestats[stat.first] += stat.second;
 	}
 
+	for (const auto& rave : other->rave) {
+		own->rave[rave.first] += rave.second;
+	}
+
 	return own;
 }
 
@@ -397,14 +420,18 @@ mcts_node *mcts::sync_node(mcts_node *own, mcts_node *other) {
 
 	for (const auto& leaf : other->leaves) {
 		coordinate coord = leaf.first;
-
-		own->nodestats[coord].wins = other->nodestats[coord].wins;
-		own->nodestats[coord].traversals = other->nodestats[coord].traversals;
-
 		own->new_node(coord, leaf.second->color);
 
 		sync_node(own->leaves[coord].get(),
 		          other->leaves[coord].get());
+	}
+
+	for (const auto& stat : other->nodestats) {
+		own->nodestats[stat.first] = stat.second;
+	}
+
+	for (const auto& rave : other->rave) {
+		own->rave[rave.first] = rave.second;
 	}
 
 	return own;
@@ -433,16 +460,26 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 		}
 
 		for (const auto& stat : newer->nodestats) {
-			//result->nodestats[stat.first] = stat.second - older->nodestats[stat.first];
 			mcts_node::stats sts = stat.second - older->nodestats[stat.first];
 
 			if (sts.traversals > 0) {
 				result->nodestats[stat.first] = sts;
 			}
 		}
+
+		for (const auto& rave : newer->rave) {
+			mcts_node::stats rsts = rave.second - older->rave[rave.first];
+
+			if (rsts.traversals > 0) {
+				result->rave[rave.first] = rave.second;
+			}
+		}
 	}
 	
 	else if (a || b) {
+		// TODO: maybe we should move sync_node out of mcts
+		//       so we can reuse it here, that way we can avoid duplicating
+		//       all this syncing code...
 		mcts_node *node = a? a : b;
 		result->traversals = node->traversals;
 
@@ -457,6 +494,10 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 
 		for (const auto& stat : node->nodestats) {
 			result->nodestats[stat.first] = stat.second;
+		}
+
+		for (const auto& rave : node->rave) {
+			result->rave[rave.first] = rave.second;
 		}
 	}
 }
@@ -484,7 +525,7 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 		leaves[coord] = nodeptr(new mcts_node(this, color));
 		//leaves[coord]->rave = child_rave;
 		//leaves[coord]->child_rave = raveptr(new ravestats);
-		leaves[coord]->rave = raveptr(new ravestats);
+		//leaves[coord]->rave = raveptr(new ravestats);
 		leaves[coord]->criticality = criticality;
 		leaves[coord]->coord = coord;
 	}
@@ -551,8 +592,8 @@ void mcts_node::update_stats(board *state, point::color winner) {
 				continue;
 			}
 
-			(*ptr->rave)[foo->coord].wins += won;
-			(*ptr->rave)[foo->coord].traversals++;
+			ptr->rave[foo->coord].wins += won;
+			ptr->rave[foo->coord].traversals++;
 		}
 	}
 }
@@ -629,7 +670,7 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 		(color == point::color::Black)? "B" : "W",
 		coord_string(coord).c_str(),
 		parent? parent->nodestats[coord].win_rate() : 0,
-		parent? (*parent->rave)[coord].win_rate() : 0,
+		parent? parent->rave[coord].win_rate() : 0,
 		parent? (*criticality)[coord].win_rate() : 0,
 		traversals);
 

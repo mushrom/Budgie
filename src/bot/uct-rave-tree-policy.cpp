@@ -45,8 +45,8 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
-	//for (auto& x : ptr->leaves) {
-	for (auto& x : (*ptr->rave)) {
+	for (auto& x : ptr->leaves) {
+	//for (auto& x : ptr->rave) {
 		/*
 		if (x.second == nullptr) {
 			continue;
@@ -80,7 +80,7 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0.5;
 	}
 
-	double rave_est = (*ptr->rave)[coord].win_rate();
+	double rave_est = ptr->rave[coord].win_rate();
 	//double mcts_est = ptr->leaves[coord]->win_rate();
 	double mcts_est = ptr->nodestats[coord].win_rate();
 	double crit_est = (*ptr->criticality)[coord].win_rate();
