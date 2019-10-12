@@ -180,6 +180,7 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 	uint32_t ravestats = ser.add_entities(self, {"rave-stats"});
 	uint32_t ravestats_cont = ser.add_entities(ravestats, {});
 
+#ifdef SERIALIZE_RAVE
 	for (const auto& x : ptr->rave) {
 		//if (x.second.traversals > 50) {
 			ser.add_entities(ravestats_cont,
@@ -189,6 +190,7 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 					{"coordinate", {x.first.first, x.first.second}}});
 		//}
 	}
+#endif
 
 	return 0;
 };
@@ -271,6 +273,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 		}
 	}
 
+#ifdef SERIALIZE_RAVE
 	if (rave) {
 		for (auto stat : rave->entities()) {
 			coordinate leaf_coord;
@@ -291,6 +294,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 			ptr->rave[leaf_coord] = leaf_stats;
 		}
 	}
+#endif
 
 	return nullptr;
 }
@@ -389,6 +393,7 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 	}
 
 	for (const auto& stat : other->nodestats) {
+		/*
 		if (stat.second.traversals > 50) {
 			fprintf(stderr, "got diff: %u\n", stat.second.traversals);
 		}
@@ -397,13 +402,16 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 			fprintf(stderr, "  ^ probably bogus, ignoring...\n");
 			continue;
 		}
+		*/
 
 		own->nodestats[stat.first] += stat.second;
 	}
 
+#ifdef SERIALIZE_RAVE
 	for (const auto& rave : other->rave) {
 		own->rave[rave.first] += rave.second;
 	}
+#endif
 
 	return own;
 }
@@ -430,9 +438,11 @@ mcts_node *mcts::sync_node(mcts_node *own, mcts_node *other) {
 		own->nodestats[stat.first] = stat.second;
 	}
 
+#ifdef SERIALIZE_RAVE
 	for (const auto& rave : other->rave) {
 		own->rave[rave.first] = rave.second;
 	}
+#endif
 
 	return own;
 }
@@ -467,6 +477,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 			}
 		}
 
+#ifdef SERIALIZE_RAVE
 		for (const auto& rave : newer->rave) {
 			mcts_node::stats rsts = rave.second - older->rave[rave.first];
 
@@ -474,6 +485,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 				result->rave[rave.first] = rave.second;
 			}
 		}
+#endif
 	}
 	
 	else if (a || b) {
@@ -496,9 +508,11 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 			result->nodestats[stat.first] = stat.second;
 		}
 
+#ifdef SERIALIZE_RAVE
 		for (const auto& rave : node->rave) {
 			result->rave[rave.first] = rave.second;
 		}
+#endif
 	}
 }
 
