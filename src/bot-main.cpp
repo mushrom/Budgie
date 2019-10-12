@@ -21,7 +21,7 @@ args_parser::default_map default_options = {
 			{"0", "1"}}},
 	{"tree_policy",
 		{"uct-rave", "Policy to use for tree traversal",
-			{"uct-rave"}}},
+			{"uct-rave", "uct", "mcts"}}},
 	{"playout_policy",
 		{"random", "Policy to use when playing out games",
 			{"random", "local_weighted"}}},
@@ -65,7 +65,19 @@ std::unique_ptr<mcts> init_mcts(args_parser::option_map& options) {
 	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
 
 	// only have this tree policy right now
-	tree_policy *tree_pol = new uct_rave_tree_policy(db);
+	tree_policy *tree_pol;
+	(options["tree_policy"] == "mcts")
+		? (tree_policy *)(new mcts_tree_policy(db))
+		: (tree_policy *)(new uct_rave_tree_policy(db));
+
+	if (options["tree_policy"] == "mcts") {
+		tree_pol = new mcts_tree_policy(db);
+	} else if (options["tree_policy"] == "uct") {
+		tree_pol = new uct_tree_policy(db);
+	} else {
+		tree_pol = new uct_rave_tree_policy(db);
+	}
+
 	playout_policy *playout_pol = (options["playout_policy"] == "local_weighted")
 		? (playout_policy *)(new local_weighted_playout(db))
 		: (playout_policy *)(new random_playout(db));

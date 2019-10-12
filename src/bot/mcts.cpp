@@ -540,7 +540,7 @@ bool mcts_node::fully_visited(board *state) {
 
 coordinate mcts_node::best_move(void) {
 	if (leaves.begin() == leaves.end()) {
-		fprintf(stderr, "unexplored!\n");
+		//fprintf(stderr, "unexplored!\n");
 		return {0, 0}; // no more nodes, return invalid coordinate
 	}
 

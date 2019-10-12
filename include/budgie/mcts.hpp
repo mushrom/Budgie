@@ -151,6 +151,34 @@ class playout_policy {
 		pattern_dbptr patterns;
 };
 
+// plain MCTS tree policy, exploring whichever node seems to have the highest
+// win rate
+class mcts_tree_policy : public tree_policy {
+	public:
+		mcts_tree_policy(pattern_dbptr db) : tree_policy(db){};
+		virtual mcts_node* search(board *state, mcts_node *ptr);
+};
+
+// MC+UCT tree exploration policy
+class uct_tree_policy : public tree_policy {
+	public:
+		uct_tree_policy(
+			pattern_dbptr db,
+			// UCT exploration weight
+			double uct_c=0.08) : tree_policy(db)
+		{
+			uct_weight  = uct_c;
+		}
+
+		virtual mcts_node* search(board *state, mcts_node *ptr);
+
+	private:
+		double uct_weight;
+
+		coordinate max_utc(board *state, mcts_node *ptr);
+		double uct(const coordinate& coord, board *state, mcts_node *ptr);
+};
+
 // MC+UCT+RAVE tree exploration policy
 class uct_rave_tree_policy : public tree_policy {
 	public:
