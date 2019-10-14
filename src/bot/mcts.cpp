@@ -235,9 +235,11 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	if (leaves) {
 		for (auto leaf : leaves->entities()) {
 			coordinate leaf_coord;
+			point::color leaf_color;
 
 			if (!anserial::destructure(leaf,
-				{"node", {},
+				{"node",
+					{"color", (uint32_t*)&leaf_color},
 					{"coordinate", {&leaf_coord.first, &leaf_coord.second}}}))
 			{
 				std::cerr << "mcts::deserialize_node(): couldn't load leaf coordinate"
@@ -247,7 +249,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 
 			// XXX: point::color::Empty since it should be overwritten
 			//      in the next level down
-			ptr->new_node(leaf_coord, point::color::Empty);
+			ptr->new_node(leaf_coord, leaf_color);
 			deserialize_node(leaf, ptr->leaves[leaf_coord].get());
 		}
 	}

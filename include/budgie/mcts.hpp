@@ -165,7 +165,7 @@ class uct_tree_policy : public tree_policy {
 		uct_tree_policy(
 			pattern_dbptr db,
 			// UCT exploration weight
-			double uct_c=0.08) : tree_policy(db)
+			double uct_c=0.20) : tree_policy(db)
 		{
 			uct_weight  = uct_c;
 		}
