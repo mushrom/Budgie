@@ -116,6 +116,7 @@ class board {
 
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi) {
+			current_player = point::color::Black;
 			dimension = boardsize;
 			komi = n_komi;
 			grid.reserve(dimension * dimension);

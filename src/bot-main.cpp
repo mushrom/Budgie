@@ -7,8 +7,11 @@
 #include <iostream>
 #include <thread>
 
+#include <budgie/budgie.hpp>
+
 using namespace mcts_thing;
 
+/*
 args_parser::default_map default_options = {
 	{"mode",
 		{"gtp", "Interface mode to use",
@@ -35,11 +38,12 @@ args_parser::default_map default_options = {
 		{"0", "Number of workers to start as a distributed client",
 			{"0 for auto", "<any unsigned integer>"}}},
 };
+*/
 
 void print_help(void) {
 	printf("Usage: ./budgie [options]\n");
 
-	for (auto& x : default_options) {
+	for (auto& x : budgie_options) {
 		printf("    --%s %*s %s\n",
 		       x.first.c_str(),
 		       (int)(18 - x.first.length()),
@@ -55,38 +59,6 @@ void print_help(void) {
 		}
 
 		printf("\n");
-	}
-}
-
-// XXX
-std::unique_ptr<mcts> init_mcts(args_parser::option_map& options) {
-	// TODO: we should have an AI instance class that handles
-	//       all of the initialization,, board/mcts interaction (make_move, ...)
-	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
-
-	// only have this tree policy right now
-	tree_policy *tree_pol;
-	(options["tree_policy"] == "mcts")
-		? (tree_policy *)(new mcts_tree_policy(db))
-		: (tree_policy *)(new uct_rave_tree_policy(db));
-
-	if (options["tree_policy"] == "mcts") {
-		tree_pol = new mcts_tree_policy(db);
-	} else if (options["tree_policy"] == "uct") {
-		tree_pol = new uct_tree_policy(db);
-	} else {
-		tree_pol = new uct_rave_tree_policy(db);
-	}
-
-	playout_policy *playout_pol = (options["playout_policy"] == "local_weighted")
-		? (playout_policy *)(new local_weighted_playout(db))
-		: (playout_policy *)(new random_playout(db));
-
-	if (options["mode"] == "distributed-gtp") {
-		return std::unique_ptr<mcts>(new distributed_mcts(tree_pol, playout_pol));
-
-	} else {
-		return std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
 	}
 }
 
@@ -107,7 +79,8 @@ void run_workers(args_parser::option_map& options) {
 			[&] () {
 				std::cerr << "run_workers(): thread " << i
 				          << ": Hello, world!" << std::endl;
-				distributed_client client(init_mcts(options), options);
+				//distributed_client client(init_mcts(options), options);
+				distributed_client client(options);
 				client.run();
 			}
 		);
@@ -119,7 +92,7 @@ void run_workers(args_parser::option_map& options) {
 }
 
 int main(int argc, char *argv[]) {
-	args_parser args(argc, argv, default_options);
+	args_parser args(argc, argv, budgie_options);
 
 	for (auto& arg : args.arguments) {
 		if (arg == "--help" || arg == "-h") {
@@ -132,7 +105,7 @@ int main(int argc, char *argv[]) {
 	    || args.options["mode"] == "distributed-gtp")
 	{
 		gtp_client gtp;
-		gtp.repl(init_mcts(args.options), args.options);
+		gtp.repl(args.options);
 	}
 
 	else if (args.options["mode"] == "distributed-worker") {

@@ -1,4 +1,5 @@
 #include <budgie/distributed_client.hpp>
+#include <budgie/budgie.hpp>
 #include <anserial/anserial.hpp>
 #include <anserial/s_tree.hpp>
 #include <unistd.h>
@@ -6,14 +7,12 @@
 
 namespace mcts_thing {
 
-distributed_client::distributed_client(std::unique_ptr<mcts> tree,
-                                       args_parser::option_map& args)
-{
-	ctx = std::unique_ptr<zmq::context_t>(new zmq::context_t);
-	socket = std::unique_ptr<zmq::socket_t>(new zmq::socket_t(*ctx, ZMQ_REQ));
-	search_tree = std::move(tree);
+distributed_client::distributed_client(args_parser::option_map& args) {
+	bot = std::unique_ptr<budgie>(new budgie(args));
 	playouts = stoi(args["playouts"]);
 
+	ctx = std::unique_ptr<zmq::context_t>(new zmq::context_t);
+	socket = std::unique_ptr<zmq::socket_t>(new zmq::socket_t(*ctx, ZMQ_REQ));
 	socket->connect(args["server-host"].c_str());
 
 	std::cerr << "client initialized" << std::endl;
@@ -22,7 +21,7 @@ distributed_client::distributed_client(std::unique_ptr<mcts> tree,
 void distributed_client::run() {
 	board state;
 	std::unique_ptr<mcts> sync_tree(new mcts);
-	sync_tree->id = search_tree->id;
+	sync_tree->id = bot->tree->id;
 
 	// NOTE: when we get here, both search_tree and sync_tree should be empty
 
@@ -30,7 +29,7 @@ void distributed_client::run() {
 		// do tree diff and send results to the server
 		// (when first starting, this is empty, so the server should send a full
 		// tree back)
-		auto difftree = mcts_diff(sync_tree.get(), search_tree.get());
+		auto difftree = mcts_diff(sync_tree.get(), bot->tree.get());
 		auto temp = difftree->serialize(&state, 0);
 		zmq::message_t request(temp.size() * 4);
 
@@ -72,19 +71,20 @@ void distributed_client::run() {
 			<< std::endl;
 
 		if (sync_tree->id != update_tree.id) {
+			// TODO: we should have this at the budgie class level...
 			sync_tree->reset();
-			search_tree->reset();
+			bot->tree->reset();
 
 			sync_tree->deserialize(vec, &state);
-			search_tree->deserialize(vec, &state);
+			bot->tree->deserialize(vec, &state);
 
 		} else {
 			sync_tree->sync(&update_tree);
-			search_tree->sync(&update_tree);
+			bot->tree->sync(&update_tree);
 		}
 
 		// finally, explore on the working tree
-		search_tree->do_search(&state, search_tree->root->traversals + playouts);
+		bot->tree->do_search(&state, bot->tree->root->traversals + playouts);
 	}
 }
 

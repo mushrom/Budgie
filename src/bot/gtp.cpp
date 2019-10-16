@@ -1,4 +1,5 @@
 #include <budgie/gtp.hpp>
+#include <budgie/budgie.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -44,10 +45,8 @@ point::color string_to_color(std::string& str) {
 	return point::color::White;
 }
 
-void gtp_client::repl(std::unique_ptr<mcts> search_tree,
-                      args_parser::option_map& options)
-{
-	unsigned playouts = stoi(options["playouts"]);
+void gtp_client::repl(args_parser::option_map& options) {
+	budgie bot(options);
 	std::string s;
 
 	while (std::getline(std::cin, s)) {
@@ -76,8 +75,9 @@ void gtp_client::repl(std::unique_ptr<mcts> search_tree,
 		}
 
 		else if (args[0] == "komi") {
-			komi = atoi(args[1].c_str());
-			game.komi = komi;
+			// TODO: accessors
+			bot.komi = atoi(args[1].c_str());
+			bot.game.komi = bot.komi;
 
 			std::cout << "=\n\n";
 		}
@@ -86,51 +86,42 @@ void gtp_client::repl(std::unique_ptr<mcts> search_tree,
 			// needs to be followed by clear_board to take effect, dunno if this is
 			// spec but it makes the implementation less messy
 
-			boardsize = atoi(args[1].c_str());
+			bot.boardsize = atoi(args[1].c_str());
 			std::cout << "=\n\n";
 		}
 
 		else if (args[0] == "clear_board") {
-			game.reset(boardsize, komi);
-
-			/*
-			current_move = search_tree.root;
-			game.komi = komi;
-			game.moves = 0;
-			*/
-
+			bot.reset();
 			std::cout << "=\n\n";
 		}
 
 		else if (args[0] == "play") {
-			point::color player = (args[1] == "B" || args[1] == "b" || args[1] == "black")
-			                          ? point::color::Black
-			                          : point::color::White;
-
+			point::color player = string_to_color(args[1]);
 			coordinate coord = string_to_coord(args[2]);
 
+			// TODO: ignore case
 			if (args[2] == "pass" || args[2] == "PASS") {
-				passed = true;
+				bot.make_move(budgie::move::types::Pass);
+			}
 
-			} else {
-				// TODO: same todo as below
-				passed = false;
-				game.current_player = player;
-				game.make_move(coord);
+			else {
+				bot.make_move(budgie::move(budgie::move::types::Move,
+				                           coord,
+				                           player));
 			}
 
 			std::cout << "=\n\n";
 		}
 
 		else if (args[0] == "set_free_handicap") {
-			point::color player = game.current_player;
+			//point::color player = game.current_player;
+			point::color player = bot.game.current_player;
 
 			for (auto it = args.begin() + 1; it != args.end(); it++) {
 				coordinate coord = string_to_coord(*it);
-
-				// TODO: again same todo
-				game.current_player = player;
-				game.make_move(coord);
+				bot.make_move(budgie::move(budgie::move::types::Move,
+				                           coord,
+				                           player));
 			}
 
 			std::cout << "=\n\n";
@@ -140,54 +131,43 @@ void gtp_client::repl(std::unique_ptr<mcts> search_tree,
 			// TODO: should have function to handle this, rather than mutating the
 			//       game state from here
 
-			game.current_player = string_to_color(args[1]);
-			search_tree->reset();
-			coordinate coord = search_tree->do_search(&game, playouts);
+			//game.current_player = string_to_color(args[1]);
+			bot.set_player(string_to_color(args[1]));
+			budgie::move move = bot.genmove();
 
-			if (!game.is_valid_coordinate(coord)) {
-				std::cerr << "# no valid moves, passing" << std::endl;
-				std::cout << "= pass\n\n";
-				continue;
+			switch (move.type) {
+				case budgie::move::types::Pass:
+					std::cout << "= pass\n\n";
+					break;
+
+				case budgie::move::types::Resign:
+					std::cout << "= resign\n\n";
+					break;
+
+				default:
+					bot.make_move(move);
+					std::cout << "= " << coord_string(move.coord) << "\n\n";
+					break;
 			}
 
-			std::cerr << "# coord: (" << coord.first << ", " << coord.second
-				<< "), win rate: " << search_tree->win_rate(coord)
-				<< ", traversals: "
-				<< std::dec << search_tree->root->leaves[coord]->traversals
+			if (move.type == budgie::move::types::Move) {
+				std::cerr << "# coord: (" << move.coord.first
+					<< ", " << move.coord.second
+					<< "), win rate: " << bot.tree->win_rate(move.coord)
+					<< ", traversals: "
+					<< std::dec << bot.tree->root->leaves[move.coord]->traversals
+					<< std::endl;
+			}
+
+			std::cerr << "# board hash: "
+				<< std::hex << bot.game.hash << std::dec
 				<< std::endl;
-
-			if (search_tree->win_rate(coord) < 0.15) {
-				std::cout << "= resign\n\n";
-				continue;
-			}
-
-			if (passed || !game.is_valid_move(coord)) {
-				std::cout << "= pass\n\n";
-				continue;
-			}
-
-			/*
-			if (search_tree->win_rate(coord) == 1) {
-				std::cout << "= pass\n\n";
-				continue;
-			}
-			*/
-
-			if (game.is_suicide(coord, game.current_player)) {
-				std::cout << "= pass\n\n";
-				continue;
-			}
-
-			std::cout << "= " << coord_string(coord) << "\n\n";
-
-			game.make_move(coord);
-			std::cerr << "# board hash: " << std::hex << game.hash << std::dec << std::endl;
 		}
 
 		else if (args[0] == "move_history") {
 			std::cout << "= ";
 
-			for (move::moveptr ptr = game.move_list;
+			for (move::moveptr ptr = bot.game.move_list;
 			     ptr != nullptr;
 			     ptr = ptr->previous)
 			{
@@ -200,7 +180,7 @@ void gtp_client::repl(std::unique_ptr<mcts> search_tree,
 
 		else if (args[0] == "showboard") {
 			std::cout << "= \n";
-			game.print();
+			bot.game.print();
 			std::cout << "\n\n";
 		}
 
