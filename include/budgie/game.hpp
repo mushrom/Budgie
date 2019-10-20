@@ -107,7 +107,8 @@ class board {
 		void deserialize(anserial::s_node *node);
 
 		move::moveptr move_list;
-		std::vector<point::color> grid;
+		//std::vector<point::color> grid;
+		point::color grid[384];
 		uint64_t hash = InitialHash;
 		int komi = 7;
 		unsigned dimension;

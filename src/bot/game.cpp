@@ -8,11 +8,19 @@
 
 namespace mcts_thing {
 
+// TODO: error on board sizes larger than \sqrt(384)
 board::board(unsigned size) {
-	grid.reserve(size * size);
+	//grid.reserve(size * size);
 	dimension = size;
 
+	/*
 	for (unsigned i = 0; i < size*size; i++){
+		ownership[i] = grid[i] = point::color::Empty;
+		groups[i] = nullptr;
+	}
+	*/
+
+	for (unsigned i = 0; i < 384; i++) {
 		ownership[i] = grid[i] = point::color::Empty;
 		groups[i] = nullptr;
 	}
@@ -42,9 +50,10 @@ void board::set(board *other) {
 	move_list = other->move_list;
 	hash = other->hash;
 
-	grid.reserve(dimension * dimension);
+	//grid.reserve(dimension * dimension);
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
+		// TODO: maybe clear existing groups for correctness
 		groups[i] = nullptr;
 	}
 
@@ -72,11 +81,15 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	current_player = point::color::Black;
 	dimension = boardsize;
 	komi = n_komi;
-	grid.reserve(dimension * dimension);
+	//grid.reserve(dimension * dimension);
 	moves = 0;
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		grid[i] = point::color::Empty;
+
+		if (groups[i]) {
+			group_clear(groups + i);
+		}
 	}
 }
 
@@ -343,11 +356,13 @@ void board::make_move(const coordinate& coord) {
 
 	set_coordinate(coord, current_player);
 	group_place(coord);
-	bool any_captured = clear_enemy_stones(coord, current_player);
-	any_captured = any_captured || clear_own_stones(coord, current_player);
-	printf("group check: %u\n", group_check());
+	clear_enemy_stones(coord, current_player);
+	//bool any_captured = clear_enemy_stones(coord, current_player);
+	//any_captured = any_captured || clear_own_stones(coord, current_player);
+	//printf("group check: %u\n", group_check());
 
-
+	// TODO: remove group_check once things are good
+	group_check();
 	regen_hash();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
@@ -655,6 +670,11 @@ bool board::group_check(void) {
 		}
 	}
 
+	/*
+	print();
+	puts("group_check(): seems good");
+	*/
+
 	return true;
 }
 
@@ -814,7 +834,11 @@ void board::group_clear(group **a) {
 }
 
 void board::group_update_neighbors(group **a) {
-	if (!a || !*a) return;
+	if (!a || !*a) {
+		puts("group_update_neighbors(): null pointer");
+		return;
+	}
+
 	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
 
 	for (const coordinate& c : (*a)->members) {
@@ -825,7 +849,14 @@ void board::group_update_neighbors(group **a) {
 			unsigned index = coord_to_index(temp);
 			group *ptr = groups[index];
 
-			if (ptr && ptr->color == other_player(current_player)) {
+			if (ptr && ptr->color == current_player) {
+				/*
+				printf("group_update_neighbors(): %s adding liberty "
+					"(%u, %u) to (%u, %u)\n",
+					(ptr->color == point::color::Black)? "black":"white",
+					c.first, c.second,
+					temp.first, temp.second);
+					*/
 				ptr->liberties.insert(c);
 			}
 		}
