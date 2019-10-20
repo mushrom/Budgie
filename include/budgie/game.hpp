@@ -52,54 +52,26 @@ class move {
 		uint64_t hash;
 };
 
+// TODO: generic 'game' class, add a way to enumerate/validate/randomly pick moves
 class board {
 	public:
-		board(unsigned size = 9){
-			grid.reserve(size * size);
-			dimension = size;
-
-			for (unsigned i = 0; i < size*size; i++){
-				ownership[i] = grid[i] = point::color::Empty;
-			}
-		};
-
-		// XXX
-		board(board *other) {
-			set(other);
-		}
-
-		void set(board *other) {
-			// copy game info
-			komi = other->komi;
-			dimension = other->dimension;
-			current_player = other->current_player;
-			moves = other->moves;
-			last_move = other->last_move;
-
-			// copy internal info
-			move_list = other->move_list;
-			hash = other->hash;
-
-			grid.reserve(dimension * dimension);
-
-			for (unsigned i = 0; i < dimension * dimension; i++) {
-				grid[i] = other->grid[i];
-				ownership[i] = point::color::Empty;
-			}
-		}
-
 		enum {
 			//InitialHash = 19937,
 			InitialHash = 1073741827,
 			//InitialHash = 65537,
 		};
 
+		board(unsigned size = 9);
+
+		// XXX
+		board(board *other);
+		void set(board *other);
+
 		point::color get_coordinate(const coordinate& coord);
-		point::color other_player(point::color color) {
-			return (color == point::color::Black)
-				? point::color::White
-				: point::color::Black;
-		};
+
+		// TODO: no reason for this to be a member function,
+		//       we could inline this...
+		point::color other_player(point::color color);
 
 		bool is_valid_move(const coordinate& coord);
 		bool is_valid_coordinate(const coordinate& coord);
@@ -115,17 +87,7 @@ class board {
 		unsigned coord_to_index(const coordinate& coord);
 
 		void print(void);
-		void reset(unsigned boardsize, unsigned n_komi) {
-			current_player = point::color::Black;
-			dimension = boardsize;
-			komi = n_komi;
-			grid.reserve(dimension * dimension);
-			moves = 0;
-
-			for (unsigned i = 0; i < dimension * dimension; i++) {
-				grid[i] = point::color::Empty;
-			}
-		}
+		void reset(unsigned boardsize, unsigned n_komi);
 
 		std::vector<uint32_t> serialize(void);
 		void serialize(anserial::serializer& ser, uint32_t parent);

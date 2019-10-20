@@ -8,6 +8,57 @@
 
 namespace mcts_thing {
 
+board::board(unsigned size) {
+	grid.reserve(size * size);
+	dimension = size;
+
+	for (unsigned i = 0; i < size*size; i++){
+		ownership[i] = grid[i] = point::color::Empty;
+	}
+}
+
+board::board(board *other){
+	set(other);
+}
+
+void board::set(board *other) {
+	// copy game info
+	komi = other->komi;
+	dimension = other->dimension;
+	current_player = other->current_player;
+	moves = other->moves;
+	last_move = other->last_move;
+
+	// copy internal info
+	move_list = other->move_list;
+	hash = other->hash;
+
+	grid.reserve(dimension * dimension);
+
+	for (unsigned i = 0; i < dimension * dimension; i++) {
+		grid[i] = other->grid[i];
+		ownership[i] = point::color::Empty;
+	}
+}
+
+void board::reset(unsigned boardsize, unsigned n_komi) {
+	current_player = point::color::Black;
+	dimension = boardsize;
+	komi = n_komi;
+	grid.reserve(dimension * dimension);
+	moves = 0;
+
+	for (unsigned i = 0; i < dimension * dimension; i++) {
+		grid[i] = point::color::Empty;
+	}
+}
+
+point::color board::other_player(point::color color) {
+	return (color == point::color::Black)
+		? point::color::White
+		: point::color::Black;
+}
+
 bool board::is_valid_move(const coordinate& coord) {
 	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 
