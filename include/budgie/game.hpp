@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <map>
+#include <set>
 #include <memory>
 #include <bitset>
 #include <anserial/anserial.hpp>
@@ -52,6 +53,17 @@ class move {
 		uint64_t hash;
 };
 
+class group {
+	public:
+		point::color color;
+
+		// list so we can splice stone lists together easily
+		std::list<coordinate> members;
+
+		// set so we can add/remove members quickly
+		std::set<coordinate> liberties;
+};
+
 // TODO: generic 'game' class, add a way to enumerate/validate/randomly pick moves
 class board {
 	public:
@@ -62,6 +74,7 @@ class board {
 		};
 
 		board(unsigned size = 9);
+		~board();
 
 		// XXX
 		board(board *other);
@@ -102,6 +115,21 @@ class board {
 		point::color current_player = point::color::Black;
 		coordinate last_move;
 		board *parent = nullptr;
+
+		// TODO: maybe we should have a group map class, no need to clutter the
+		//       board class more...
+		void group_place(const coordinate& coord);
+		void group_link(group **a, group **b);
+		void group_try_capture(group **a, const coordinate& coord);
+		void group_clear(group **a);
+		void group_update_neighbors(group **a);
+		void group_propagate(group **a);
+		bool group_check(void);
+		void group_print(void);
+
+		// group pointer for every board square
+		group *groups[384];
+		std::set<group**> ataris[4];
 
 		bool owns(const coordinate& coord, point::color color);
 		point::color ownership[384];

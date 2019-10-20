@@ -14,11 +14,20 @@ board::board(unsigned size) {
 
 	for (unsigned i = 0; i < size*size; i++){
 		ownership[i] = grid[i] = point::color::Empty;
+		groups[i] = nullptr;
 	}
 }
 
 board::board(board *other){
 	set(other);
+}
+
+board::~board() {
+	for (unsigned i = 0; i < dimension*dimension; i++) {
+		if (groups[i]) {
+			group_clear(groups + i);
+		}
+	}
 }
 
 void board::set(board *other) {
@@ -36,8 +45,26 @@ void board::set(board *other) {
 	grid.reserve(dimension * dimension);
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
+		groups[i] = nullptr;
+	}
+
+	for (unsigned i = 0; i < dimension * dimension; i++) {
 		grid[i] = other->grid[i];
 		ownership[i] = point::color::Empty;
+
+		if (!groups[i] && other->groups[i]) {
+			groups[i] = new group;
+			groups[i]->color = other->groups[i]->color;
+			//*groups[i] = *other->groups[i];
+			groups[i]->members.insert(groups[i]->members.end(),
+			                          other->groups[i]->members.begin(),
+			                          other->groups[i]->members.end());
+
+			groups[i]->liberties.insert(other->groups[i]->liberties.begin(),
+			                            other->groups[i]->liberties.end());
+
+			group_propagate(groups + i);
+		}
 	}
 }
 
@@ -314,31 +341,26 @@ void board::make_move(const coordinate& coord) {
 		return;
 	}
 
-	bool any_captured = false;
-	//unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
-	//grid[index] = current_player;
 	set_coordinate(coord, current_player);
-	any_captured = clear_enemy_stones(coord, current_player);
+	group_place(coord);
+	bool any_captured = clear_enemy_stones(coord, current_player);
 	any_captured = any_captured || clear_own_stones(coord, current_player);
+	printf("group check: %u\n", group_check());
 
-	/*
-	if (!any_captured) {
-		//hash = gen_hash(coord, current_player);
-		regen_hash();
 
-	} else {
-		regen_hash();
-	}
-	*/
 	regen_hash();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
 	last_move = coord;
 	moves++;
 
+	/*
 	current_player = (current_player == point::color::Black)
 	                 ? point::color::White
 	                 : point::color::Black;
+					 */
+
+	current_player = other_player(current_player);
 }
 
 unsigned board::count_stones(point::color player) {
@@ -611,6 +633,214 @@ void board::print(void) {
 		printf("%2c", letters[x]);
 	}
 	printf(" \n");
+}
+
+bool board::group_check(void) {
+	for (unsigned i = 0; i < dimension*dimension; i++) {
+		if (groups[i]) {
+			if (groups[i]->color != grid[i]) {
+				puts("color mismatch");
+				return false;
+			}
+		}
+
+		if (!groups[i] && grid[i] != point::color::Empty) {
+			int y = i / dimension + 1;
+			int x = i % dimension + 1;
+
+			print();
+			printf("no group for stones on board at (%d, %d)\n", x, y);
+			group_print();
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void board::group_print(void) {
+	for (unsigned y = dimension; y > 0; y--) {
+		printf("# %2u ", y);
+
+		for (unsigned x = 1; x <= dimension; x++) {
+			unsigned index = coord_to_index({x, y});
+
+			if (groups[index]) {
+				char c = ((groups[index]->color == point::color::Black)? 'O' : '#'); 
+				printf("%c ", c);
+			}
+
+			else {
+				printf(". ");
+			}
+		}
+
+		putchar('\n');
+	}
+}
+
+void board::group_place(const coordinate& coord) {
+	unsigned index = coord_to_index(coord);
+	group **g = groups + index;
+
+	if (*g) {
+		puts("group_place(): occupied location...");
+		// there's already a group here...
+		return;
+	}
+
+	*g = new group;
+	(*g)->members.push_back(coord);
+	(*g)->color = current_player;
+
+	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+
+	for (auto& diff : coords) {
+		coordinate temp = {coord.first + diff.first, coord.second + diff.second};
+		if (!is_valid_coordinate(temp)) {
+			continue;
+		}
+
+		point::color p = get_coordinate(temp);
+
+		if (p == point::color::Empty)
+			(*g)->liberties.insert(temp);
+
+		else if (p == current_player)
+			group_link(g, groups + coord_to_index(temp));
+
+		// enemy group
+		else if (p == other_player(current_player))
+			group_try_capture(groups + coord_to_index(temp), coord);
+	}
+
+	// make sure the current position didn't end up in the liberty lists,
+	// in case this resulted in a group link
+	if (g && *g) {
+		if ((*g)->liberties.size() == 0) {
+			puts("group_place(): hmmmst, suicidal move?");
+		}
+
+		(*g)->liberties.erase(coord);
+
+		if ((*g)->liberties.size() == 0) {
+			puts("group_place(): yep still 0 liberties");
+		}
+	}
+
+	if (!*g) {
+		puts("dude where's my pointer");
+	}
+
+	/*
+	if ((*g)->liberties.size() == 1) {
+		ataris[current_player].insert(g);
+	}
+	*/
+}
+
+void board::group_link(group **a, group **b) {
+	if (!a || !b || !*a || !*b) {
+		//print();
+		puts("group_link(): null pointers");
+		return;
+	}
+
+	if (*a == *b) {
+		//puts("ayyy sup");
+		return;
+	}
+
+	group **smaller = ((*a)->members.size() <= (*b)->members.size())? a : b;
+	group **larger  = ((*a)->members.size() >  (*b)->members.size())? a : b;
+	group *small_ptr = *smaller;
+
+	// update group pointers
+	for (const coordinate& c : small_ptr->members) {
+		unsigned index = coord_to_index(c);
+		groups[index] = *larger;
+	}
+
+	// splice/copy group data
+	(*larger)->members.splice((*larger)->members.end(),
+	                          small_ptr->members,
+	                          small_ptr->members.begin(),
+	                          small_ptr->members.end());
+	(*larger)->liberties.insert(small_ptr->liberties.begin(),
+	                            small_ptr->liberties.end());
+
+	delete small_ptr;
+}
+
+void board::group_try_capture(group **a, const coordinate& coord) {
+	if (!a || !*a) {
+		//puts("eh?");
+		return;
+	}
+
+	if ((*a)->color == current_player) {
+		puts("friendlies");
+		return;
+	}
+
+	(*a)->liberties.erase(coord);
+
+	if ((*a)->liberties.size() == 0) {
+		//puts("boom");
+		group_update_neighbors(a);
+		group_clear(a);
+	}
+}
+
+void board::group_clear(group **a) {
+	if (!a || !*a) {
+		puts("group_clear(): nothing to clear");
+		return;
+	}
+
+	group *deadptr = *a;
+
+	for (const coordinate& c : deadptr->members) {
+		unsigned index = coord_to_index(c);
+
+		if (groups[index] != deadptr) {
+			puts("group_clear(): mismatched member pointers");
+		}
+
+		groups[index] = nullptr;
+	}
+
+	delete deadptr;
+}
+
+void board::group_update_neighbors(group **a) {
+	if (!a || !*a) return;
+	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+
+	for (const coordinate& c : (*a)->members) {
+		for (const coordinate& diff : coords) {
+			coordinate temp = {c.first + diff.first, c.second + diff.second};
+			if (!is_valid_coordinate(temp)) continue;
+
+			unsigned index = coord_to_index(temp);
+			group *ptr = groups[index];
+
+			if (ptr && ptr->color == other_player(current_player)) {
+				ptr->liberties.insert(c);
+			}
+		}
+	}
+}
+
+void board::group_propagate(group **a) {
+	if (!a || !*a) {
+		puts("group_propagate(): null pointers");
+	}
+
+	for (const coordinate& c : (*a)->members) {
+		unsigned index = coord_to_index(c);
+		groups[index] = *a;
+	}
 }
 
 void board::serialize(anserial::serializer& ser, uint32_t parent) {
