@@ -209,6 +209,12 @@ class random_playout : public playout_policy {
 		virtual mcts_node* playout(board *state, mcts_node *ptr);
 };
 
+class capture_weighted_playout : public playout_policy {
+	public:
+		capture_weighted_playout(pattern_dbptr db) : playout_policy(db) { };
+		virtual mcts_node* playout(board *state, mcts_node *ptr);
+};
+
 class local_weighted_playout : public playout_policy {
 	public:
 		local_weighted_playout(pattern_dbptr db) : playout_policy(db) { };

@@ -57,6 +57,10 @@ void board::set(board *other) {
 		groups[i] = nullptr;
 	}
 
+	for (auto& c : ataris) {
+		c.clear();
+	}
+
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		grid[i] = other->grid[i];
 		ownership[i] = point::color::Empty;
@@ -90,6 +94,10 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 		if (groups[i]) {
 			group_clear(groups + i);
 		}
+	}
+
+	for (auto& c : ataris) {
+		c.clear();
 	}
 }
 
@@ -752,11 +760,9 @@ void board::group_place(const coordinate& coord) {
 		puts("dude where's my pointer");
 	}
 
-	/*
 	if ((*g)->liberties.size() == 1) {
-		ataris[current_player].insert(g);
+		ataris[current_player].insert(*g);
 	}
-	*/
 }
 
 void board::group_link(group **a, group **b) {
@@ -789,6 +795,7 @@ void board::group_link(group **a, group **b) {
 	(*larger)->liberties.insert(small_ptr->liberties.begin(),
 	                            small_ptr->liberties.end());
 
+	ataris[small_ptr->color].erase(small_ptr);
 	delete small_ptr;
 }
 
@@ -830,6 +837,7 @@ void board::group_clear(group **a) {
 		groups[index] = nullptr;
 	}
 
+	ataris[deadptr->color].erase(deadptr);
 	delete deadptr;
 }
 
@@ -871,6 +879,10 @@ void board::group_propagate(group **a) {
 	for (const coordinate& c : (*a)->members) {
 		unsigned index = coord_to_index(c);
 		groups[index] = *a;
+	}
+
+	if ((*a)->liberties.size() == 1) {
+		ataris[(*a)->color].insert(*a);
 	}
 }
 

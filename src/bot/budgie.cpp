@@ -97,9 +97,21 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 		tree_pol = new uct_rave_tree_policy(db);
 	}
 
-	playout_policy *playout_pol = (options["playout_policy"] == "local_weighted")
+	playout_policy *playout_pol;
+
+	if (options["playout_policy"] == "local_weighted") {
+		playout_pol = new local_weighted_playout(db);
+	} else if (options["playout_policy"] == "capture_weighted") {
+		playout_pol = new capture_weighted_playout(db);
+	} else {
+		playout_pol = new random_playout(db);
+	}
+
+	/*
+	= (options["playout_policy"] == "local_weighted")
 		? (playout_policy *)(new local_weighted_playout(db))
 		: (playout_policy *)(new random_playout(db));
+		*/
 
 	if (options["mode"] == "distributed-gtp") {
 		return std::unique_ptr<mcts>(new distributed_mcts(tree_pol, playout_pol));

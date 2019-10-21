@@ -130,7 +130,7 @@ class board {
 
 		// group pointer for every board square
 		group *groups[384];
-		std::set<group**> ataris[4];
+		std::set<group*> ataris[4];
 
 		bool owns(const coordinate& coord, point::color color);
 		point::color ownership[384];
