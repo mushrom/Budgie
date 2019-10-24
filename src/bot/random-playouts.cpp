@@ -3,7 +3,8 @@
 
 namespace mcts_thing {
 
-mcts_node* random_playout::playout(board *state, mcts_node *ptr) {
+coordinate random_playout::apply(board *state) {
+	/*
 	while (true) {
 		coordinate next = pick_random_leaf(state);
 
@@ -16,6 +17,9 @@ mcts_node* random_playout::playout(board *state, mcts_node *ptr) {
 	}
 
 	return nullptr;
+	*/
+
+	return pick_random_leaf(state);
 }
 
 // namespace mcts_thing

@@ -122,7 +122,34 @@ void mcts::reset() {
 void mcts::explore(board *state)
 {
 	mcts_node* ptr = tree->search(state, root.get());
-	ptr = ptr? policy->playout(state, ptr) : ptr;
+	playout(state, ptr);
+	//ptr = ptr? policy->playout(state, ptr) : ptr;
+}
+
+void mcts::playout(board *state, mcts_node *ptr) {
+	if (!ptr) {
+		return;
+	}
+
+	// terminates when no strategies find a valid move to play
+	for (;;) {
+		coordinate next;
+
+		for (auto strat : playout_strats) {
+			next = strat->apply(state);
+
+			if (next != coordinate(0, 0)) {
+				break;
+			}
+		}
+
+		if (next == coordinate(0 ,0)) {
+			ptr->update(state);
+			return;
+		}
+
+		state->make_move(next);
+	}
 }
 
 // TODO: we could add a 'generation' parameter to the node class that tracks when

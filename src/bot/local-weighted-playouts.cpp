@@ -3,7 +3,7 @@
 
 namespace mcts_thing {
 
-coordinate local_weighted_playout::local_best(board *state) {
+coordinate local_weighted_playout::apply(board *state) {
 	coordinate things[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
@@ -43,39 +43,6 @@ coordinate local_weighted_playout::local_best(board *state) {
 	}
 
 	return coordinate(0, 0);
-}
-
-mcts_node* local_weighted_playout::playout(board *state, mcts_node *ptr) {
-	while (true) {
-		coordinate next = {0, 0};
-		std::bitset<384> map;
-
-		next = local_best(state);
-
-		if (next != coordinate(0, 0)) {
-			goto asdf;
-		}
-
-		next = pick_random_leaf(state);
-
-		if (next == coordinate(0, 0)) {
-			ptr->update(state);
-			return nullptr;
-		}
-
-// TODO: asdf
-asdf:
-		/*
-		// debugging output
-		   printf("\e[1;1H");
-		   state->print();
-		   usleep(100000);
-		   */
-
-		state->make_move(next);
-	}
-
-	return nullptr;
 }
 
 // namespace mcts_thing

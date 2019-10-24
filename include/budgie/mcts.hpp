@@ -133,6 +133,9 @@ coordinate pick_random_leaf(board *state);
 // TODO: maybe move this to pattern_db.hpp
 typedef std::shared_ptr<pattern_db> pattern_dbptr;
 
+// TODO: maybe make this pluggable like playout heuristics
+// TODO: load pattern db as part of board class so we don't need to initialize
+//       a db for every strategy
 class tree_policy {
 	public:
 		tree_policy(pattern_dbptr db) { patterns = db; };
@@ -142,10 +145,10 @@ class tree_policy {
 		pattern_dbptr patterns;
 };
 
-class playout_policy {
+class playout_strategy {
 	public:
-		playout_policy(pattern_dbptr db) { patterns = db; }
-		virtual mcts_node* playout(board *state, mcts_node *ptr) = 0;
+		playout_strategy(pattern_dbptr db) { patterns = db; }
+		virtual coordinate apply(board *state) = 0;
 
 	protected:
 		pattern_dbptr patterns;
@@ -203,22 +206,23 @@ class uct_rave_tree_policy : public tree_policy {
 		double uct(const coordinate& coord, board *state, mcts_node *ptr);
 };
 
-class random_playout : public playout_policy {
+class random_playout : public playout_strategy {
 	public:
-		random_playout(pattern_dbptr db) : playout_policy(db) { };
-		virtual mcts_node* playout(board *state, mcts_node *ptr);
+		random_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
 };
 
-class capture_weighted_playout : public playout_policy {
+// TODO: rename to 'capture enemy ataris' or something like that
+class capture_weighted_playout : public playout_strategy {
 	public:
-		capture_weighted_playout(pattern_dbptr db) : playout_policy(db) { };
-		virtual mcts_node* playout(board *state, mcts_node *ptr);
+		capture_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
 };
 
-class local_weighted_playout : public playout_policy {
+class local_weighted_playout : public playout_strategy {
 	public:
-		local_weighted_playout(pattern_dbptr db) : playout_policy(db) { };
-		virtual mcts_node* playout(board *state, mcts_node *ptr);
+		local_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
 		coordinate local_best(board *state);
 };
 
@@ -227,19 +231,20 @@ class mcts {
 	public:
 		mcts() {
 			tree = nullptr;
-			policy = nullptr;
+			playout_strats = {};
 			reset();
 		};
 
-		mcts(tree_policy *tp, playout_policy *pp)
+		mcts(tree_policy *tp, std::list<playout_strategy*> strats)
 		{
 			tree = tp;
-			policy = pp;
+			playout_strats = strats;
 			reset();
 		};
 
 		virtual ~mcts(){};
 		virtual void explore(board *state);
+		virtual void playout(board *state, mcts_node *ptr);
 
 		coordinate do_search(board *state, unsigned playouts=10000);
 		double win_rate(coordinate& coord);
@@ -259,7 +264,9 @@ class mcts {
 		bool sync(mcts *other);
 
 		tree_policy *tree;
-		playout_policy *policy;
+		std::list<playout_strategy*> playout_strats;
+
+		//playout_policy *policy;
 
 		// TODO: we need to change this to a shared pointer
 		//mcts_node *root = nullptr;

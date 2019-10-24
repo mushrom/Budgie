@@ -19,4 +19,7 @@ class gtp_client {
 		bool passed = false;
 };
 
+// XXX: defining this here so we can reuse it
+std::vector<std::string> split_string(std::string& s);
+
 }

@@ -2,6 +2,8 @@
 #include <budgie/pattern_db.hpp>
 #include <budgie/distributed_mcts.hpp>
 #include <budgie/distributed_client.hpp>
+// TODO: only included for 'split_string()', should split that in a util file
+#include <budgie/gtp.hpp>
 #include <iostream>
 
 namespace mcts_thing {
@@ -97,27 +99,35 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 		tree_pol = new uct_rave_tree_policy(db);
 	}
 
-	playout_policy *playout_pol;
+	// TODO: parse options from command line
+	std::list<playout_strategy*> strats = {
+		new capture_weighted_playout(db),
+		new random_playout(db),
+	};
 
-	if (options["playout_policy"] == "local_weighted") {
-		playout_pol = new local_weighted_playout(db);
-	} else if (options["playout_policy"] == "capture_weighted") {
-		playout_pol = new capture_weighted_playout(db);
-	} else {
-		playout_pol = new random_playout(db);
+	auto policies = mcts_thing::split_string(options["playout_policy"]);
+
+	for (auto policy : policies) {
+		if (policy == "local_weighted") {
+			strats.push_back(new local_weighted_playout(db));
+
+		} else if (policy == "capture_enemy_ataris") {
+			strats.push_back(new capture_weighted_playout(db));
+
+		} else if (policy == "random"){
+			strats.push_back(new random_playout(db));
+
+		} else {
+			std::cerr << __func__ << ": unknown playout policy \""
+				<< policy << "\"" << std::endl;
+		}
 	}
 
-	/*
-	= (options["playout_policy"] == "local_weighted")
-		? (playout_policy *)(new local_weighted_playout(db))
-		: (playout_policy *)(new random_playout(db));
-		*/
-
 	if (options["mode"] == "distributed-gtp") {
-		return std::unique_ptr<mcts>(new distributed_mcts(tree_pol, playout_pol));
+		return std::unique_ptr<mcts>(new distributed_mcts(tree_pol, strats));
 
 	} else {
-		return std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
+		return std::unique_ptr<mcts>(new mcts(tree_pol, strats));
 	}
 }
 

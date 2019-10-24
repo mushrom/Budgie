@@ -8,7 +8,7 @@ namespace mcts_thing {
 
 class distributed_mcts : public mcts {
 	public:
-		distributed_mcts(tree_policy *tp, playout_policy *pp);
+		distributed_mcts(tree_policy *tp, std::list<playout_strategy*> strats);
 		virtual ~distributed_mcts();
 		virtual void explore(board *state);
 
