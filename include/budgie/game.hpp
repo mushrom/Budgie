@@ -96,7 +96,9 @@ class board {
 		unsigned count_territory(point::color player);
 		std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
-		uint64_t gen_hash(const coordinate& coord, point::color color);
+		static uint64_t gen_hash(const coordinate& coord,
+		                         point::color color,
+		                         uint64_t hash);
 		unsigned coord_to_index(const coordinate& coord);
 
 		void print(void);
@@ -127,6 +129,8 @@ class board {
 		void group_propagate(group **a);
 		bool group_check(void);
 		void group_print(void);
+		size_t group_capturable(const coordinate& coord, group *arr[4]);
+		uint64_t group_pseudocapture(const coordinate& coord, group *arr[4]);
 
 		// group pointer for every board square
 		group *groups[384];
@@ -137,6 +141,7 @@ class board {
 
 	private:
 		void regen_hash(void);
+		uint64_t regen_hash(point::color grid[384]);
 		void endgame_mark_captured(const coordinate& coord, point::color color,
 		                           std::bitset<384>& marked);
 		void endgame_clear_captured(void);
