@@ -102,15 +102,17 @@ void gtp_client::repl(args_parser::option_map& options) {
 			// TODO: ignore case
 			if (args[2] == "pass" || args[2] == "PASS") {
 				bot.make_move(budgie::move::types::Pass);
+				std::cout << "=\n\n";
 			}
 
 			else {
-				bot.make_move(budgie::move(budgie::move::types::Move,
-				                           coord,
-				                           player));
-			}
+				bool valid = bot.make_move(
+				    budgie::move(budgie::move::types::Move,
+				                 coord,
+				                 player));
 
-			std::cout << "=\n\n";
+				std::cout << (valid? "=\n\n" : "? invalid move\n\n");
+			}
 		}
 
 		else if (args[0] == "set_free_handicap") {

@@ -383,10 +383,10 @@ point::color board::get_coordinate(const coordinate& coord) {
 	return grid[(coord.second - 1)*dimension + (coord.first - 1)];
 }
 
-void board::make_move(const coordinate& coord) {
-	if (!is_valid_coordinate(coord)) {
+bool board::make_move(const coordinate& coord) {
+	if (!is_valid_move(coord)) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
-		return;
+		return false;
 	}
 
 	set_coordinate(coord, current_player);
@@ -411,6 +411,8 @@ void board::make_move(const coordinate& coord) {
 					 */
 
 	current_player = other_player(current_player);
+
+	return true;
 }
 
 unsigned board::count_stones(point::color player) {

@@ -22,21 +22,23 @@ budgie::budgie(args_parser::option_map& opts) {
 	game.reset(boardsize, komi);
 }
 
-void budgie::make_move(move m) {
+bool budgie::make_move(move m) {
 	switch (m.type) {
 		case budgie::move::types::Pass:
 			passed = true;
 			break;
 
 		case budgie::move::types::Move:
-			game.current_player = m.player;
-			game.make_move(m.coord);
 			passed = false;
+			game.current_player = m.player;
+			return game.make_move(m.coord);
 			break;
 
 		default:
 			break;
 	}
+
+	return true;
 }
 
 budgie::move budgie::genmove(void) {

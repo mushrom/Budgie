@@ -97,7 +97,7 @@ class board {
 		bool is_suicide(const coordinate& coord, point::color color);
 		bool violates_ko(const coordinate& coord);
 		bool captures_enemy(const coordinate& coord, point::color color);
-		void make_move(const coordinate& coord);
+		bool make_move(const coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
 		std::vector<coordinate> available_moves(void);
