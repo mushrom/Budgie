@@ -62,6 +62,12 @@ class group {
 
 		// set so we can add/remove members quickly
 		std::set<coordinate> liberties;
+
+		// self-reference so that we can efficiently move groups around
+		std::list<group*>::iterator it;
+
+		// number of liberties at last update
+		size_t last_update = 0xdeadbeef;
 };
 
 // TODO: generic 'game' class, add a way to enumerate/validate/randomly pick moves
@@ -125,6 +131,16 @@ class board {
 		void group_link(group **a, group **b);
 		void group_try_capture(group **a, const coordinate& coord);
 		void group_clear(group **a);
+		/*
+		void group_libs_remove(group *a);
+		void group_libs_remove(group *a, const coordinate& coord);
+		void group_libs_add(group *a);
+		void group_libs_add(group *a, const coordinate& coord);
+		*/
+
+		void group_libs_update(group *a);
+		void group_libs_remove(group *a);
+
 		void group_update_neighbors(group **a);
 		void group_propagate(group **a);
 		bool group_check(void);
@@ -134,7 +150,11 @@ class board {
 
 		// group pointer for every board square
 		group *groups[384];
-		std::set<group*> ataris[4];
+		//std::set<group*> ataris[4];
+		// array of sets sorted by color and the number of liberties
+		// in the group
+		//std::set<group*> group_liberties[4][384];
+		std::list<group*> group_liberties[4][384];
 
 		bool owns(const coordinate& coord, point::color color);
 		point::color ownership[384];

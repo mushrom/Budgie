@@ -52,15 +52,15 @@ void board::set(board *other) {
 	move_list = other->move_list;
 	hash = other->hash;
 
-	//grid.reserve(dimension * dimension);
-
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		// TODO: maybe clear existing groups for correctness
 		groups[i] = nullptr;
 	}
 
-	for (auto& c : ataris) {
-		c.clear();
+	for (auto& s : group_liberties) {
+		for (auto& k : s) {
+			k.clear();
+		}
 	}
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
@@ -87,7 +87,6 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	current_player = point::color::Black;
 	dimension = boardsize;
 	komi = n_komi;
-	//grid.reserve(dimension * dimension);
 	moves = 0;
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
@@ -98,8 +97,10 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 		}
 	}
 
-	for (auto& c : ataris) {
-		c.clear();
+	for (auto& s : group_liberties) {
+		for (auto& k : s) {
+			k.clear();
+		}
 	}
 }
 
@@ -718,6 +719,23 @@ void board::print(void) {
 	printf(" \n");
 }
 
+/*
+void group::unlink(void) {
+	if (next) next->prev = prev;
+	if (prev) prev->next = next;
+
+	next = prev = nullptr;
+}
+
+void group::link_before(group *a) {
+	if (!a) return;
+
+	a->unlink();
+	a->next = this;
+	prev = a;
+}
+*/
+
 bool board::group_check(void) {
 	for (unsigned i = 0; i < dimension*dimension; i++) {
 		if (groups[i]) {
@@ -768,6 +786,8 @@ void board::group_print(void) {
 }
 
 void board::group_place(const coordinate& coord) {
+	// TODO: move this somewhere else eventually
+	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
 	unsigned index = coord_to_index(coord);
 	group **g = groups + index;
 
@@ -781,8 +801,11 @@ void board::group_place(const coordinate& coord) {
 	(*g)->members.push_back(coord);
 	(*g)->color = current_player;
 
-	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
-
+	// TODO: this is a pretty common pattern, should have a function that
+	//       takes a coord and a lambda and applies that to nearby
+	//       coordinates
+	// TODO: we should split this into multiple functions
+	// TODO: also we should split this class into multiple classes
 	for (auto& diff : coords) {
 		coordinate temp = {coord.first + diff.first, coord.second + diff.second};
 		if (!is_valid_coordinate(temp)) {
@@ -792,6 +815,7 @@ void board::group_place(const coordinate& coord) {
 		point::color p = get_coordinate(temp);
 
 		if (p == point::color::Empty)
+			//group_libs_add(*g, temp);
 			(*g)->liberties.insert(temp);
 
 		else if (p == current_player)
@@ -809,7 +833,9 @@ void board::group_place(const coordinate& coord) {
 			puts("group_place(): hmmmst, suicidal move?");
 		}
 
+		//group_libs_remove(*g, coord);
 		(*g)->liberties.erase(coord);
+		group_libs_update(*g);
 
 		if ((*g)->liberties.size() == 0) {
 			puts("group_place(): yep still 0 liberties");
@@ -820,9 +846,7 @@ void board::group_place(const coordinate& coord) {
 		puts("dude where's my pointer");
 	}
 
-	if ((*g)->liberties.size() == 1) {
-		ataris[current_player].insert(*g);
-	}
+	group_libs_update(*g);
 }
 
 void board::group_link(group **a, group **b) {
@@ -855,7 +879,8 @@ void board::group_link(group **a, group **b) {
 	(*larger)->liberties.insert(small_ptr->liberties.begin(),
 	                            small_ptr->liberties.end());
 
-	ataris[small_ptr->color].erase(small_ptr);
+	group_libs_remove(small_ptr);
+	group_libs_update(*larger);
 	delete small_ptr;
 }
 
@@ -871,9 +896,9 @@ void board::group_try_capture(group **a, const coordinate& coord) {
 	}
 
 	(*a)->liberties.erase(coord);
+	group_libs_update(*a);
 
 	if ((*a)->liberties.size() == 0) {
-		//puts("boom");
 		group_update_neighbors(a);
 		group_clear(a);
 	}
@@ -897,7 +922,7 @@ void board::group_clear(group **a) {
 		groups[index] = nullptr;
 	}
 
-	ataris[deadptr->color].erase(deadptr);
+	group_libs_remove(deadptr);
 	delete deadptr;
 }
 
@@ -925,10 +950,35 @@ void board::group_update_neighbors(group **a) {
 					c.first, c.second,
 					temp.first, temp.second);
 					*/
+
 				ptr->liberties.insert(c);
+				group_libs_update(ptr);
 			}
 		}
 	}
+}
+
+void board::group_libs_remove(group *a) {
+	if (!a) return;
+	if (a->last_update == 0xdeadbeef) return;
+
+	group_liberties[a->color][a->last_update].erase(a->it);
+	a->last_update = 0xdeadbeef;
+}
+
+void board::group_libs_update(group *a) {
+	if (!a) return;
+
+	if (a->last_update != 0xdeadbeef) {
+		std::list<group*>& ogrp = group_liberties[a->color][a->last_update];
+		ogrp.erase(a->it);
+	}
+
+	std::list<group*>& ngrp = group_liberties[a->color][a->liberties.size()];
+
+	ngrp.push_front(a);
+	a->it = ngrp.begin();
+	a->last_update = a->liberties.size();
 }
 
 void board::group_propagate(group **a) {
@@ -941,9 +991,7 @@ void board::group_propagate(group **a) {
 		groups[index] = *a;
 	}
 
-	if ((*a)->liberties.size() == 1) {
-		ataris[(*a)->color].insert(*a);
-	}
+	group_libs_update(*a);
 }
 
 size_t board::group_capturable(const coordinate& coord, group *arr[4]) {

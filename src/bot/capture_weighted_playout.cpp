@@ -8,16 +8,13 @@ namespace mcts_thing {
 coordinate capture_weighted_playout::apply(board *state) {
 	coordinate next = {0, 0};
 	point::color other = state->other_player(state->current_player);
+	std::list<group*>& ataris = state->group_liberties[other][1];
 
-	if (rand() % 3 == 0 && !state->ataris[other].empty()) {
-		// pick random move
-		size_t ngroups = state->ataris[other].size();
-		group *ptr = *std::next(state->ataris[other].begin(), rand() % ngroups);
-
+	// TODO: probability here should be configurable
+	if (rand() % 3 == 0 && !ataris.empty()) {
+		// pick a random group to capture
+		group *ptr = *std::next(ataris.begin(), rand() % ataris.size());
 		assert(ptr != nullptr);
-		// if the group is in the 'ataris' set, it should only
-		// have one liberty, so there's no need to randomly pick
-		// from the liberty set.
 		next = *ptr->liberties.begin();
 
 		if (!state->is_valid_move(next)) {
