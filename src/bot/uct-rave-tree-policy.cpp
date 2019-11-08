@@ -5,6 +5,14 @@ namespace mcts_thing {
 
 mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 	while (ptr) {
+		// TODO: keep a list of available moves in the game class, could be a
+		//       major speedup and would allow removing the different code paths
+		//       for fully visited nodes
+		//
+		//       this would also improve non-rave policies, since they don't
+		//       have exploration after transistioning into a fully visited node.
+		//       All valild moves should be considered, not just the random nodes
+		//       picked in the "exploration" phase...
 		if (!ptr->fully_visited(state)) {
 			coordinate next = pick_random_leaf(state);
 
@@ -45,8 +53,17 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
-	for (auto& x : ptr->leaves) {
-	//for (auto& x : ptr->rave) {
+	//for (auto& x : ptr->leaves) {
+	// XXX: need rave here because we're basically using rave for exploration,
+	//      we should keep a list of available moves in the game class now
+	//      that we have working group tracking, that way we don't need to rely
+	//      on either 'rave' or 'leaves' having all the moves to traverse.
+	//
+	//      This was commented out for the above originally because in
+	//      distributed mode rave nodes won't be sent, so this technically
+	//      breaks that, although that was already broken with uct-rave anyway.
+	//      Now it's just more broken.
+	for (auto& x : ptr->rave) {
 		/*
 		if (x.second == nullptr) {
 			continue;
@@ -75,10 +92,16 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0;
 	}
 
+	/*
+	// NOTE: commented out because win_rate() for uninitialized leaves should
+	//       be an even 0.5, returning early here breaks UCT weighting
+	//
+	//       leaving this here just in case though
 	if (ptr->nodestats[coord].traversals == 0) {
 		// unexplored leaf
 		return 0.5;
 	}
+	*/
 
 	double rave_est = ptr->rave[coord].win_rate();
 	//double mcts_est = ptr->leaves[coord]->win_rate();
@@ -102,14 +125,19 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 
 	double meh = 0;
 
+	/*
 	if (ptr->traversals >= 100) {
 	//if ((*ptr->criticality)[coord].traversals >= 100) {
 		//meh = crit_est*(1-B) + rave_est*(1-B);
+	*/
+	// TODO: do we really need a threshold for crit_est?
 		meh = (crit_est + rave_est) * (1-B);
 
+		/*
 	} else {
 		meh = rave_est * (1-B);
 	}
+	*/
 
 	//meh = (crit_est*(1-B) + rave_est*(1-B)) / 2;
 

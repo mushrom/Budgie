@@ -575,8 +575,10 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 }
 
 bool mcts_node::fully_visited(board *state) {
+	//return true;
+	//return traversals > 8;
+	//return traversals >= state->dimension * 2;
 	return traversals >= state->dimension * state->dimension;
-	//return traversals >= state->dimension * state->dimension;
 	//return traversals > state->dimension * 2;
 	//return traversals > 2;
 }
