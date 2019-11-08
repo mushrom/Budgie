@@ -219,6 +219,20 @@ class capture_weighted_playout : public playout_strategy {
 		virtual coordinate apply(board *state);
 };
 
+// TODO: rename to 'capture enemy ataris' or something like that
+class save_atari_playout : public playout_strategy {
+	public:
+		save_atari_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
+};
+
+// TODO: rename to 'capture enemy ataris' or something like that
+class attack_enemy_groups_playout : public playout_strategy {
+	public:
+		attack_enemy_groups_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
+};
+
 class local_weighted_playout : public playout_strategy {
 	public:
 		local_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };

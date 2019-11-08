@@ -5,10 +5,10 @@
 
 namespace mcts_thing {
 
-coordinate capture_weighted_playout::apply(board *state) {
+coordinate save_atari_playout::apply(board *state) {
 	coordinate next = {0, 0};
-	point::color other = state->other_player(state->current_player);
-	std::list<group*>& ataris = state->group_liberties[other][1];
+	point::color current = state->current_player;
+	std::list<group*>& ataris = state->group_liberties[current][1];
 
 	// TODO: probability here should be configurable
 	if (rand() % 6 == 0 && !ataris.empty()) {
@@ -21,7 +21,7 @@ coordinate capture_weighted_playout::apply(board *state) {
 			next = {0, 0};
 		}
 
-		//std::cerr << "boom! captured a group!" << std::endl;
+		//std::cerr << "boom! saved a group!" << std::endl;
 	}
 
 	return next;

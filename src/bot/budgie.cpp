@@ -116,6 +116,12 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 		} else if (policy == "capture_enemy_ataris") {
 			strats.push_back(new capture_weighted_playout(db));
 
+		} else if (policy == "attack_enemy_groups") {
+			strats.push_back(new attack_enemy_groups_playout(db));
+
+		} else if (policy == "save_own_ataris") {
+			strats.push_back(new save_atari_playout(db));
+
 		} else if (policy == "random"){
 			strats.push_back(new random_playout(db));
 
