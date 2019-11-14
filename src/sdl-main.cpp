@@ -1,3 +1,4 @@
+#include <budgie/budgie.hpp>
 #include <budgie/args_parser.hpp>
 #include <budgie/game.hpp>
 #include <budgie/mcts.hpp>
@@ -6,12 +7,13 @@
 #include <SDL2/SDL_ttf.h>
 
 #include <iostream>
+#include <time.h>
 
 namespace mcts_thing {
 
 class gui_state {
 	public:
-		gui_state();
+		gui_state(budgie& b);
 		~gui_state();
 		int run(void);
 		void handle_events(void);
@@ -26,6 +28,7 @@ class gui_state {
 		void draw_overlays(unsigned x, unsigned y, unsigned width);
 		void draw_grid(unsigned x, unsigned y, unsigned width);
 		void draw_stones(unsigned x, unsigned y, unsigned width);
+		void draw_predicted(unsigned x, unsigned y, unsigned width);
 		void draw_circle(unsigned x, unsigned y, int radius);
 		void draw_text(unsigned x, unsigned y, std::string str);
 
@@ -35,11 +38,14 @@ class gui_state {
 		TTF_Font     *font;
 		bool running;
 
+		/*
 		board game = board(9);
 		std::unique_ptr<mcts> search_tree;
+		*/
+		budgie& bot;
 };
 
-gui_state::gui_state() {
+gui_state::gui_state(budgie& b) : bot(b) {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		throw "SDL_Init()";
 	}
@@ -64,12 +70,13 @@ gui_state::gui_state() {
 		throw "SDL_CreateRenderer()";
 	}
 
-	font = TTF_OpenFont("assets/fonts/LiberationSans-Regular.ttf", 12);
+	font = TTF_OpenFont("assets/fonts/LiberationSans-Regular.ttf", 16);
 
 	if (!font) {
 		throw "TTF_OpenFont()";
 	}
 
+	/*
 	// XXX: need to make some sort of AI instance class
 	pattern_dbptr db = pattern_dbptr(new pattern_db("patterns.txt"));
 	tree_policy *tree_pol = new uct_rave_tree_policy(db);
@@ -77,6 +84,7 @@ gui_state::gui_state() {
 	//playout_policy *playout_pol = new local_weighted_playout(db);
 
 	search_tree = std::unique_ptr<mcts>(new mcts(tree_pol, playout_pol));
+	*/
 }
 
 gui_state::~gui_state() {
@@ -105,10 +113,10 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 	double min_crit = 1.0;
 	double max_crit = 0;
 
-	for (const auto& move : search_tree->root->leaves) {
-		double traversals = move.second->traversals / (1.*search_tree->root->traversals);
-		double rave_est = (*search_tree->root->rave)[move.first].win_rate();
-		double crit_est = (*search_tree->root->criticality)[move.first].win_rate();
+	for (const auto& move : bot.tree->root->leaves) {
+		double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
+		double rave_est = bot.tree->root->rave[move.first].win_rate();
+		double crit_est = (*bot.tree->root->criticality)[move.first].win_rate();
 
 		if (traversals < min_traversals) {
 			min_traversals = traversals;
@@ -135,11 +143,11 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 		}
 	}
 
-	for (const auto& move : search_tree->root->leaves) {
+	for (const auto& move : bot.tree->root->leaves) {
 		coordinate foo = move.first;
 		SDL_Rect rect;
 
-		double meh = (1.*width) / (game.dimension - 1);
+		double meh = (1.*width) / (bot.game.dimension - 1);
 		double asdf = (x + 1) - (meh/2);
 
 		unsigned off = 0x40;
@@ -149,25 +157,27 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 		rect.y = asdf + (foo.second - 1) * meh;
 		rect.h = rect.w = meh + 1;
 
-		double traversals = move.second->traversals / (1.*search_tree->root->traversals);
+#if 1
+		// TODO: config option to toggle ownership/statistic heatmaps
+		double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
 
 		traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
 		unsigned b = off + range * traversals;
 
-		double rave_est = (*search_tree->root->rave)[foo].win_rate();
+		double rave_est = bot.tree->root->rave[foo].win_rate();
 		rave_est = (rave_est - min_rave) / (max_rave - min_rave);
 		unsigned g = off + range * rave_est;
 
-		double crit_est = (*search_tree->root->criticality)[foo].win_rate();
+		double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
 		crit_est = (crit_est - min_crit) / (max_crit - min_crit);
 		unsigned r = off + range * crit_est;
+#else
 
-		/*
-		auto& x = (*search_tree->root->criticality)[foo];
+		auto& x = (*bot.tree->root->criticality)[foo];
 		double r = off + range * (x.black_owns / (1. * x.traversals));
 		double g = off + range * (x.white_owns / (1. * x.traversals));
 		unsigned b = 0x66;
-		*/
+#endif
 
 		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
 		SDL_RenderFillRect(renderer, &rect);
@@ -175,14 +185,14 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 }
 
 void gui_state::draw_grid(unsigned x, unsigned y, unsigned width) {
-	for (unsigned i = 0; i < game.dimension; i++) {
+	for (unsigned i = 0; i < bot.game.dimension; i++) {
 		SDL_Rect r;
 
 		r.h = 1;
 		//r.w = foo * (game.dimension - 1);
 		r.w = width;
 		r.x = x;
-		r.y = y + ((1.*width) / (game.dimension - 1) * i);
+		r.y = y + ((1.*width) / (bot.game.dimension - 1) * i);
 
 		SDL_SetRenderDrawColor(renderer, 0x40, 0x40, 0x30, 0);
 		SDL_RenderFillRect(renderer, &r);
@@ -199,13 +209,13 @@ void gui_state::draw_grid(unsigned x, unsigned y, unsigned width) {
 }
 
 void gui_state::draw_stones(unsigned x, unsigned y, unsigned width) {
-	double meh = (1.*width) / (game.dimension - 1);
+	double meh = (1.*width) / (bot.game.dimension - 1);
 	double blarg = meh - (meh/12);
 	double x_off = (x + 1) - (blarg/2);
 	double y_off = (y + 1) - (blarg/2);
 
-	for (unsigned y = 1; y <= game.dimension; y++) {
-		for (unsigned x = 1; x <= game.dimension; x++) {
+	for (unsigned y = 1; y <= bot.game.dimension; y++) {
+		for (unsigned x = 1; x <= bot.game.dimension; x++) {
 			coordinate foo = {x, y};
 			SDL_Rect r;
 
@@ -213,7 +223,7 @@ void gui_state::draw_stones(unsigned x, unsigned y, unsigned width) {
 			r.y = y_off + (y - 1) * meh;
 			r.h = r.w = blarg;
 
-			switch (game.get_coordinate(foo)) {
+			switch (bot.game.get_coordinate(foo)) {
 				case point::color::Black:
 					SDL_SetRenderDrawColor(renderer, 0x10, 0x10, 0x10, 0);
 					draw_circle(r.x, r.y, r.h/2);
@@ -229,6 +239,45 @@ void gui_state::draw_stones(unsigned x, unsigned y, unsigned width) {
 					break;
 			}
 		}
+	}
+}
+
+void gui_state::draw_predicted(unsigned x, unsigned y, unsigned width) {
+	double meh = (1.*width) / (bot.game.dimension - 1);
+	double blarg = meh - (meh/12);
+	double x_off = (x + 1) - (blarg/3);
+	double y_off = (y + 1) - (blarg/3);
+
+	unsigned i = 1;
+	for (mcts_node *ptr = bot.tree->root.get(); ptr; i++) {
+		coordinate coord = ptr->best_move();
+		SDL_Rect r;
+
+		r.x = x_off + (coord.first-1) * meh;
+		r.y = y_off + (coord.second-1) * meh;
+		r.h = r.w = blarg;
+
+		switch (ptr->color) {
+			// Colors are reversed here, black nodes track possible moves for white
+			// and vice versa
+			case point::color::White:
+				SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0);
+				draw_circle(r.x, r.y, r.h/3);
+				draw_text(r.x + r.h/2, r.y+r.h/2, std::to_string(i));
+				break;
+
+			case point::color::Black:
+				SDL_SetRenderDrawColor(renderer, 0xd0, 0xd0, 0xd0, 0);
+				draw_circle(r.x, r.y, r.h/3);
+				draw_text(r.x + r.h/2, r.y+r.h/2, std::to_string(i));
+				break;
+
+			default:
+				break;
+		}
+
+		//printf("got here\n");
+		ptr = ptr->leaves[coord].get();
 	}
 }
 
@@ -284,6 +333,7 @@ void gui_state::draw_board(unsigned x, unsigned y, unsigned width) {
 	draw_overlays(x + padding, y + padding, sub_width);
 	draw_grid(x + padding, y + padding, sub_width);
 	draw_stones(x + padding, y + padding, sub_width);
+	draw_predicted(x + padding, y + padding, sub_width);
 }
 
 void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned height) {
@@ -357,16 +407,18 @@ int gui_state::run(void) {
 	running = true;
 
 	while (running) {
-		search_tree->reset();
+		bot.tree->reset();
+		//bot.reset();
 		coordinate coord;
 
-		for (unsigned i = 100; running && i <= 10000; i += 100) {
-			coord = search_tree->do_search(&game, i);
+		for (int i = 100; running && i <= bot.playouts; i += 100) {
+			coord = bot.tree->do_search(&bot.game, i);
 			handle_events();
 			redraw();
 		}
 
-		game.make_move(coord);
+		//bot.game.make_move(coord);
+		bot.make_move(coord);
 	}
 
 	return 0;
@@ -379,7 +431,10 @@ using namespace mcts_thing;
 
 int main(int argc, char *argv[]) {
 	try {
-		gui_state gui;
+		srand(time(NULL));
+		args_parser args(argc, argv, budgie_options);
+		budgie bot(args.options);
+		gui_state gui(bot);
 		return gui.run();
 
 	} catch (const char *e) {

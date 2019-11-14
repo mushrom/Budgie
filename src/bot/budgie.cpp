@@ -41,6 +41,10 @@ bool budgie::make_move(move m) {
 	return true;
 }
 
+bool budgie::make_move(const coordinate& c) {
+	return make_move(move(move::types::Move, c, game.current_player));
+}
+
 budgie::move budgie::genmove(void) {
 	// TODO: passing heuristics
 	if (passed) {

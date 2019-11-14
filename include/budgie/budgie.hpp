@@ -72,6 +72,7 @@ class budgie {
 		// these functions wrap the board and mcts classes to keep everything
 		// in sync
 		bool make_move(move m);
+		bool make_move(const coordinate& c);
 		move genmove(void);
 		void reset(void);
 		void set_player(point::color p);
