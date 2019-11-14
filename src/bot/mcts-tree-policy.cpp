@@ -18,7 +18,19 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 			return ptr->leaves[next].get();
 		}
 
-		coordinate next = ptr->best_move();
+		coordinate next = {0, 0};
+		double max = 0;
+
+		for (const auto& x : state->available_moves) {
+			if (!state->is_valid_move(x)) {
+				continue;
+			}
+
+			if (ptr->nodestats[x].win_rate() > max) {
+				next = x;
+				max = ptr->nodestats[x].win_rate();
+			}
+		}
 
 		if (next == coordinate(0, 0)) {
 			ptr->update(state);

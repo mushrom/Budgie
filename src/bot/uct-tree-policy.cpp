@@ -38,6 +38,7 @@ coordinate uct_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
 	coordinate ret = {0, 0};
 
+#if 0
 	for (auto& x : ptr->leaves) {
 		double temp = uct(x.first, state, ptr);
 
@@ -46,6 +47,17 @@ coordinate uct_tree_policy::max_utc(board *state, mcts_node *ptr) {
 			ret = x.first;
 		}
 	}
+#else
+	for (const auto& x : state->available_moves) {
+		double temp = uct(x, state, ptr);
+
+		if (temp > cur_max) {
+			cur_max = temp;
+			ret = x;
+		}
+	}
+
+#endif
 
 	return ret;
 }
@@ -61,15 +73,26 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 		return 0;
 	}
 
+	/*
 	if (ptr->nodestats[coord].traversals == 0) {
 		// unexplored leaf
 		return 0.5;
 	}
+	*/
 
 	double mcts_est = ptr->nodestats[coord].win_rate();
 
+	/*
 	double uct = uct_weight
 		* sqrt(log(ptr->traversals) / ptr->nodestats[coord].traversals);
+		* */
+	double uct =
+		uct_weight * sqrt(log(ptr->traversals) /
+			((ptr->nodestats[coord].traversals > 0)
+				? ptr->nodestats[coord].traversals
+				: 1));
+
+
 	double mc_uct_est = mcts_est + uct;
 
 	return mc_uct_est;

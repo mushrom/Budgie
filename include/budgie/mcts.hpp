@@ -168,6 +168,7 @@ class uct_tree_policy : public tree_policy {
 		uct_tree_policy(
 			pattern_dbptr db,
 			// UCT exploration weight
+			// TODO: config option
 			double uct_c=0.20) : tree_policy(db)
 		{
 			uct_weight  = uct_c;
@@ -187,10 +188,11 @@ class uct_rave_tree_policy : public tree_policy {
 	public:
 		uct_rave_tree_policy(
 			pattern_dbptr db,
+			// TODO: config option
 			// UCT exploration weight
-			double uct_c=0.05,
+			double uct_c=0.15,
 			// RAVE estimation weight
-			double rave_c=2000.0) : tree_policy(db)
+			double rave_c=500) : tree_policy(db)
 		{
 			uct_weight  = uct_c;
 			rave_weight = rave_c;

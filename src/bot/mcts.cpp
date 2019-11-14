@@ -158,6 +158,22 @@ void mcts::playout(board *state, mcts_node *ptr) {
 	// terminates when no strategies find a valid move to play
 	for (;;) {
 		coordinate next;
+		/*
+		printf("#  current player: %s\n",
+		       (state->current_player == point::color::Black)? "black" : "white");
+		printf("# available moves: ");
+		*/
+
+		/*
+		for (const auto& c : state->available_moves) {
+			printf("(%u, %u)[%s] ",
+					c.first, c.second,
+					state->is_valid_move(c)? "valid" : "invalid");
+		}
+		printf("\n");
+		state->print();
+		*/
+
 
 		for (auto strat : playout_strats) {
 			next = strat->apply(state);
@@ -168,11 +184,13 @@ void mcts::playout(board *state, mcts_node *ptr) {
 		}
 
 		if (next == coordinate(0 ,0)) {
+			//printf("#  no valid moves!\n");
 			ptr->update(state);
 			return;
 		}
 
 		state->make_move(next);
+		//usleep(100000);
 	}
 }
 
@@ -599,10 +617,11 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 }
 
 bool mcts_node::fully_visited(board *state) {
+	// TODO: config option
 	//return true;
-	//return traversals > 8;
+	return traversals > 8;
 	//return traversals >= state->dimension * 2;
-	return traversals >= state->dimension * state->dimension;
+	//return traversals >= state->dimension * state->dimension;
 	//return traversals > state->dimension * 2;
 	//return traversals > 2;
 }

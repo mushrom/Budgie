@@ -78,9 +78,8 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 			ret = x.first;
 		}
 	}
-#endif
 
-	unsigned i = 0;
+#else
 	for (const auto& x : state->available_moves) {
 		double temp = uct(x, state, ptr);
 
@@ -88,11 +87,8 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 			cur_max = temp;
 			ret = x;
 		}
-		i++;
 	}
-
-	// TODO: debugging, remove
-	printf("tested %u possible moves\n", i);
+#endif
 
 	return ret;
 }
@@ -108,56 +104,41 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0;
 	}
 
-	/*
-	// NOTE: commented out because win_rate() for uninitialized leaves should
-	//       be an even 0.5, returning early here breaks UCT weighting
-	//
-	//       leaving this here just in case though
-	if (ptr->nodestats[coord].traversals == 0) {
-		// unexplored leaf
-		return 0.5;
-	}
-	*/
-
 	double rave_est = ptr->rave[coord].win_rate();
-	//double mcts_est = ptr->leaves[coord]->win_rate();
 	double mcts_est = ptr->nodestats[coord].win_rate();
 	double crit_est = (*ptr->criticality)[coord].win_rate();
 
-	/*
-	double uct = uct_weight
-		* sqrt(log(ptr->traversals) / ptr->leaves[coord]->traversals);
-		* */
+	//double uct = uct_weight * sqrt(log(ptr->traversals) / ptr->nodestats[coord].traversals);
+
 
 	double uct =
 		uct_weight * sqrt(log(ptr->traversals) /
-			(ptr->nodestats[coord].traversals > 0)
+			((ptr->nodestats[coord].traversals > 0)
 				? ptr->nodestats[coord].traversals
-				: 1);
+				: 1));
+	//printf("uct weight: %g\n", uct);
 
 	double mc_uct_est = mcts_est + uct;
 
 	double B = (ptr->nodestats[coord].traversals)/rave_weight;
-	//double B = (ptr->leaves[coord]->traversals)/rave_weight;
-	//double B = (ptr->leaves[coord]->traversals)/rave_weight;
-	//double B = (ptr->traversals / rave_weight);
+	//double B = (ptr->traversals)/rave_weight;
 	B = (B > 1)? 1 : B;
 
-	double meh = 0;
+#if 0
+	double stats_weight = 0;
 
-	/*
+	// TODO: do we really need a threshold for crit_est? if so, why?
 	if (ptr->traversals >= 100) {
 	//if ((*ptr->criticality)[coord].traversals >= 100) {
-		//meh = crit_est*(1-B) + rave_est*(1-B);
-	*/
-	// TODO: do we really need a threshold for crit_est?
-		meh = (crit_est + rave_est) * (1-B);
+		stats_weight = (crit_est + rave_est) * (1-B);
 
-		/*
 	} else {
-		meh = rave_est * (1-B);
+		stats_weight = rave_est * (1-B);
 	}
-	*/
+
+	stats_weight = crit_est + rave_est*(1-B);
+#else
+#endif
 
 	//meh = (crit_est*(1-B) + rave_est*(1-B)) / 2;
 
@@ -165,7 +146,10 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	// prefer uct+mcts playout rates
 	//double foo = (rave_est * (1-B)) + (mc_uct_est * B);
 	//double foo = (crit_est * (1-B)) + (rave_est * (1-B)) + (mc_uct_est * B);
-	double foo = meh + (mc_uct_est * B);
+	//double foo = stats_weight + (mc_uct_est * B);
+	//double foo = mcts_est*B + rave_ + mcts_est*B + uct;
+	double foo = mcts_est*B + rave_est*(1-B) + crit_est + uct;
+	//printf("returning %g for node with %u traversals (rave est: %g, mc est: %g)\n", foo, ptr->nodestats[coord].traversals, rave_est, mc_uct_est);
 	return foo;
 }
 

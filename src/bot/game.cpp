@@ -401,7 +401,7 @@ bool board::make_move(const coordinate& coord) {
 	//printf("group check: %u\n", group_check());
 
 	// TODO: remove group_check once things are good
-	group_check();
+	//group_check();
 	regen_hash();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
@@ -675,6 +675,7 @@ void board::regen_hash(void) {
 uint64_t board::regen_hash(point::color tempgrid[384]) {
 	uint64_t ret = InitialHash;
 
+	/*
 	for (unsigned i = 0; i < dimension*dimension; i++) {
 		// TODO: index_to_coord()
 		coordinate coord = {(i % dimension) + 1, (i / dimension) + 1};
@@ -684,8 +685,8 @@ uint64_t board::regen_hash(point::color tempgrid[384]) {
 			ret = gen_hash(coord, grid[i], ret);
 		}
 	}
+	*/
 
-	/*
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
@@ -696,7 +697,6 @@ uint64_t board::regen_hash(point::color tempgrid[384]) {
 			}
 		}
 	}
-	*/
 
 	return ret;
 }
@@ -773,11 +773,13 @@ bool board::group_check(void) {
 
 		if (it == available_moves.end() && grid[i] == point::color::Empty) {
 			printf("have no available move for empty space at (%d, %d)", x, y);
+			return false;
 
 		} else if (it != available_moves.end()
 		           && grid[i] != point::color::Empty)
 		{
 			printf("invalid available move at (%d, %d)", x, y);
+			return false;
 		}
 	}
 
