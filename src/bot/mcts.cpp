@@ -616,10 +616,14 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 	}
 }
 
+// XXX XXX: defined in budgie.cpp, this is set by the argument parsing thing
+//          this is probably a code smell :P
+extern unsigned full_traversals;
+
 bool mcts_node::fully_visited(board *state) {
-	// TODO: config option
+	return traversals > full_traversals;
 	//return true;
-	return traversals > 8;
+	//return traversals > 8;
 	//return traversals >= state->dimension * 2;
 	//return traversals >= state->dimension * state->dimension;
 	//return traversals > state->dimension * 2;

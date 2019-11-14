@@ -8,6 +8,10 @@
 
 namespace mcts_thing {
 
+// XXX XXX: global variable used by mcts_node::fully_visited
+// TODO: what would be a cleaner way to do this?
+unsigned full_traversals = 8;
+
 budgie::budgie(args_parser::option_map& opts) {
 	// cache options
 	options = opts;
@@ -19,6 +23,7 @@ budgie::budgie(args_parser::option_map& opts) {
 	komi = stoi(opts["komi"]);
 	boardsize = stoi(opts["boardsize"]);
 	playouts = stoi(opts["playouts"]);
+	full_traversals = stoi(opts["node_expansion_threshold"]);
 	game.reset(boardsize, komi);
 }
 
@@ -90,6 +95,8 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 	// TODO: we should have an AI instance class that handles
 	//       all of the initialization,, board/mcts interaction (make_move, ...)
 	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
+	double uct_weight = std::stof(options["uct_weight"]);
+	unsigned rave_weight = std::stoi(options["rave_weight"]);
 
 	// only have this tree policy right now
 	tree_policy *tree_pol;
@@ -100,9 +107,9 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 	if (options["tree_policy"] == "mcts") {
 		tree_pol = new mcts_tree_policy(db);
 	} else if (options["tree_policy"] == "uct") {
-		tree_pol = new uct_tree_policy(db);
+		tree_pol = new uct_tree_policy(db, uct_weight);
 	} else {
-		tree_pol = new uct_rave_tree_policy(db);
+		tree_pol = new uct_rave_tree_policy(db, uct_weight, rave_weight);
 	}
 
 	// TODO: parse options from command line

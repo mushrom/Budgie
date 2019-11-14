@@ -7,18 +7,21 @@
 namespace mcts_thing {
 
 static args_parser::default_map budgie_options = {
+	// general game settings
 	{"boardsize",
 		{"9", "Initial board size, currently only square boards are supported.",
 			{"<any integer greater than 0>"}}},
 	{"komi",
 		{"5.5", "Komi given to the white player",
 			{"<any real number>"}}},
+
+	// AI settings
 	{"mode",
 		{"gtp", "Interface mode to use",
 			{"gtp", "distributed-gtp", "distributed-worker"}}},
 	{"playouts",
 		{"10000", "Number of playouts to use per move",
-			{"<any unsigned integer>"}}},
+			{"<any postive integer>"}}},
 	{"use_patterns",
 		{"1", "Boolean to enable/disable the pattern database",
 			{"0", "1"}}},
@@ -33,6 +36,17 @@ static args_parser::default_map budgie_options = {
 	{"patterns",
 		{"patterns.txt", "Local pattern database file (gnugo format)",
 			{"patterns.txt"}}},
+	{"uct_weight",
+		{"0.15", "UCT exploration weight",
+			{"<any postive real number or zero>"}}},
+	{"rave_weight",
+		{"500", "RAVE bias weight",
+			{"<any positive integer>"}}},
+	{"node_expansion_threshold",
+		{"8", "Threshold for converting to an internal tree node, lower is slower",
+			{"<any positive integer>"}}},
+
+	// distributed mode configuration
 	{"server-host",
 		{"tcp://localhost:5555", "Master server using the distributed mode",
 			{"<ZMQ socket string>"}}},
