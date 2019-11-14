@@ -15,16 +15,13 @@ board::board(unsigned size) {
 	//grid.reserve(size * size);
 	dimension = size;
 
-	/*
-	for (unsigned i = 0; i < size*size; i++){
-		ownership[i] = grid[i] = point::color::Empty;
-		groups[i] = nullptr;
-	}
-	*/
-
 	for (unsigned i = 0; i < 384; i++) {
 		ownership[i] = grid[i] = point::color::Empty;
 		groups[i] = nullptr;
+	}
+
+	for (unsigned i = 0; i < dimension * dimension; i++) {
+		available_moves.insert(index_to_coord(i));
 	}
 }
 
@@ -51,6 +48,9 @@ void board::set(board *other) {
 	// copy internal info
 	move_list = other->move_list;
 	hash = other->hash;
+	available_moves.clear();
+	available_moves.insert(other->available_moves.begin(),
+	                       other->available_moves.end());
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		// TODO: maybe clear existing groups for correctness
@@ -89,12 +89,16 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	komi = n_komi;
 	moves = 0;
 
+	available_moves.clear();
+
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		grid[i] = point::color::Empty;
 
 		if (groups[i]) {
 			group_clear(groups + i);
 		}
+
+		available_moves.insert(index_to_coord(i));
 	}
 
 	for (auto& s : group_liberties) {
@@ -531,6 +535,10 @@ unsigned board::coord_to_index(const coordinate& coord) {
 	return dimension*(coord.second - 1) + (coord.first - 1);
 }
 
+coordinate board::index_to_coord(unsigned index) {
+	return {(index % dimension) + 1, (index / dimension) + 1};
+}
+
 // TODO: Right now the bot the bot doesn't count stones in atari as being dead,
 //       which impacts territory counting, since playing a stone in your opponents
 //       territory immediately makes their territory invalid in the bot's eyes...
@@ -558,6 +566,8 @@ unsigned board::count_territory(point::color player) {
 	return territory;
 }
 
+/*
+// TODO: I don't thing this is being used anywhere anymore
 std::vector<coordinate> board::available_moves(void) {
 	std::vector<coordinate> ret = {};
 
@@ -573,6 +583,7 @@ std::vector<coordinate> board::available_moves(void) {
 
 	return ret;
 }
+*/
 
 #include <unistd.h>
 
@@ -664,7 +675,6 @@ void board::regen_hash(void) {
 uint64_t board::regen_hash(point::color tempgrid[384]) {
 	uint64_t ret = InitialHash;
 
-	/*
 	for (unsigned i = 0; i < dimension*dimension; i++) {
 		// TODO: index_to_coord()
 		coordinate coord = {(i % dimension) + 1, (i / dimension) + 1};
@@ -674,8 +684,8 @@ uint64_t board::regen_hash(point::color tempgrid[384]) {
 			ret = gen_hash(coord, grid[i], ret);
 		}
 	}
-	*/
 
+	/*
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
@@ -686,6 +696,7 @@ uint64_t board::regen_hash(point::color tempgrid[384]) {
 			}
 		}
 	}
+	*/
 
 	return ret;
 }
@@ -740,6 +751,9 @@ void group::link_before(group *a) {
 
 bool board::group_check(void) {
 	for (unsigned i = 0; i < dimension*dimension; i++) {
+		int y = i / dimension + 1;
+		int x = i % dimension + 1;
+
 		if (groups[i]) {
 			if (groups[i]->color != grid[i]) {
 				puts("color mismatch");
@@ -748,13 +762,22 @@ bool board::group_check(void) {
 		}
 
 		if (!groups[i] && grid[i] != point::color::Empty) {
-			int y = i / dimension + 1;
-			int x = i % dimension + 1;
 
 			print();
 			printf("no group for stones on board at (%d, %d)\n", x, y);
 			group_print();
 			return false;
+		}
+
+		auto it = available_moves.find(index_to_coord(i));
+
+		if (it == available_moves.end() && grid[i] == point::color::Empty) {
+			printf("have no available move for empty space at (%d, %d)", x, y);
+
+		} else if (it != available_moves.end()
+		           && grid[i] != point::color::Empty)
+		{
+			printf("invalid available move at (%d, %d)", x, y);
 		}
 	}
 
@@ -802,6 +825,7 @@ void board::group_place(const coordinate& coord) {
 	*g = new group;
 	(*g)->members.push_back(coord);
 	(*g)->color = current_player;
+	available_moves.erase(coord);
 
 	// TODO: this is a pretty common pattern, should have a function that
 	//       takes a coord and a lambda and applies that to nearby
@@ -849,6 +873,8 @@ void board::group_place(const coordinate& coord) {
 	}
 
 	group_libs_update(*g);
+	// update set of available moves
+	//available_moves.erase(coord);
 }
 
 void board::group_link(group **a, group **b) {
@@ -901,6 +927,13 @@ void board::group_try_capture(group **a, const coordinate& coord) {
 	group_libs_update(*a);
 
 	if ((*a)->liberties.size() == 0) {
+		// TODO: wrap available_moves stuff into it's own function
+		for (const coordinate& c : (*a)->members) {
+			// update map of available moves
+			//available_moves[index] = true;
+			available_moves.insert(c);
+		}
+
 		group_update_neighbors(a);
 		group_clear(a);
 	}

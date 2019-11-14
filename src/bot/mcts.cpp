@@ -26,6 +26,7 @@ coordinate random_coord(board *b) {
 }
 
 // TODO: also maybe move this
+#if 0
 coordinate pick_random_leaf(board *state) {
 	coordinate ret = {0, 0};
 	unsigned boardsquares = state->dimension * state->dimension;
@@ -48,6 +49,29 @@ coordinate pick_random_leaf(board *state) {
 
 	return ret;
 }
+#else
+
+coordinate pick_random_leaf(board *state) {
+	std::bitset<384> map;
+	unsigned tried = 0;
+
+	while (tried < state->available_moves.size()) {
+		unsigned foo = rand() % state->available_moves.size();
+		if (map[foo]) continue;
+
+		tried++;
+		map[foo] = true;
+		coordinate c = *std::next(state->available_moves.begin(), foo);
+
+		if (!state->is_valid_move(c) || patterns.search(state, c) == 0)
+			continue;
+
+		return c;
+	}
+
+	return {0, 0};
+}
+#endif
 
 /*
 // keeping this here because we might use it later

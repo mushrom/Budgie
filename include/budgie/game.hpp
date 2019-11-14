@@ -100,12 +100,13 @@ class board {
 		bool make_move(const coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
-		std::vector<coordinate> available_moves(void);
+		//std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
 		static uint64_t gen_hash(const coordinate& coord,
 		                         point::color color,
 		                         uint64_t hash);
 		unsigned coord_to_index(const coordinate& coord);
+		coordinate index_to_coord(unsigned index);
 
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi);
@@ -158,6 +159,7 @@ class board {
 
 		bool owns(const coordinate& coord, point::color color);
 		point::color ownership[384];
+		std::set<coordinate> available_moves;
 
 	private:
 		void regen_hash(void);

@@ -63,6 +63,7 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 	//      distributed mode rave nodes won't be sent, so this technically
 	//      breaks that, although that was already broken with uct-rave anyway.
 	//      Now it's just more broken.
+#if 0
 	for (auto& x : ptr->rave) {
 		/*
 		if (x.second == nullptr) {
@@ -77,6 +78,21 @@ coordinate uct_rave_tree_policy::max_utc(board *state, mcts_node *ptr) {
 			ret = x.first;
 		}
 	}
+#endif
+
+	unsigned i = 0;
+	for (const auto& x : state->available_moves) {
+		double temp = uct(x, state, ptr);
+
+		if (temp > cur_max) {
+			cur_max = temp;
+			ret = x;
+		}
+		i++;
+	}
+
+	// TODO: debugging, remove
+	printf("tested %u possible moves\n", i);
 
 	return ret;
 }
@@ -113,8 +129,12 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		* sqrt(log(ptr->traversals) / ptr->leaves[coord]->traversals);
 		* */
 
-	double uct = uct_weight
-		* sqrt(log(ptr->traversals) / ptr->nodestats[coord].traversals);
+	double uct =
+		uct_weight * sqrt(log(ptr->traversals) /
+			(ptr->nodestats[coord].traversals > 0)
+				? ptr->nodestats[coord].traversals
+				: 1);
+
 	double mc_uct_est = mcts_est + uct;
 
 	double B = (ptr->nodestats[coord].traversals)/rave_weight;

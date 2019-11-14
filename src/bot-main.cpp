@@ -3,9 +3,10 @@
 #include <budgie/distributed_client.hpp>
 #include <budgie/gtp.hpp>
 #include <budgie/args_parser.hpp>
-#include <stdio.h>
 #include <iostream>
 #include <thread>
+#include <time.h>
+#include <stdio.h>
 
 #include <budgie/budgie.hpp>
 
@@ -92,6 +93,7 @@ void run_workers(args_parser::option_map& options) {
 }
 
 int main(int argc, char *argv[]) {
+	srand(time(NULL));
 	args_parser args(argc, argv, budgie_options);
 
 	for (auto& arg : args.arguments) {
