@@ -88,6 +88,7 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	dimension = boardsize;
 	komi = n_komi;
 	moves = 0;
+	move_list = nullptr;
 
 	available_moves.clear();
 
@@ -1086,16 +1087,30 @@ void board::serialize(anserial::serializer& ser, uint32_t parent) {
 			{"komi", (uint32_t)komi},
 			{"current_player", current_player}});
 
-	uint32_t grid_entry = ser.add_entities(datas, {"grid"});
-	uint32_t grid_datas = ser.add_entities(grid_entry, {});
+	uint32_t move_entry = ser.add_entities(datas, {"moves"});
+	uint32_t move_datas = ser.add_entities(move_entry, {});
 
+	/*
 	for (unsigned i = 0; i < dimension*dimension; i++) {
 		ser.add_entities(grid_datas, grid[i]);
 	}
+	*/
+
+	for (auto& ptr = move_list; ptr != nullptr; ptr = ptr->previous) {
+		ser.add_entities(move_datas,
+			{"move",
+				{"coordinate", {ptr->coord.first, ptr->coord.second}},
+				{"player", ptr->color},
+				{"hash", {(uint32_t)(ptr->hash >> 32),
+				          (uint32_t)(ptr->hash & 0xffffffff)}},
+				});
+	}
 }
 
+#include <cassert>
+
 void board::deserialize(anserial::s_node *node) {
-	anserial::s_node* grid_datas;
+	anserial::s_node* move_datas;
 	uint32_t n_dimension, n_komi;
 	point::color n_current;
 
@@ -1104,7 +1119,7 @@ void board::deserialize(anserial::s_node *node) {
 			{"dimension", &n_dimension},
 			{"komi", &n_komi},
 			{"current_player", (uint32_t*)&n_current},
-			{"grid", &grid_datas}}))
+			{"moves", &move_datas}}))
 	{
 		throw std::logic_error("board::deserialize(): invalid board tree structure");
 	}
@@ -1112,8 +1127,34 @@ void board::deserialize(anserial::s_node *node) {
 	reset(n_dimension, n_komi);
 	current_player = n_current;
 
+	/*
 	for (unsigned i = 0; i < dimension*dimension; i++) {
 		grid[i] = (point::color)grid_datas->get(i)->uint();
+	}
+	*/
+
+	auto& nodes = move_datas->entities();
+	for (auto it = nodes.rbegin(); it != nodes.rend(); it++) {
+		anserial::s_node* move_node = *it;
+		coordinate coord;
+		point::color color;
+		uint32_t temphash[2];
+
+		if (!anserial::destructure(move_node,
+			{"move",
+				{"coordinate", {&coord.first, &coord.second}},
+				{"player", (uint32_t*)&color},
+				{"hash", {temphash, temphash + 1}}}))
+		{
+			throw std::logic_error("board::deserialize(): invalid move");
+		}
+
+		uint64_t fullhash = (((uint64_t)temphash[0] << 32)) | (uint64_t)temphash[1];
+
+		current_player = color;
+		make_move(coord);
+		//printf("have %lx :: %lx\n", hash, fullhash);
+		//assert(hash == fullhash);
 	}
 }
 
