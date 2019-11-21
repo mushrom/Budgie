@@ -21,74 +21,20 @@ O*O
 +--
 :0
 
-# avoid playing dumb self-ataris
-#?.?
-#X*X
-#xX?
-#:0
-
-#?Xx
-#.*X
-#---
-#:0
-
-# defensive moves
-## - respond to atari
-# - (more general, centered)
-X??
-O*o
-X??
-:120
-
-## cutting
-Xo?
-?*o
-?oX
-:120
-
 ## hane
-?oO
-o*X
-??o
-:120
-
-# captures
-# - centered, more general
-
-?oO
-o*X
----
-:130
-
 O??
 X*?
-o??
-:130
+???
+:120
 
+## respond to attachments
 X??
-?*O
-?OX
-:130
+O*?
+???
+:120
 
-# - poke shape points
-#.X.
-#o*o
-#XoX
-#:150
-
-#XoX
-#o*o
-#Xoo
-#:150
-
-# then offensive moves
-#oX?
-#O*o
-#oX?
-#:150
-
-### - peep
-#?oX
-#o*.
-#?oX
-#:120
+## simple extend
+?O?
+?*?
+???
+:120
