@@ -112,12 +112,7 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 		tree_pol = new uct_rave_tree_policy(db, uct_weight, rave_weight);
 	}
 
-	// TODO: parse options from command line
-	std::list<playout_strategy*> strats = {
-		new capture_weighted_playout(db),
-		new random_playout(db),
-	};
-
+	std::list<playout_strategy*> strats;
 	auto policies = mcts_thing::split_string(options["playout_policy"]);
 
 	for (auto policy : policies) {

@@ -7,7 +7,7 @@ coordinate local_weighted_playout::apply(board *state) {
 	coordinate things[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
-	unsigned best = 101;
+	unsigned best = 0;
 
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
