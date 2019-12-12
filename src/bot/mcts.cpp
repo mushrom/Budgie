@@ -15,8 +15,6 @@
 namespace mcts_thing {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine generator(seed);
-	// XXX: get rid of this eventually
-	pattern_db patterns("patterns.txt");
 
 // TODO: Maybe move this
 coordinate random_coord(board *b) {
@@ -51,7 +49,7 @@ coordinate pick_random_leaf(board *state) {
 }
 #else
 
-coordinate pick_random_leaf(board *state) {
+coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 	std::bitset<384> map;
 	unsigned tried = 0;
 
@@ -63,7 +61,7 @@ coordinate pick_random_leaf(board *state) {
 		map[foo] = true;
 		coordinate c = *std::next(state->available_moves.begin(), foo);
 
-		if (!state->is_valid_move(c) || patterns.search(state, c) == 0)
+		if (!state->is_valid_move(c) || patterns->search(state, c) == 0)
 			continue;
 
 		return c;

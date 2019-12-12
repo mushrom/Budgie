@@ -19,7 +19,7 @@ coordinate random_playout::apply(board *state) {
 	return nullptr;
 	*/
 
-	return pick_random_leaf(state);
+	return pick_random_leaf(state, patterns.get());
 }
 
 // namespace mcts_thing

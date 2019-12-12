@@ -14,7 +14,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 		//       All valild moves should be considered, not just the random nodes
 		//       picked in the "exploration" phase...
 		if (!ptr->fully_visited(state)) {
-			coordinate next = pick_random_leaf(state);
+			coordinate next = pick_random_leaf(state, patterns.get());
 
 			// no valid moves from here, just return
 			if (!state->is_valid_move(next)) {

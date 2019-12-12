@@ -128,7 +128,7 @@ operator-(const mcts_node::stats& a, const mcts_node::stats& b) {
 
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
-coordinate pick_random_leaf(board *state);
+coordinate pick_random_leaf(board *state, pattern_db *patterns);
 
 // TODO: maybe move this to pattern_db.hpp
 typedef std::shared_ptr<pattern_db> pattern_dbptr;
