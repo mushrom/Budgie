@@ -148,7 +148,7 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	//double foo = (crit_est * (1-B)) + (rave_est * (1-B)) + (mc_uct_est * B);
 	//double foo = stats_weight + (mc_uct_est * B);
 	//double foo = mcts_est*B + rave_ + mcts_est*B + uct;
-	double foo = mcts_est*B + rave_est*(1-B) + crit_est + uct;
+	double foo = mcts_est*B + (crit_est+rave_est)*(1-B) + uct;
 	//printf("returning %g for node with %u traversals (rave est: %g, mc est: %g)\n", foo, ptr->nodestats[coord].traversals, rave_est, mc_uct_est);
 	return foo;
 }
