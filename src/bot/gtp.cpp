@@ -75,7 +75,9 @@ void gtp_client::repl(args_parser::option_map& options) {
 		}
 
 		else if (args[0] == "komi") {
-			// TODO: accessors
+			// XXX: duplicated state here is because might not necessarily
+			//      want to reset the board, this usually happens after
+			//      clear_board.
 			bot.komi = atoi(args[1].c_str());
 			bot.game.komi = bot.komi;
 
@@ -99,7 +101,6 @@ void gtp_client::repl(args_parser::option_map& options) {
 			point::color player = string_to_color(args[1]);
 			coordinate coord = string_to_coord(args[2]);
 
-			// TODO: ignore case
 			if (args[2] == "pass" || args[2] == "PASS") {
 				bot.make_move(budgie::move::types::Pass);
 				std::cout << "=\n\n";
@@ -130,10 +131,6 @@ void gtp_client::repl(args_parser::option_map& options) {
 		}
 
 		else if (args[0] == "genmove") {
-			// TODO: should have function to handle this, rather than mutating the
-			//       game state from here
-
-			//game.current_player = string_to_color(args[1]);
 			bot.set_player(string_to_color(args[1]));
 			budgie::move move = bot.genmove();
 

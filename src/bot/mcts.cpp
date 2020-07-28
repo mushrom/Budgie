@@ -16,39 +16,13 @@ namespace mcts_thing {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine generator(seed);
 
-// TODO: Maybe move this
 coordinate random_coord(board *b) {
 	std::uniform_int_distribution<int> distribution(1, b->dimension);
 
 	return coordinate(distribution(generator), distribution(generator));
 }
 
-// TODO: also maybe move this
-#if 0
-coordinate pick_random_leaf(board *state) {
-	coordinate ret = {0, 0};
-	unsigned boardsquares = state->dimension * state->dimension;
-	std::bitset<384> map;
-
-	while (map.count() != boardsquares) {
-		coordinate temp = random_coord(state);
-		unsigned index = state->coord_to_index(temp);
-
-		if (map[index]) continue;
-		map[index] = true;
-
-		if (!state->is_valid_move(temp) || patterns.search(state, temp) == 0) {
-			continue;
-		}
-
-		ret = temp;
-		break;
-	}
-
-	return ret;
-}
-#else
-
+// TODO: this could use more optimization
 coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 	std::bitset<384> map;
 	unsigned tried = 0;
@@ -69,20 +43,8 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 
 	return {0, 0};
 }
-#endif
-
-/*
-// keeping this here because we might use it later
-auto random_choice(auto& x) {
-	std::uniform_int_distribution<int> distribution(0, x.size() - 1);
-
-	return x[distribution(generator)];
-}
-*/
 
 coordinate mcts::do_search(board *state, unsigned playouts) {
-	// XXX: we'll want to check to make sure this is already the case once we
-	//      start reusing trees
 	root->color = state->other_player(state->current_player);
 
 	while (root->traversals < playouts) {
@@ -91,15 +53,7 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 	}
 
 	fprintf(stderr, "# %u playouts\n", root->traversals);
-
 	/*
-	// TODO: re-add this once we have a logger
-	//       Actually, once we have a logger we'll probably also have an
-	//       AI instance class so we should just put debugging stuff there.
-
-	coordinate temp = {1, 1};
-	root->dump_node_statistics(temp, state);
-
 	std::cerr << "# predicted playout: ";
 	root->dump_best_move_statistics(state);
 	std::cerr << std::endl;
@@ -109,15 +63,6 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 }
 
 double mcts::win_rate(coordinate& coord) {
-	/*
-	if (root->leaves[coord] != nullptr) {
-		return root->leaves[coord]->win_rate();
-
-	} else {
-		return 0.5;
-	}
-	*/
-
 	if (root->nodestats.find(coord) != root->nodestats.end()) {
 		return root->nodestats[coord].win_rate();
 
@@ -127,17 +72,11 @@ double mcts::win_rate(coordinate& coord) {
 }
 
 void mcts::reset() {
-	//delete root;
-
 	uint32_t temp = id;
 	while ((id = rand()) == temp);
 	updates = 0;
 
-	//root = new mcts_node(nullptr, point::color::Empty);
 	root = std::move(mcts_node::nodeptr(new mcts_node(nullptr, point::color::Empty)));
-	//root->rave = rave_map::ptr(new rave_map(point::color::Empty, nullptr));
-	//root->rave = mcts_node::raveptr(new mcts_node::ravestats);
-	//root->child_rave = mcts_node::raveptr(new mcts_node::ravestats);
 	root->criticality = mcts_node::critptr(new mcts_node::critmap);
 }
 
@@ -145,7 +84,6 @@ void mcts::explore(board *state)
 {
 	mcts_node* ptr = tree->search(state, root.get());
 	playout(state, ptr);
-	//ptr = ptr? policy->playout(state, ptr) : ptr;
 }
 
 void mcts::playout(board *state, mcts_node *ptr) {
@@ -156,22 +94,6 @@ void mcts::playout(board *state, mcts_node *ptr) {
 	// terminates when no strategies find a valid move to play
 	for (;;) {
 		coordinate next;
-		/*
-		printf("#  current player: %s\n",
-		       (state->current_player == point::color::Black)? "black" : "white");
-		printf("# available moves: ");
-		*/
-
-		/*
-		for (const auto& c : state->available_moves) {
-			printf("(%u, %u)[%s] ",
-					c.first, c.second,
-					state->is_valid_move(c)? "valid" : "invalid");
-		}
-		printf("\n");
-		state->print();
-		*/
-
 
 		for (auto strat : playout_strats) {
 			next = strat->apply(state);
@@ -188,13 +110,9 @@ void mcts::playout(board *state, mcts_node *ptr) {
 		}
 
 		state->make_move(next);
-		//usleep(100000);
 	}
 }
 
-// TODO: we could add a 'generation' parameter to the node class that tracks when
-//       nodes were last updated, so that we can serialize only nodes that have
-//       been touched since the client last recieved the tree.
 uint32_t mcts::serialize_node(anserial::serializer& ser,
                               uint32_t parent,
                               const mcts_node* ptr,
@@ -205,16 +123,8 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 	}
 
 	if (ptr->updates < since) {
-		//ser.add_entities(parent, {});
-		// TODO: remove return maybe
 		return 0;
 	}
-
-	/*
-	std::string color = (ptr->color == point::color::Black)? "black" : "white";
-	std::string childs = "";
-	std::string ravestr = "";
-	*/
 
 	uint32_t self = ser.add_entities(parent,
 		{"node",
@@ -235,7 +145,7 @@ uint32_t mcts::serialize_node(anserial::serializer& ser,
 
 	for (const auto& x : ptr->nodestats) {
 		coordinate coord = x.first;
-		mcts_node::stats sts = x.second;
+		stats sts = x.second;
 
 		ser.add_entities(nodestats_cont,
 			{"leaf",
@@ -293,7 +203,6 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 		throw std::logic_error("mcts::deserialize_node(): invalid tree structure!");
 	}
 
-	// TODO: ok, so we will need a seperate merge function
 	ptr->color = color;
 	ptr->coord = coord;
 	ptr->traversals = node_traversals;
@@ -324,7 +233,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	if (node_stats) {
 		for (auto leaf : node_stats->entities()) {
 			coordinate leaf_coord;
-			mcts_node::stats leaf_stats;
+			stats leaf_stats;
 			anserial::s_node *leaf_node;
 
 			if (!anserial::destructure(leaf,
@@ -346,7 +255,7 @@ mcts_node *mcts::deserialize_node(anserial::s_node *node, mcts_node *ptr) {
 	if (rave) {
 		for (auto stat : rave->entities()) {
 			coordinate leaf_coord;
-			mcts_node::stats leaf_stats;
+			stats leaf_stats;
 
 			if (!anserial::destructure(stat,
 				{"stats",
@@ -379,12 +288,6 @@ std::vector<uint32_t> mcts::serialize(board *state, uint32_t since) {
 	uint32_t nodes = ret.add_entities(tree_top, {"nodes"});
 	serialize_node(ret, nodes, root.get(), since);
 	ret.add_symtab(0);
-	/*
-	ret.add_version(0);
-	uint32_t tree = ret.add_entities(0, {"budgie-tree"});
-	serialize_node(ret, tree, root);
-	ret.add_symtab(0);
-	*/
 
 	return ret.serialize();
 }
@@ -443,8 +346,6 @@ bool mcts::sync(mcts *other) {
 
 
 mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
-	// TODO: 'own' should never be null here, might be a good idea
-	//       to add a sanity check just in case
 	if (!own || !other) {
 		return nullptr;
 	}
@@ -486,8 +387,6 @@ mcts_node *mcts::merge_node(mcts_node *own, mcts_node *other) {
 }
 
 mcts_node *mcts::sync_node(mcts_node *own, mcts_node *other) {
-	// TODO: 'own' should never be null here, might be a good idea
-	//       to add a sanity check just in case
 	if (!own || !other) {
 		return nullptr;
 	}
@@ -539,7 +438,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 		}
 
 		for (const auto& stat : newer->nodestats) {
-			mcts_node::stats sts = stat.second - older->nodestats[stat.first];
+			stats sts = stat.second - older->nodestats[stat.first];
 
 			if (sts.traversals > 0) {
 				result->nodestats[stat.first] = sts;
@@ -548,7 +447,7 @@ static void mcts_diff_iter(mcts_node *result, mcts_node *a, mcts_node *b) {
 
 #ifdef SERIALIZE_RAVE
 		for (const auto& rave : newer->rave) {
-			mcts_node::stats rsts = rave.second - older->rave[rave.first];
+			stats rsts = rave.second - older->rave[rave.first];
 
 			if (rsts.traversals > 0) {
 				result->rave[rave.first] = rave.second;
@@ -589,7 +488,6 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 	assert(a && b);
 	assert(a->id == b->id);
 
-	// TODO: mcts constructor without policies
 	mcts *result = new mcts();
 	result->id = a->id;
 	// TODO: send max, although they should be the same for now
@@ -601,14 +499,9 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 }
 
 void mcts_node::new_node(coordinate& coord, point::color color) {
-	// TODO: experimented with sharing rave stats between siblings but it seems to
-	//       be hit-or-miss, leaving the code here for now...
 	if (leaves[coord] == nullptr) {
 		// this node is unvisited, set up a new node
 		leaves[coord] = nodeptr(new mcts_node(this, color));
-		//leaves[coord]->rave = child_rave;
-		//leaves[coord]->child_rave = raveptr(new ravestats);
-		//leaves[coord]->rave = raveptr(new ravestats);
 		leaves[coord]->criticality = criticality;
 		leaves[coord]->coord = coord;
 	}
@@ -620,12 +513,6 @@ extern unsigned full_traversals;
 
 bool mcts_node::fully_visited(board *state) {
 	return traversals > full_traversals;
-	//return true;
-	//return traversals > 8;
-	//return traversals >= state->dimension * 2;
-	//return traversals >= state->dimension * state->dimension;
-	//return traversals > state->dimension * 2;
-	//return traversals > 2;
 }
 
 coordinate mcts_node::best_move(void) {
@@ -650,12 +537,6 @@ coordinate mcts_node::best_move(void) {
 	return max->first;
 }
 
-/*
-double mcts_node::win_rate(void){
-	return (double)wins / (double)traversals;
-}
-*/
-
 void mcts_node::update_stats(board *state, point::color winner) {
 	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
 		// update criticality maps
@@ -670,12 +551,6 @@ void mcts_node::update_stats(board *state, point::color winner) {
 
 		for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
 			bool won = foo->color == winner;
-
-			/*
-			ptr->criticality[foo->coord].wins += won && state->owns(foo->coord, foo->color);
-			ptr->criticality[foo->coord].traversals += 1;
-			*/
-
 
 			// node rave maps track the best moves for the oppenent
 			if (ptr->color == foo->color) {
@@ -694,7 +569,6 @@ void mcts_node::update(board *state) {
 	update_stats(state, winner);
 
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
-		//bool won = ptr->color == winner;
 		bool won = ptr->color == winner;
 
 		if (ptr->parent) {
@@ -703,7 +577,6 @@ void mcts_node::update(board *state) {
 		}
 
 		ptr->traversals++;
-		//ptr->wins += won;
 	}
 }
 
@@ -748,12 +621,6 @@ void mcts_node::dump_node_statistics(const coordinate& coord, board *state, unsi
 		}
 	};
 
-	/*
-	if (depth >= 4) {
-		return;
-	}
-	*/
-
 	print_spaces();
 
 	fprintf(stderr, "%s: %s, winrate: %.2f, rave: %.2f, criticality: %.2f, traversals: %u\n",
@@ -784,7 +651,6 @@ void mcts_node::dump_best_move_statistics(board *state) {
 	std::cerr << ((color == point::color::Black)? " (W)" : " (B)");
 
 	if (fully_visited(state) && leaves[coord]) {
-		//std::cerr << " => ";
 		std::cerr << ", ";
 		leaves[coord]->dump_best_move_statistics(state);
 	}

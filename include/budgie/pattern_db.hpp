@@ -14,8 +14,6 @@ class pattern {
 		void print(void);
 		char minigrid[9] = {0};
 		unsigned weight = 0;
-		int x_offset = 0;
-		int y_offset = 0;
 		bool valid = false;
 
 		void rotate_grid(void);
@@ -37,7 +35,6 @@ class pattern_db {
 		void load_permutations(pattern pat, unsigned index=0);
 		void load_compile(pattern& pat);
 		void dump_patterns(void);
-		//std::vector<pattern> patterns;
 		std::unordered_map<uint64_t, unsigned> patterns;
 };
 

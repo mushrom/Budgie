@@ -13,61 +13,58 @@
 
 namespace mcts_thing {
 
-// TODO: maybe move this to the 'board' class
 struct coord_hash {
 	std::size_t operator () (const coordinate& coord) const {
 		return (coord.first * 3313) + (coord.second * 797);
 	}
 };
 
-// TODO: trim down this class
+// TODO: rename stats and crit_stats
+class stats {
+	public:
+		unsigned wins = 0;
+		unsigned traversals = 0;
+
+		double win_rate(void) {
+			return traversals? (double)wins / (double)traversals : 0.5;
+		};
+
+		stats& operator+=(const stats& other) {
+			wins += other.wins;
+			traversals += other.traversals;
+			return *this;
+		}
+};
+
+class crit_stats {
+	public:
+		unsigned total_wins = 0;
+		unsigned traversals = 0;
+
+		unsigned black_wins = 0;
+		unsigned white_wins = 0;
+
+		unsigned black_owns = 0;
+		unsigned white_owns = 0;
+
+		double win_rate(void) {
+			double uwin = total_wins / (1. * traversals);
+			double ubx  = black_owns / (1. * traversals);
+			double ub   = black_wins / (1. * traversals);
+			double uwx  = white_owns / (1. * traversals);
+			double uw   = white_wins / (1. * traversals);
+
+			double ret = uwin - (ubx*ub + uwx*uw);
+
+			return (ret < 0)? -ret : ret;
+		};
+};
+
 class mcts_node {
 	public:
-		class stats {
-			public:
-				unsigned wins = 0;
-				unsigned traversals = 0;
-
-				double win_rate(void) {
-					// TODO: we shouldn't have a state where traversals is 0, right?
-					return traversals? (double)wins / (double)traversals : 0.5;
-				};
-
-				stats& operator+=(const stats& other) {
-					wins += other.wins;
-					traversals += other.traversals;
-					return *this;
-				}
-		};
-
-		class crit_stats {
-			public:
-				unsigned total_wins = 0;
-				unsigned traversals = 0;
-
-				unsigned black_wins = 0;
-				unsigned white_wins = 0;
-
-				unsigned black_owns = 0;
-				unsigned white_owns = 0;
-
-				double win_rate(void) {
-					double uwin = total_wins / (1. * traversals);
-					double ubx  = black_owns / (1. * traversals);
-					double ub   = black_wins / (1. * traversals);
-					double uwx  = white_owns / (1. * traversals);
-					double uw   = white_wins / (1. * traversals);
-
-					double ret = uwin - (ubx*ub + uwx*uw);
-
-					return (ret < 0)? -ret : ret;
-				};
-		};
-
 		typedef std::unique_ptr<mcts_node> nodeptr;
 		typedef std::unordered_map<coordinate, stats, coord_hash> ravestats;
 		typedef std::unordered_map<coordinate, crit_stats, coord_hash> critmap;
-		//typedef std::shared_ptr<ravestats> raveptr;
 		typedef std::shared_ptr<critmap> critptr;
 
 		mcts_node(mcts_node *n_parent = nullptr,
@@ -75,7 +72,6 @@ class mcts_node {
 		{
 			color = player;
 			parent = n_parent;
-			//traversals = wins = 0;
 			traversals = 0;
 		};
 
@@ -83,7 +79,6 @@ class mcts_node {
 		void update_stats(board *state, point::color winner);
 		void new_node(coordinate& coord, point::color color);
 
-		//double win_rate(void);
 		coordinate best_move(void);
 		bool fully_visited(board *state);
 
@@ -93,17 +88,12 @@ class mcts_node {
 		                          unsigned depth=0);
 		void dump_best_move_statistics(board *state);
 
+		// TODO: what about a 19-node shallow tree instead of a map here?
 		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
-		//std::unordered_map<coordinate, stats, coord_hash> ownership;
 		std::unordered_map<coordinate, stats, coord_hash> nodestats;
 
 		critptr criticality;
-
 		ravestats rave;
-		// rave stats for this level
-		//raveptr rave;
-		// rave stats for children
-		//raveptr child_rave;
 
 		mcts_node *parent;
 		point::color color;
@@ -112,14 +102,10 @@ class mcts_node {
 		// send differential updates (in distributed mode)
 		unsigned updates;
 		coordinate coord;
-		/*
-		unsigned wins;
-		*/
 };
 
-static inline mcts_node::stats
-operator-(const mcts_node::stats& a, const mcts_node::stats& b) {
-	mcts_node::stats ret;
+static inline stats operator-(const stats& a, const stats& b) {
+	stats ret;
 	ret.wins = a.wins - b.wins;
 	ret.traversals = a.traversals - b.traversals;
 
@@ -133,9 +119,6 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns);
 // TODO: maybe move this to pattern_db.hpp
 typedef std::shared_ptr<pattern_db> pattern_dbptr;
 
-// TODO: maybe make this pluggable like playout heuristics
-// TODO: load pattern db as part of board class so we don't need to initialize
-//       a db for every strategy
 class tree_policy {
 	public:
 		tree_policy(pattern_dbptr db) { patterns = db; };
@@ -214,21 +197,18 @@ class random_playout : public playout_strategy {
 		virtual coordinate apply(board *state);
 };
 
-// TODO: rename to 'capture enemy ataris' or something like that
 class capture_weighted_playout : public playout_strategy {
 	public:
 		capture_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };
 		virtual coordinate apply(board *state);
 };
 
-// TODO: rename to 'capture enemy ataris' or something like that
 class save_atari_playout : public playout_strategy {
 	public:
 		save_atari_playout(pattern_dbptr db) : playout_strategy(db) { };
 		virtual coordinate apply(board *state);
 };
 
-// TODO: rename to 'capture enemy ataris' or something like that
 class attack_enemy_groups_playout : public playout_strategy {
 	public:
 		attack_enemy_groups_playout(pattern_dbptr db) : playout_strategy(db) { };
@@ -242,7 +222,6 @@ class local_weighted_playout : public playout_strategy {
 		coordinate local_best(board *state);
 };
 
-// TODO: should consider splitting mcts_node and mcts code
 class mcts {
 	public:
 		mcts() {
@@ -272,7 +251,6 @@ class mcts {
 		// efficient delta updates in distributed mode
 		uint32_t updates = 0;
 
-		// TODO: should anserial have a typedef for the return type?
 		std::vector<uint32_t> serialize(board *state, uint32_t since);
 		void serialize(anserial::serializer& ser, uint32_t parent);
 		void deserialize(std::vector<uint32_t>& serialized, board *state);
@@ -281,11 +259,6 @@ class mcts {
 
 		tree_policy *tree;
 		std::list<playout_strategy*> playout_strats;
-
-		//playout_policy *policy;
-
-		// TODO: we need to change this to a shared pointer
-		//mcts_node *root = nullptr;
 		mcts_node::nodeptr root = nullptr;
 
 	private:

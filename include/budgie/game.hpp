@@ -76,7 +76,6 @@ class board {
 		enum {
 			//InitialHash = 19937,
 			InitialHash = 1073741827,
-			//InitialHash = 65537,
 		};
 
 		board(unsigned size = 9);
@@ -100,7 +99,6 @@ class board {
 		bool make_move(const coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
-		//std::vector<coordinate> available_moves(void);
 		point::color determine_winner(void);
 		static uint64_t gen_hash(const coordinate& coord,
 		                         point::color color,
@@ -116,7 +114,6 @@ class board {
 		void deserialize(anserial::s_node *node);
 
 		move::moveptr move_list;
-		//std::vector<point::color> grid;
 		point::color grid[384];
 		uint64_t hash = InitialHash;
 		int komi = 7;
@@ -132,12 +129,6 @@ class board {
 		void group_link(group **a, group **b);
 		void group_try_capture(group **a, const coordinate& coord);
 		void group_clear(group **a);
-		/*
-		void group_libs_remove(group *a);
-		void group_libs_remove(group *a, const coordinate& coord);
-		void group_libs_add(group *a);
-		void group_libs_add(group *a, const coordinate& coord);
-		*/
 
 		void group_libs_update(group *a);
 		void group_libs_remove(group *a);
@@ -151,10 +142,8 @@ class board {
 
 		// group pointer for every board square
 		group *groups[384];
-		//std::set<group*> ataris[4];
-		// array of sets sorted by color and the number of liberties
+		// array of lists sorted by color and the number of liberties
 		// in the group
-		//std::set<group*> group_liberties[4][384];
 		std::list<group*> group_liberties[4][384];
 
 		bool owns(const coordinate& coord, point::color color);

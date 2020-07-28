@@ -56,22 +56,19 @@ budgie::move budgie::genmove(void) {
 		return move(budgie::move::types::Pass);
 	}
 
-	// XXX: we should get rid of reset here and preserve nodes...
 	tree->reset();
 	coordinate coord = tree->do_search(&game, playouts);
 
 	// TODO: make resign threshold configurable
 	if (tree->win_rate(coord) < 0.15) {
 		return move(budgie::move::types::Resign);
-	}
 
-	else if (!game.is_valid_move(coord)
-	         || game.is_suicide(coord, game.current_player))
+	} else if (!game.is_valid_move(coord)
+	           || game.is_suicide(coord, game.current_player))
 	{
 		return move(budgie::move::types::Pass);
-	}
 
-	else {
+	} else {
 		return move(budgie::move::types::Move,
 		            coord,
 		            game.current_player);
@@ -85,15 +82,10 @@ void budgie::reset(void) {
 }
 
 void budgie::set_player(point::color p) {
-	// TODO: reset tree if the current player isn't the same as the 
-	//       root node
 	game.current_player = p;
 }
 
-// XXX
 std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
-	// TODO: we should have an AI instance class that handles
-	//       all of the initialization,, board/mcts interaction (make_move, ...)
 	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
 	double uct_weight = std::stof(options["uct_weight"]);
 	unsigned rave_weight = std::stoi(options["rave_weight"]);

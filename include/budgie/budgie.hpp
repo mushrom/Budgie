@@ -93,7 +93,6 @@ class budgie {
 
 		args_parser::option_map options;
 
-		// TODO: maybe some accessor functions for game parameters
 		int komi;
 		int boardsize;
 		int playouts;

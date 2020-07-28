@@ -38,7 +38,6 @@ void pattern::flip_vertically(void) {
 
 void pattern::print(void) {
 	std::cerr << "weight: " << weight << ", ";
-	std::cerr << "x off: " << x_offset << ", y off: " << y_offset << std::endl;
 
 	for (unsigned y = 0; y < 3; y++) {
 		for (unsigned x = 0; x < 3; x++) {
@@ -49,6 +48,7 @@ void pattern::print(void) {
 	}
 }
 
+// TODO: if hashes only use 18 bits, why not use uint32_t?
 uint64_t pattern::hash(void) {
 	uint64_t ret = 1;
 
@@ -78,6 +78,7 @@ uint64_t pattern::hash(void) {
 				break;
 		}
 
+		// TODO: should do this before ORing no?
 		ret <<= 2;
 	}
 
@@ -89,37 +90,26 @@ pattern pattern_db::read_pattern(std::ifstream& f){
 	std::string buf = "";
 
 	for (unsigned i = 0; i < 4; i++) {
-asdf:
+retry:
 		if (!std::getline(f, buf)) {
 			f.close();
 			return ret;
 		}
 
 		if (buf == "" || buf[0] == '#') {
-			goto asdf;
+			goto retry;
 		}
 
+		// handle pattern line
 		if (i < 3) {
 			for (unsigned k = 0; k < 3; k++) {
 				ret.minigrid[i*3 + k] = buf[k];
-
-				if (buf[k] == '*') {
-					ret.x_offset = k;
-					ret.y_offset = i;
-				}
 			}
-		}
 
-		else {
+		// last line is weight definition
+		} else {
 			ret.weight = atoi(buf.substr(1).c_str());
 		}
-	}
-
-	// TODO: remove y_offset and x_offset fields
-	if (ret.y_offset != 1 && ret.x_offset != 1) {
-		std::cerr << "warning: invalid pattern:" << std::endl;
-		ret.valid = false;
-		ret.print();
 	}
 
 	//ret.print();
@@ -212,8 +202,8 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 			load_permutations(pat, index + 1);
 			break;
 
-		// exact specifier, continue onwards
 		default:
+			// exact specifier, continue onwards
 			load_permutations(pat, index + 1);
 			break;
 	}
@@ -278,9 +268,7 @@ uint64_t pattern_db::hash_grid(board *state, point::color grid[9]) {
 void pattern_db::read_grid(board *state, coordinate coord, point::color grid[9]) {
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
-			//fprintf(stderr, "- x: %d, y: %d\n", x, y);
 			coordinate k = {coord.first + x, coord.second + y};
-			//grid[3*(y-y_offset) + (x-x_offset)] = state->get_coordinate(k);
 			grid[(y+1)*3 + (x+1)] = state->get_coordinate(k);
 		}
 	}

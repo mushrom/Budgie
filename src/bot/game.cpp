@@ -12,7 +12,6 @@ namespace mcts_thing {
 
 // TODO: error on board sizes larger than \sqrt(384)
 board::board(unsigned size) {
-	//grid.reserve(size * size);
 	dimension = size;
 
 	for (unsigned i = 0; i < 384; i++) {
@@ -53,7 +52,6 @@ void board::set(board *other) {
 	                       other->available_moves.end());
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
-		// TODO: maybe clear existing groups for correctness
 		groups[i] = nullptr;
 	}
 
@@ -70,7 +68,6 @@ void board::set(board *other) {
 		if (!groups[i] && other->groups[i]) {
 			groups[i] = new group;
 			groups[i]->color = other->groups[i]->color;
-			//*groups[i] = *other->groups[i];
 			groups[i]->members.insert(groups[i]->members.end(),
 			                          other->groups[i]->members.begin(),
 			                          other->groups[i]->members.end());
@@ -140,57 +137,19 @@ bool board::violates_ko(const coordinate& coord) {
 		return false;
 	}
 
-	/*
-	if (n_capturable == 0) {
-		return false;
-	}
-	*/
-
-	/*
-	if (!captures_enemy(coord, current_player)) {
-		return false;
-	}
-	*/
-
-	//uint64_t hash = gen_hash(coord, current_player);
-	// TODO: this kills performance, reaaaaaallly need a fast way to check
-	//       group liberties so we can check for captures instead...
-	/*
-	board foo(this);
-	foo.make_move(coord);
-	*/
-
 	uint64_t temphash = group_pseudocapture(coord, capturable);
-	//puts("got here");
 
-	// TODO: do we really need to do full superko checking?
+	// XXX: only check few past moves for superko violations
 	unsigned k = 9;
 
 	for (move::moveptr ptr = move_list;
 	     ptr != nullptr && k;
 	     ptr = ptr->previous, k--)
 	{
-		//if (foo.hash == ptr->hash)
 		if (temphash == ptr->hash) {
-			// TODO: check that it's not just a hash collision, although it's
-			//       pretty unlikely
+			// XXX: doesn't check for hash collisions, too slow
 			return true;
 		}
-
-		/*
-		bool is_different = false;
-
-		for (unsigned i = 0; i < dimension * dimension; i++) {
-			if (temp.grid[i] != ptr->grid[i]) {
-				is_different = true;
-				break;
-			}
-		}
-
-		if (!is_different) {
-			return true;
-		}
-		*/
 	}
 
 	return false;
@@ -295,8 +254,6 @@ void board::clear_stones(const coordinate& coord, point::color color) {
 		return;
 	}
 
-	//printf("clearing (%u, %u, %u (%u))\n", coord.first, coord.second, color, get_coordinate(coord));
-
 	set_coordinate(coord, point::color::Empty);
 
 	// TODO: lambdas?
@@ -339,13 +296,7 @@ bool board::clear_own_stones(const coordinate& coord, point::color color) {
 }
 
 bool board::captures_enemy(const coordinate& coord, point::color color) {
-	/*
-	if (get_coordinate(coord) != point::color::Empty) {
-		return false;
-	}
-	*/
-
-	// XXX: pretend to place a stone there, we could make the initial coord in
+	// XXX: pretend to place a stone there, could make the initial coord in
 	//      reaches_empty() be filled though...
 	set_coordinate(coord, color);
 	bool ret = false;
@@ -381,7 +332,6 @@ bool board::is_valid_coordinate(const coordinate& coord) {
 
 point::color board::get_coordinate(const coordinate& coord) {
 	if (!is_valid_coordinate(coord)) {
-		// XXX
 		return point::color::Invalid;
 	}
 
@@ -397,26 +347,13 @@ bool board::make_move(const coordinate& coord) {
 	set_coordinate(coord, current_player);
 	group_place(coord);
 	clear_enemy_stones(coord, current_player);
-	//bool any_captured = clear_enemy_stones(coord, current_player);
-	//any_captured = any_captured || clear_own_stones(coord, current_player);
-	//printf("group check: %u\n", group_check());
-
-	// TODO: remove group_check once things are good
-	//group_check();
 	regen_hash();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
 	last_move = coord;
 	moves++;
 
-	/*
-	current_player = (current_player == point::color::Black)
-	                 ? point::color::White
-	                 : point::color::Black;
-					 */
-
 	current_player = other_player(current_player);
-
 	return true;
 }
 
@@ -486,10 +423,6 @@ void board::endgame_mark_captured(const coordinate& coord,
 	}
 }
 
-// TODO: we could reuse the 'count reachable' map for faster traversal,
-//       as a future optimization
-//
-//       ^ leaving the debug statements here for that
 void board::endgame_clear_captured(void) {
 	std::bitset<384> marked = {0};
 	std::bitset<384> traversed = {0};
@@ -518,7 +451,7 @@ void board::endgame_clear_captured(void) {
 	}
 
 	// then clear them
-	// NOTE: we clear after marking so that seki situations
+	// NOTE: clear after marking so that seki situations
 	//       end up being counted correctly
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
@@ -540,11 +473,6 @@ coordinate board::index_to_coord(unsigned index) {
 	return {(index % dimension) + 1, (index / dimension) + 1};
 }
 
-// TODO: Right now the bot the bot doesn't count stones in atari as being dead,
-//       which impacts territory counting, since playing a stone in your opponents
-//       territory immediately makes their territory invalid in the bot's eyes...
-//
-//       Also makes it very annoying to play sometimes.
 unsigned board::count_territory(point::color player) {
 	std::bitset<384> bitmap = {0};
 	unsigned territory = 0;
@@ -567,39 +495,10 @@ unsigned board::count_territory(point::color player) {
 	return territory;
 }
 
-/*
-// TODO: I don't thing this is being used anywhere anymore
-std::vector<coordinate> board::available_moves(void) {
-	std::vector<coordinate> ret = {};
-
-	for (unsigned y = 1; y <= dimension; y++) {
-		for (unsigned x = 1; x <= dimension; x++) {
-			coordinate coord = {x, y};
-
-			if (is_valid_move(coord)) {
-				ret.push_back(coord);
-			}
-		}
-	}
-
-	return ret;
-}
-*/
-
 #include <unistd.h>
 
 point::color board::determine_winner(void) {
-	/*
-	std::cerr << "# board before captures: " << std::endl;
-	print();
-	*/
-
 	endgame_clear_captured();
-
-	/*
-	std::cerr << "# board after captures: " << std::endl;
-	print();
-	*/
 
 	int white_stones = count_stones(point::color::White) + komi;
 	int black_stones = count_stones(point::color::Black);
@@ -609,31 +508,6 @@ point::color board::determine_winner(void) {
 
 	int white = white_stones + white_territory;
 	int black = black_stones + black_territory;
-
-	/*
-	// TODO: maybe add an option to show predicted score and most likely playout
-	//print();
-	printf(
-		"game result: %d points black, %d points white\n"
-		"             black: %d territory, %d stones\n"
-		"             white: %d territory, %d stones\n"
-		"             %u moves made\n",
-		black, white,
-		black_territory, black_stones,
-		white_territory, white_stones,
-		moves
-	);
-
-	for (move::moveptr thing = move_list; thing != nullptr; thing = thing->previous) {
-		printf(
-			" -> %s : (%u, %u)\n",
-			(thing->color == point::color::Black)? "black" : "white",
-			thing->coord.first, thing->coord.second
-		);
-	}
-
-	sleep(1);
-	*/
 
 	return (black > white)? point::color::Black : point::color::White;
 }
@@ -649,11 +523,7 @@ uint64_t board::gen_hash(const coordinate& coord,
 	// generate 12 bit identifier for this move
 	uint16_t foo = (color << 10) | (coord.first << 5) | coord.second;
 
-	// note: we need an associative hash here, since the board hash
-	//       will need to be rebuilt outside of move order, this is a good
-	//       hash for uniquely identifying games though
 	return (hash << 12) + hash + foo;
-	//return hash + (uint64_t)InitialHash * (uint64_t)foo;
 }
 
 void board::regen_hash(void) {
@@ -676,18 +546,6 @@ void board::regen_hash(void) {
 uint64_t board::regen_hash(point::color tempgrid[384]) {
 	uint64_t ret = InitialHash;
 
-	/*
-	for (unsigned i = 0; i < dimension*dimension; i++) {
-		// TODO: index_to_coord()
-		coordinate coord = {(i % dimension) + 1, (i / dimension) + 1};
-		//printf("coord at (%u, %u)\n", coord.first, coord.second);
-
-		if (grid[i] != point::color::Empty) {
-			ret = gen_hash(coord, grid[i], ret);
-		}
-	}
-	*/
-
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
@@ -704,19 +562,14 @@ uint64_t board::regen_hash(point::color tempgrid[384]) {
 
 void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
-		//unsigned index = (coord.second - 1)*dimension + (coord.first - 1);
-		//grid[index] = color;
 		grid[coord_to_index(coord)] = color;
 	}
 }
 
 void board::print(void) {
-	//printf("\e[1;1H");
-
 	for (unsigned y = dimension; y > 0; y--) {
 		printf("# %2d ", y);
 		for (unsigned x = 1; x <= dimension; x++) {
-			//unsigned index = y * dimension + x;
 			coordinate coord = {x, y};
 			printf("%c ", ". O#"[get_coordinate(coord)]);
 		}
@@ -732,23 +585,6 @@ void board::print(void) {
 	}
 	printf(" \n");
 }
-
-/*
-void group::unlink(void) {
-	if (next) next->prev = prev;
-	if (prev) prev->next = next;
-
-	next = prev = nullptr;
-}
-
-void group::link_before(group *a) {
-	if (!a) return;
-
-	a->unlink();
-	a->next = this;
-	prev = a;
-}
-*/
 
 bool board::group_check(void) {
 	for (unsigned i = 0; i < dimension*dimension; i++) {
@@ -783,11 +619,6 @@ bool board::group_check(void) {
 			return false;
 		}
 	}
-
-	/*
-	print();
-	puts("group_check(): seems good");
-	*/
 
 	return true;
 }
@@ -844,7 +675,6 @@ void board::group_place(const coordinate& coord) {
 		point::color p = get_coordinate(temp);
 
 		if (p == point::color::Empty)
-			//group_libs_add(*g, temp);
 			(*g)->liberties.insert(temp);
 
 		else if (p == current_player)
@@ -862,7 +692,6 @@ void board::group_place(const coordinate& coord) {
 			puts("group_place(): hmmmst, suicidal move?");
 		}
 
-		//group_libs_remove(*g, coord);
 		(*g)->liberties.erase(coord);
 		group_libs_update(*g);
 
@@ -876,19 +705,16 @@ void board::group_place(const coordinate& coord) {
 	}
 
 	group_libs_update(*g);
-	// update set of available moves
-	//available_moves.erase(coord);
 }
 
 void board::group_link(group **a, group **b) {
 	if (!a || !b || !*a || !*b) {
-		//print();
 		puts("group_link(): null pointers");
 		return;
 	}
 
 	if (*a == *b) {
-		//puts("ayyy sup");
+		// already the same group, nothing to link
 		return;
 	}
 
@@ -917,12 +743,11 @@ void board::group_link(group **a, group **b) {
 
 void board::group_try_capture(group **a, const coordinate& coord) {
 	if (!a || !*a) {
-		//puts("eh?");
 		return;
 	}
 
 	if ((*a)->color == current_player) {
-		puts("friendlies");
+		puts("group_try_capture(): friendlies (this is a bug)");
 		return;
 	}
 
@@ -933,7 +758,6 @@ void board::group_try_capture(group **a, const coordinate& coord) {
 		// TODO: wrap available_moves stuff into it's own function
 		for (const coordinate& c : (*a)->members) {
 			// update map of available moves
-			//available_moves[index] = true;
 			available_moves.insert(c);
 		}
 
@@ -981,14 +805,6 @@ void board::group_update_neighbors(group **a) {
 			group *ptr = groups[index];
 
 			if (ptr && ptr->color == current_player) {
-				/*
-				printf("group_update_neighbors(): %s adding liberty "
-					"(%u, %u) to (%u, %u)\n",
-					(ptr->color == point::color::Black)? "black":"white",
-					c.first, c.second,
-					temp.first, temp.second);
-					*/
-
 				ptr->liberties.insert(c);
 				group_libs_update(ptr);
 			}
@@ -1090,12 +906,6 @@ void board::serialize(anserial::serializer& ser, uint32_t parent) {
 	uint32_t move_entry = ser.add_entities(datas, {"moves"});
 	uint32_t move_datas = ser.add_entities(move_entry, {});
 
-	/*
-	for (unsigned i = 0; i < dimension*dimension; i++) {
-		ser.add_entities(grid_datas, grid[i]);
-	}
-	*/
-
 	for (auto& ptr = move_list; ptr != nullptr; ptr = ptr->previous) {
 		ser.add_entities(move_datas,
 			{"move",
@@ -1127,12 +937,6 @@ void board::deserialize(anserial::s_node *node) {
 	reset(n_dimension, n_komi);
 	current_player = n_current;
 
-	/*
-	for (unsigned i = 0; i < dimension*dimension; i++) {
-		grid[i] = (point::color)grid_datas->get(i)->uint();
-	}
-	*/
-
 	auto& nodes = move_datas->entities();
 	for (auto it = nodes.rbegin(); it != nodes.rend(); it++) {
 		anserial::s_node* move_node = *it;
@@ -1149,12 +953,8 @@ void board::deserialize(anserial::s_node *node) {
 			throw std::logic_error("board::deserialize(): invalid move");
 		}
 
-		uint64_t fullhash = (((uint64_t)temphash[0] << 32)) | (uint64_t)temphash[1];
-
 		current_player = color;
 		make_move(coord);
-		//printf("have %lx :: %lx\n", hash, fullhash);
-		//assert(hash == fullhash);
 	}
 }
 
