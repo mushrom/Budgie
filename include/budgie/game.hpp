@@ -70,6 +70,14 @@ class group {
 		size_t last_update = 0xdeadbeef;
 };
 
+// TODO: no reason for this to be a member function,
+//       we could inline this...
+static inline point::color other_player(point::color color) {
+	return (color == point::color::Black)
+		? point::color::White
+		: point::color::Black;
+}
+
 // TODO: generic 'game' class, add a way to enumerate/validate/randomly pick moves
 class board {
 	public:
@@ -86,13 +94,11 @@ class board {
 		void set(board *other);
 
 		point::color get_coordinate(const coordinate& coord);
-
-		// TODO: no reason for this to be a member function,
-		//       we could inline this...
-		point::color other_player(point::color color);
+		point::color get_coordinate(unsigned x, unsigned y);
 
 		bool is_valid_move(const coordinate& coord);
 		bool is_valid_coordinate(const coordinate& coord);
+		bool is_valid_coordinate(unsigned x, unsigned y);
 		bool is_suicide(const coordinate& coord, point::color color);
 		bool violates_ko(const coordinate& coord);
 		bool captures_enemy(const coordinate& coord, point::color color);

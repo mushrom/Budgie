@@ -7,7 +7,7 @@ namespace mcts_thing {
 
 coordinate capture_weighted_playout::apply(board *state) {
 	coordinate next = {0, 0};
-	point::color other = state->other_player(state->current_player);
+	point::color other = other_player(state->current_player);
 	std::list<group*>& ataris = state->group_liberties[other][1];
 
 	// TODO: probability here should be configurable

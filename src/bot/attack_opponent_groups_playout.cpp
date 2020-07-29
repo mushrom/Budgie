@@ -7,7 +7,7 @@ namespace mcts_thing {
 
 coordinate attack_enemy_groups_playout::apply(board *state) {
 	coordinate next = {0, 0};
-	point::color other = state->other_player(state->current_player);
+	point::color other = other_player(state->current_player);
 	// opponent groups with two liberties
 	std::list<group*>& weakgrps = state->group_liberties[other][2];
 

@@ -49,8 +49,8 @@ void pattern::print(void) {
 }
 
 // TODO: if hashes only use 18 bits, why not use uint32_t?
-uint64_t pattern::hash(void) {
-	uint64_t ret = 1;
+uint32_t pattern::hash(void) {
+	uint32_t ret = 1;
 
 	// XXX: only handling exact specifiers here
 	for (unsigned i = 0; i < 9; i++) {
@@ -210,7 +210,7 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 }
 
 void pattern_db::load_compile(pattern& pat) {
-	uint64_t hash = pat.hash();
+	uint32_t hash = pat.hash();
 	auto it = patterns.find(hash);
 
 	if (it != patterns.end() && pat.weight > it->second) {
@@ -229,7 +229,7 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	point::color grid[9];
 	read_grid(state, coord, grid);
 
-	uint64_t hash = hash_grid(state, grid);
+	uint32_t hash = hash_grid(state, grid);
 	auto it = patterns.find(hash);
 
 	if (it == patterns.end()) {
@@ -239,19 +239,21 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	return it->second;
 }
 
-uint64_t pattern_db::hash_grid(board *state, point::color grid[9]) {
-	uint64_t ret = 1;
+uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
+	uint32_t ret = 1;
+	point::color player = state->current_player;
+	point::color other  = other_player(player);
 
 	for (unsigned i = 0; i < 9; i++) {
 		if (grid[i] == point::color::Empty) {
 			ret |= 0;
 		}
 
-		if (grid[i] == state->current_player) {
+		if (grid[i] == player) {
 			ret |= 1;
 		}
 
-		if (grid[i] == state->other_player(state->current_player)) {
+		if (grid[i] == other) {
 			ret |= 2;
 		}
 
@@ -268,8 +270,8 @@ uint64_t pattern_db::hash_grid(board *state, point::color grid[9]) {
 void pattern_db::read_grid(board *state, coordinate coord, point::color grid[9]) {
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
-			coordinate k = {coord.first + x, coord.second + y};
-			grid[(y+1)*3 + (x+1)] = state->get_coordinate(k);
+			//coordinate k = {coord.first + x, coord.second + y};
+			grid[(y+1)*3 + (x+1)] = state->get_coordinate(coord.first + x, coord.second + y);
 		}
 	}
 }

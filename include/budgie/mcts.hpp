@@ -15,7 +15,7 @@ namespace mcts_thing {
 
 struct coord_hash {
 	std::size_t operator () (const coordinate& coord) const {
-		return (coord.first * 3313) + (coord.second * 797);
+		return (coord.first << 6) | coord.second;
 	}
 };
 

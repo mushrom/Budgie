@@ -1,4 +1,7 @@
-CXXFLAGS += -g -I./include -I./libs/anserial/include -std=c++17 -Wall -O3 -march=native -lzmq -pthread $(BUDGIE_DEFINES)
+CXXFLAGS += -I./include -I./libs/anserial/include -std=c++17 -Wall \
+            -O3 -march=native -lzmq -pthread $(BUDGIE_DEFINES) \
+            -MD -g
+
 SDL2_FLAGS = `sdl2-config --cflags --libs` -lSDL2_ttf
 
 intree-libs = libs/anserial/build/lib/anserial.a
@@ -6,6 +9,7 @@ intree-libs = libs/anserial/build/lib/anserial.a
 #OBJ = src/main.o src/mcts.o src/game.o src/gtp.o src/pattern_db.o
 bot-src = $(wildcard src/bot/*.cpp)
 bot-obj = $(bot-src:.cpp=.o)
+bot-dep = $(bot-src:.cpp=.d)
 bot-main = src/bot-main.o
 
 sdl-ui-src =
@@ -22,6 +26,8 @@ libs/anserial/build/lib/anserial.a:
 	cd libs/anserial; make libs
 
 all: bin/thing bin/sdl-thing
+
+-include $(bot-dep)
 
 .PHONY: dir-structure
 dir-structure:

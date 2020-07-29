@@ -19,14 +19,14 @@ class pattern {
 		void rotate_grid(void);
 		void flip_horizontally(void);
 		void flip_vertically(void);
-		uint64_t hash(void);
+		uint32_t hash(void);
 };
 
 class pattern_db {
 	public:
 		pattern_db(const std::string& db);
 		unsigned search(board *state, coordinate coord);
-		uint64_t hash_grid(board *state, point::color grid[9]);
+		uint32_t hash_grid(board *state, point::color grid[9]);
 	
 	private:
 		void read_grid(board *state, coordinate coord, point::color grid[9]);
@@ -35,7 +35,7 @@ class pattern_db {
 		void load_permutations(pattern pat, unsigned index=0);
 		void load_compile(pattern& pat);
 		void dump_patterns(void);
-		std::unordered_map<uint64_t, unsigned> patterns;
+		std::unordered_map<uint32_t, unsigned> patterns;
 };
 
 }

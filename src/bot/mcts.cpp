@@ -45,7 +45,7 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 }
 
 coordinate mcts::do_search(board *state, unsigned playouts) {
-	root->color = state->other_player(state->current_player);
+	root->color = other_player(state->current_player);
 
 	while (root->traversals < playouts) {
 		board scratch(state);

@@ -106,12 +106,6 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	}
 }
 
-point::color board::other_player(point::color color) {
-	return (color == point::color::Black)
-		? point::color::White
-		: point::color::Black;
-}
-
 bool board::is_valid_move(const coordinate& coord) {
 	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 
@@ -326,8 +320,15 @@ bool board::is_suicide(const coordinate& coord, point::color color) {
 }
 
 bool board::is_valid_coordinate(const coordinate& coord) {
+	/*
 	return !(coord.first < 1 || coord.second < 1
 	         || coord.first > dimension || coord.second > dimension);
+			 */
+	return is_valid_coordinate(coord.first, coord.second);
+}
+
+bool board::is_valid_coordinate(unsigned x, unsigned y) {
+	return !(x < 1 || y < 1 || x > dimension || y > dimension);
 }
 
 point::color board::get_coordinate(const coordinate& coord) {
@@ -336,6 +337,14 @@ point::color board::get_coordinate(const coordinate& coord) {
 	}
 
 	return grid[(coord.second - 1)*dimension + (coord.first - 1)];
+}
+
+point::color board::get_coordinate(unsigned x, unsigned y) {
+	if (!is_valid_coordinate(x, y)) {
+		return point::color::Invalid;
+	}
+
+	return grid[(y - 1)*dimension + (x - 1)];
 }
 
 bool board::make_move(const coordinate& coord) {
