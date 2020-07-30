@@ -21,21 +21,16 @@ O*O
 +--
 :0
 
-## avoid playing dumb self-ataris when desperate
+## discourage playing dumb self-ataris when desperate
 xX?
 X*x
 ---
-:0
-
-|xx
-|*x
-+--
-:0
+:1
 
 ?X?
 X*x
 ?X?
-:0
+:1
 
 ## hane
 Oo?
@@ -53,4 +48,10 @@ O*?
 ?O?
 ?*?
 ???
+:120
+
+## hopefully encourage monkey jumps
+Xoo
+O*.
+---
 :120
