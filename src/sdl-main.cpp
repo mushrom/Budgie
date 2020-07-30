@@ -33,16 +33,23 @@ class gui_state {
 		void draw_text(unsigned x, unsigned y, std::string str);
 
 	private:
+		enum modes {
+			Statistics,
+			Ownership,
+		};
+
 		SDL_Window   *window;
 		SDL_Renderer *renderer;
 		TTF_Font     *font;
 		bool running;
+		enum modes mode;
 
 		/*
 		board game = board(9);
 		std::unique_ptr<mcts> search_tree;
 		*/
 		budgie& bot;
+		std::vector<float> winrates;
 };
 
 gui_state::gui_state(budgie& b) : bot(b) {
@@ -157,30 +164,32 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 		rect.y = asdf + (foo.second - 1) * meh;
 		rect.h = rect.w = meh + 1;
 
-#if 1
-		// TODO: config option to toggle ownership/statistic heatmaps
-		double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
+		if (mode == modes::Statistics) {
+			// TODO: config option to toggle ownership/statistic heatmaps
+			double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
+			traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
+			unsigned b = off + range * traversals;
 
-		traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
-		unsigned b = off + range * traversals;
+			double rave_est = bot.tree->root->rave[foo].win_rate();
+			rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+			unsigned g = off + range * rave_est;
 
-		double rave_est = bot.tree->root->rave[foo].win_rate();
-		rave_est = (rave_est - min_rave) / (max_rave - min_rave);
-		unsigned g = off + range * rave_est;
+			double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
+			crit_est = (crit_est - min_crit) / (max_crit - min_crit);
+			unsigned r = off + range * crit_est;
 
-		double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
-		crit_est = (crit_est - min_crit) / (max_crit - min_crit);
-		unsigned r = off + range * crit_est;
-#else
+			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
+			SDL_RenderFillRect(renderer, &rect);
 
-		auto& x = (*bot.tree->root->criticality)[foo];
-		double r = off + range * (x.black_owns / (1. * x.traversals));
-		double g = off + range * (x.white_owns / (1. * x.traversals));
-		unsigned b = 0x66;
-#endif
+		} else if (mode == modes::Ownership) {
+			auto& x = (*bot.tree->root->criticality)[foo];
+			unsigned r = off + range * (x.black_owns / (1. * x.traversals));
+			unsigned g = off + range * (x.white_owns / (1. * x.traversals));
+			unsigned b = 0x66;
 
-		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-		SDL_RenderFillRect(renderer, &rect);
+			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
+			SDL_RenderFillRect(renderer, &rect);
+		}
 	}
 }
 
@@ -346,8 +355,42 @@ void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned heig
 	SDL_SetRenderDrawColor(renderer, 0x30, 0x30, 0x30, 0);
 	SDL_RenderFillRect(renderer, &r);
 
-	draw_text(x, y, "testing");
-	draw_text(x, y + height/2, "this");
+	float score_black = 0, score_white = bot.game.komi;
+
+	for (unsigned x = 1; x <= bot.game.dimension; x++) {
+		for (unsigned y = 1; y <= bot.game.dimension; y++) {
+			auto& crit = (*bot.tree->root->criticality)[coordinate(x, y)];
+
+			score_black += crit.black_owns / (1. * crit.traversals);
+			score_white += crit.white_owns / (1. * crit.traversals);
+		}
+	}
+
+	draw_text(x, y, std::to_string(bot.tree->root->traversals) + " playouts");
+	draw_text(x, y+16, "estimated score:");
+	draw_text(x+16, y+32, "black: " + std::to_string(score_black));
+	draw_text(x+16, y+48, "white: " + std::to_string(score_white));
+
+	draw_text(x, y + height/2, "Winrate:");
+	draw_text(x + width/2 - 28, y + height/2 + 16, "white");
+	draw_text(x + width/2 - 28, y + height-16, "black");
+
+	SDL_SetRenderDrawColor(renderer, 0xd0, 0xd0, 0xd0, 0);
+	for (unsigned i = 0; i < winrates.size(); i++) {
+		SDL_Rect rect;
+		rect.x = x + 16 + 4*(i+1);
+		rect.y = y + height/2 + 32;
+		rect.h = winrates[i] * (height/2 - 48);
+		rect.w = 4;
+
+		SDL_RenderFillRect(renderer, &rect);
+	}
+
+	// line at 50% winrate for each side
+	SDL_SetRenderDrawColor(renderer, 0xa0, 0xc0, 0xa0, 0);
+	SDL_RenderDrawLine(renderer,
+		x+16,       y+height/2+32 + height/4 - 24,
+		x+width-16, y+height/2+32 + height/4 - 24);
 }
 
 void gui_state::redraw(void) {
@@ -395,11 +438,24 @@ void gui_state::handle_events(void) {
 			break;
 		}
 
-		/*
-		   if (e.type == SDL_KEYDOWN) {
-		   break;
-		   }
-		   */
+		if (e.type == SDL_KEYDOWN) {
+			switch (e.key.keysym.sym) {
+				case SDLK_TAB:
+					if (mode == modes::Statistics) {
+						mode = modes::Ownership;
+					} else {
+						mode = modes::Statistics;
+					}
+					break;
+
+				case SDLK_ESCAPE:
+					// TODO: reset the bot
+					break;
+
+				default:
+					break;
+			}
+		}
 	}
 }
 
@@ -416,6 +472,10 @@ int gui_state::run(void) {
 			handle_events();
 			redraw();
 		}
+
+		winrates.push_back((bot.game.current_player == point::color::Black)
+			? 1.0 - bot.tree->win_rate(coord)
+			: bot.tree->win_rate(coord));
 
 		//bot.game.make_move(coord);
 		bot.make_move(coord);
