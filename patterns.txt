@@ -21,10 +21,26 @@ O*O
 +--
 :0
 
+## avoid playing dumb self-ataris when desperate
+xX?
+X*x
+---
+:0
+
+|xx
+|*x
++--
+:0
+
+?X?
+X*x
+?X?
+:0
+
 ## hane
-O??
+Oo?
 X*?
-???
+o??
 :120
 
 ## respond to attachments
