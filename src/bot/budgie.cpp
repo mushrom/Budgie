@@ -61,15 +61,18 @@ budgie::move budgie::genmove(void) {
 
 	// TODO: make resign threshold configurable
 	if (tree->win_rate(coord) < 0.15) {
-		return move(budgie::move::types::Resign);
+		return move(move::types::Resign);
+
+	} else if (tree->win_rate(coord) >= 1.0) {
+		return move(move::types::Pass);
 
 	} else if (!game.is_valid_move(coord)
 	           || game.is_suicide(coord, game.current_player))
 	{
-		return move(budgie::move::types::Pass);
+		return move(move::types::Pass);
 
 	} else {
-		return move(budgie::move::types::Move,
+		return move(move::types::Move,
 		            coord,
 		            game.current_player);
 	}
