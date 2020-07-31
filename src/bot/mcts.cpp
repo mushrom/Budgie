@@ -46,6 +46,7 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 
 coordinate mcts::do_search(board *state, unsigned playouts) {
 	root->color = other_player(state->current_player);
+	root->coord = state->last_move;
 
 	while (root->traversals < playouts) {
 		board scratch(state);
@@ -63,8 +64,10 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 }
 
 double mcts::win_rate(coordinate& coord) {
-	if (root->nodestats.find(coord) != root->nodestats.end()) {
-		return root->nodestats[coord].win_rate();
+	auto it = root->nodestats.find(coord);
+
+	if (it != root->nodestats.end()) {
+		return it->second.win_rate();
 
 	} else {
 		return 0.5;
@@ -549,6 +552,7 @@ void mcts_node::update_stats(board *state, point::color winner) {
 		x.white_wins += winner == point::color::White;
 		x.white_owns += state->owns(foo->coord, point::color::White);
 
+		// update RAVE maps
 		for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
 			bool won = foo->color == winner;
 

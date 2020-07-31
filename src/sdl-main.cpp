@@ -36,6 +36,11 @@ class gui_state {
 		enum modes {
 			Statistics,
 			Ownership,
+			Mcts,
+			Traversals,
+			Rave,
+			Criticality,
+			End,
 		};
 
 		SDL_Window   *window;
@@ -50,6 +55,7 @@ class gui_state {
 		*/
 		budgie& bot;
 		std::vector<float> winrates;
+		bool relative_stats = false;
 };
 
 gui_state::gui_state(budgie& b) : bot(b) {
@@ -157,39 +163,64 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 		double meh = (1.*width) / (bot.game.dimension - 1);
 		double asdf = (x + 1) - (meh/2);
 
-		unsigned off = 0x40;
+		unsigned off = 0x20;
 		unsigned range = (0xff - off);
 
 		rect.x = asdf + (foo.first  - 1) * meh;
 		rect.y = asdf + (foo.second - 1) * meh;
 		rect.h = rect.w = meh + 1;
 
-		if (mode == modes::Statistics) {
+		unsigned r=0, g=0, b=0;
+
+		if (mode == modes::Traversals || mode == modes::Statistics) {
 			// TODO: config option to toggle ownership/statistic heatmaps
 			double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
-			traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
-			unsigned b = off + range * traversals;
-
-			double rave_est = bot.tree->root->rave[foo].win_rate();
-			rave_est = (rave_est - min_rave) / (max_rave - min_rave);
-			unsigned g = off + range * rave_est;
-
-			double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
-			crit_est = (crit_est - min_crit) / (max_crit - min_crit);
-			unsigned r = off + range * crit_est;
-
-			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-			SDL_RenderFillRect(renderer, &rect);
-
-		} else if (mode == modes::Ownership) {
-			auto& x = (*bot.tree->root->criticality)[foo];
-			unsigned r = off + range * (x.black_owns / (1. * x.traversals));
-			unsigned g = off + range * (x.white_owns / (1. * x.traversals));
-			unsigned b = 0x66;
-
-			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-			SDL_RenderFillRect(renderer, &rect);
+			if (relative_stats) {
+				traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
+			}
+			b = off + range * traversals;
 		}
+
+		if (mode == modes::Rave || mode == modes::Statistics) {
+			double rave_est = bot.tree->root->rave[foo].win_rate();
+			if (relative_stats) {
+				rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+			}
+			g = off + range * rave_est;
+		}
+
+		if (mode == modes::Criticality || mode == modes::Statistics) {
+			double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
+			if (relative_stats) {
+				crit_est = (crit_est - min_crit) / (max_crit - min_crit);
+			}
+			r = off + range * crit_est;
+		}
+
+		if (mode == modes::Mcts) {
+			auto& stat = bot.tree->root->nodestats[foo];
+			double mcts_est = stat.win_rate();
+
+			r = off + range * mcts_est;
+			b = off + range * mcts_est;
+			g = off + range * bot.tree->root->nodestats[foo].traversals /
+				(1.*bot.tree->root->traversals);
+		}
+
+		if (mode == modes::Ownership) {
+			auto& x = (*bot.tree->root->criticality)[foo];
+			r = off + range * (x.black_owns / (1. * x.traversals));
+			g = off + range * (x.white_owns / (1. * x.traversals));
+			b = off;
+		}
+
+		// gamma correction
+		r = 0xff * pow(r/255.0, 1/2.2);
+		g = 0xff * pow(g/255.0, 1/2.2);
+		b = 0xff * pow(b/255.0, 1/2.2);
+
+		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
+		SDL_RenderFillRect(renderer, &rect);
 	}
 }
 
@@ -441,11 +472,12 @@ void gui_state::handle_events(void) {
 		if (e.type == SDL_KEYDOWN) {
 			switch (e.key.keysym.sym) {
 				case SDLK_TAB:
-					if (mode == modes::Statistics) {
-						mode = modes::Ownership;
-					} else {
-						mode = modes::Statistics;
-					}
+					mode = (enum modes)(((int)mode + 1) % (int)(modes::End));
+					break;
+
+				case SDLK_LSHIFT:
+				case SDLK_RSHIFT:
+					relative_stats = !relative_stats;
 					break;
 
 				case SDLK_ESCAPE:
