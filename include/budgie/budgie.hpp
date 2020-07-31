@@ -100,6 +100,7 @@ class budgie {
 
 		board game;
 		std::unique_ptr<mcts> tree;
+		unsigned woncount = 0;
 
 	private:
 		std::unique_ptr<mcts> init_mcts(args_parser::option_map& options);

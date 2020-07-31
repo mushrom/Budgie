@@ -58,12 +58,13 @@ budgie::move budgie::genmove(void) {
 
 	tree->reset();
 	coordinate coord = tree->do_search(&game, playouts);
+	float winrate = tree->win_rate(coord);
 
 	// TODO: make resign threshold configurable
-	if (tree->win_rate(coord) < 0.15) {
+	if (winrate < 0.15) {
 		return move(move::types::Resign);
 
-	} else if (tree->win_rate(coord) >= 1.0) {
+	} else if (woncount >= 3 && winrate >= 1.0) {
 		return move(move::types::Pass);
 
 	} else if (!game.is_valid_move(coord)
@@ -72,6 +73,8 @@ budgie::move budgie::genmove(void) {
 		return move(move::types::Pass);
 
 	} else {
+		woncount = (winrate >= 1.0)? woncount + 1 : 0;
+
 		return move(move::types::Move,
 		            coord,
 		            game.current_player);
