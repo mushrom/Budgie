@@ -155,15 +155,9 @@ bool board::reaches_iter(const coordinate& coord,
                          std::bitset<384>& marked)
 {
 	bool ret = false;
-
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	marked[coord_to_index(coord)] = true;
 
-	for (const auto& thing : {left, right, up, down}) {
+	for (const auto& thing : adjacent(coord)) {
 		if (is_valid_coordinate(thing) && !marked[coord_to_index(thing)]) {
 			point::color foo = get_coordinate(thing);
 
@@ -198,15 +192,9 @@ unsigned board::count_iter(const coordinate& coord,
                            std::bitset<384>& traversed)
 {
 	unsigned ret = 0;
-
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	marked[coord_to_index(coord)] = true;
 
-	for (const auto& thing : {left, right, up, down}) {
+	for (const auto& thing : adjacent(coord)) {
 		unsigned index = coord_to_index(thing);
 
 		if (is_valid_coordinate(thing) && !marked[index]) {
@@ -239,11 +227,6 @@ unsigned board::count_reachable(const coordinate& coord,
 
 
 void board::clear_stones(const coordinate& coord, point::color color) {
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	if (get_coordinate(coord) != color) {
 		return;
 	}
@@ -251,7 +234,7 @@ void board::clear_stones(const coordinate& coord, point::color color) {
 	set_coordinate(coord, point::color::Empty);
 
 	// TODO: lambdas?
-	for (auto thing : {left, right, up, down}) {
+	for (auto thing : adjacent(coord)) {
 		if (is_valid_coordinate(thing)) {
 			clear_stones(thing, color);
 		}
@@ -261,16 +244,11 @@ void board::clear_stones(const coordinate& coord, point::color color) {
 bool board::clear_enemy_stones(const coordinate& coord, point::color color) {
 	bool ret = false;
 
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	point::color enemy = (color == point::color::Black)
 	                     ? point::color::White
 	                     : point::color::Black;
 
-	for (auto thing : {left, right, up, down}) {
+	for (auto thing : adjacent(coord)) {
 		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
 			clear_stones(thing, enemy);
 			ret = true;
@@ -295,16 +273,11 @@ bool board::captures_enemy(const coordinate& coord, point::color color) {
 	set_coordinate(coord, color);
 	bool ret = false;
 
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	point::color enemy = (color == point::color::Black)
 	                     ? point::color::White
 	                     : point::color::Black;
 
-	for (const auto& thing : {left, right, up, down}) {
+	for (const auto& thing : adjacent(coord)) {
 		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
 			ret = true;
 			break;
@@ -336,7 +309,7 @@ point::color board::get_coordinate(const coordinate& coord) {
 		return point::color::Invalid;
 	}
 
-	return grid[(coord.second - 1)*dimension + (coord.first - 1)];
+	return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
 }
 
 point::color board::get_coordinate(unsigned x, unsigned y) {
@@ -344,7 +317,7 @@ point::color board::get_coordinate(unsigned x, unsigned y) {
 		return point::color::Invalid;
 	}
 
-	return grid[(y - 1)*dimension + (x - 1)];
+	return (point::color)grid[(y - 1)*dimension + (x - 1)];
 }
 
 bool board::make_move(const coordinate& coord) {
@@ -396,14 +369,9 @@ unsigned board::territory_flood(const coordinate& coord,
 		return 0;
 
 	} else {
-		coordinate left  = {coord.first - 1, coord.second};
-		coordinate right = {coord.first + 1, coord.second};
-		coordinate up    = {coord.first,     coord.second - 1};
-		coordinate down  = {coord.first,     coord.second + 1};
-
 		unsigned ret = is_territory;
 
-		for (const auto& thing : {left, right, up, down}) {
+		for (const auto& thing : adjacent(coord)) {
 			ret += territory_flood(thing, is_territory, traversed_map);
 		}
 
@@ -415,14 +383,9 @@ void board::endgame_mark_captured(const coordinate& coord,
                                   point::color color,
                                   std::bitset<384>& marked)
 {
-	coordinate left  = {coord.first - 1, coord.second};
-	coordinate right = {coord.first + 1, coord.second};
-	coordinate up    = {coord.first,     coord.second - 1};
-	coordinate down  = {coord.first,     coord.second + 1};
-
 	marked[coord_to_index(coord)] = true;
 
-	for (const auto& thing : {left, right, up, down}) {
+	for (const auto& thing : adjacent(coord)) {
 		if (is_valid_coordinate(thing)
 		    && !marked[coord_to_index(thing)]
 		    && get_coordinate(thing) == color)
@@ -552,13 +515,13 @@ void board::regen_hash(void) {
 	hash = ret;
 }
 
-uint64_t board::regen_hash(point::color tempgrid[384]) {
+uint64_t board::regen_hash(uint8_t tempgrid[384]) {
 	uint64_t ret = InitialHash;
 
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
 			coordinate coord = {x, y};
-			point::color color = tempgrid[coord_to_index(coord)];
+			point::color color = (point::color)tempgrid[coord_to_index(coord)];
 
 			if (color != point::color::Empty) {
 				ret = gen_hash(coord, color, ret);
@@ -655,7 +618,6 @@ void board::group_print(void) {
 
 void board::group_place(const coordinate& coord) {
 	// TODO: move this somewhere else eventually
-	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
 	unsigned index = coord_to_index(coord);
 	group **g = groups + index;
 
@@ -670,13 +632,7 @@ void board::group_place(const coordinate& coord) {
 	(*g)->color = current_player;
 	available_moves.erase(coord);
 
-	// TODO: this is a pretty common pattern, should have a function that
-	//       takes a coord and a lambda and applies that to nearby
-	//       coordinates
-	// TODO: we should split this into multiple functions
-	// TODO: also we should split this class into multiple classes
-	for (auto& diff : coords) {
-		coordinate temp = {coord.first + diff.first, coord.second + diff.second};
+	for (const auto& temp : adjacent(coord)) {
 		if (!is_valid_coordinate(temp)) {
 			continue;
 		}
@@ -803,11 +759,8 @@ void board::group_update_neighbors(group **a) {
 		return;
 	}
 
-	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
-
 	for (const coordinate& c : (*a)->members) {
-		for (const coordinate& diff : coords) {
-			coordinate temp = {c.first + diff.first, c.second + diff.second};
+		for (const coordinate& temp : adjacent(c)) {
 			if (!is_valid_coordinate(temp)) continue;
 
 			unsigned index = coord_to_index(temp);
@@ -858,12 +811,11 @@ void board::group_propagate(group **a) {
 }
 
 size_t board::group_capturable(const coordinate& coord, group *arr[4]) {
-	static std::vector<coordinate> coords = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+	const auto& coords = adjacent(coord);
 	size_t ret = 0;
 
 	for (unsigned i = 0; i < 4; i++) {
-		coordinate& c = coords[i];
-		coordinate n = {coord.first + c.first, coord.second + c.second};
+		const auto& n = coords[i];
 
 		if (!is_valid_coordinate(n)) {
 			arr[i] = nullptr;
@@ -887,7 +839,8 @@ size_t board::group_capturable(const coordinate& coord, group *arr[4]) {
 // takes an array generated by group_capturable and generates a hash
 // that simulates capturing those groups
 uint64_t board::group_pseudocapture(const coordinate& coord, group *arr[4]) {
-	point::color tempgrid[384];
+	//point::color tempgrid[384];
+	uint8_t tempgrid[384];
 	memcpy(tempgrid, grid, sizeof(grid));
 
 	for (unsigned i = 0; i < 4; i++) {

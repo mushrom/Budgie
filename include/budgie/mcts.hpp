@@ -19,11 +19,13 @@ struct coord_hash {
 	}
 };
 
+#define M 50
+
 // TODO: rename stats and crit_stats
 class stats {
 	public:
-		unsigned wins = 0;
-		unsigned traversals = 0;
+		unsigned wins = M/2;
+		unsigned traversals = M;
 
 		double win_rate(void) {
 			return traversals? (double)wins / (double)traversals : 0.5;

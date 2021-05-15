@@ -507,6 +507,12 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 		leaves[coord] = nodeptr(new mcts_node(this, color));
 		leaves[coord]->criticality = criticality;
 		leaves[coord]->coord = coord;
+
+		if (parent) {
+			for (const auto& x : parent->rave) {
+				leaves[coord]->rave[x.first] = x.second;
+			}
+		}
 	}
 }
 

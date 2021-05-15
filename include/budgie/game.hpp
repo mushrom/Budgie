@@ -70,6 +70,15 @@ class group {
 		size_t last_update = 0xdeadbeef;
 };
 
+static inline constexpr std::array<coordinate, 4> adjacent(const coordinate& coord) {
+	return {
+		coordinate {coord.first - 1, coord.second},
+		coordinate {coord.first + 1, coord.second},
+		coordinate {coord.first,     coord.second - 1},
+		coordinate {coord.first,     coord.second + 1},
+	};
+}
+
 // TODO: no reason for this to be a member function,
 //       we could inline this...
 static inline point::color other_player(point::color color) {
@@ -120,7 +129,7 @@ class board {
 		void deserialize(anserial::s_node *node);
 
 		move::moveptr move_list;
-		point::color grid[384];
+		uint8_t grid[384];
 		uint64_t hash = InitialHash;
 		int komi = 7;
 		unsigned dimension;
@@ -153,12 +162,12 @@ class board {
 		std::list<group*> group_liberties[4][384];
 
 		bool owns(const coordinate& coord, point::color color);
-		point::color ownership[384];
+		uint8_t ownership[384];
 		std::set<coordinate> available_moves;
 
 	private:
 		void regen_hash(void);
-		uint64_t regen_hash(point::color grid[384]);
+		uint64_t regen_hash(uint8_t grid[384]);
 		void endgame_mark_captured(const coordinate& coord, point::color color,
 		                           std::bitset<384>& marked);
 		void endgame_clear_captured(void);
