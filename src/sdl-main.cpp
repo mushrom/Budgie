@@ -126,101 +126,117 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 	double min_crit = 1.0;
 	double max_crit = 0;
 
-	for (const auto& move : bot.tree->root->leaves) {
-		double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
-		double rave_est = bot.tree->root->rave[move.first].win_rate();
-		double crit_est = (*bot.tree->root->criticality)[move.first].win_rate();
+	for (int dx = 1; dx <= bot.boardsize; dx++) {
+		for (int dy = 1; dy <= bot.boardsize; dy++) {
+			coordinate coord = {dx, dy};
+			unsigned hash = coord_hash_v2(coord);
+			const mcts_node *leaf = bot.tree->root->leaves[hash];
 
-		if (traversals < min_traversals) {
-			min_traversals = traversals;
-		}
+			double traversals = (leaf == nullptr)
+				? 0
+				: leaf->traversals / (1.*bot.tree->root->traversals);
 
-		if (traversals > max_traversals) {
-			max_traversals = traversals;
-		}
+			double rave_est = bot.tree->root->rave[hash].win_rate();
+			double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
 
-		if (rave_est < min_rave) {
-			min_rave = rave_est;
-		}
+			if (traversals < min_traversals) {
+				min_traversals = traversals;
+			}
 
-		if (rave_est > max_rave) {
-			max_rave = rave_est;
-		}
+			if (traversals > max_traversals) {
+				max_traversals = traversals;
+			}
 
-		if (crit_est < min_crit) {
-			min_crit = crit_est;
-		}
+			if (rave_est < min_rave) {
+				min_rave = rave_est;
+			}
 
-		if (crit_est > max_crit) {
-			max_crit = crit_est;
+			if (rave_est > max_rave) {
+				max_rave = rave_est;
+			}
+
+			if (crit_est < min_crit) {
+				min_crit = crit_est;
+			}
+
+			if (crit_est > max_crit) {
+				max_crit = crit_est;
+			}
 		}
 	}
 
-	for (const auto& move : bot.tree->root->leaves) {
-		coordinate foo = move.first;
-		SDL_Rect rect;
+	for (int dx = 1; dx <= bot.boardsize; dx++) {
+		for (int dy = 1; dy <= bot.boardsize; dy++) {
+			coordinate foo = {dx, dy};
+			unsigned hash = coord_hash_v2(foo);
+			const mcts_node *leaf = bot.tree->root->leaves[hash];
+			SDL_Rect rect;
 
-		double meh = (1.*width) / (bot.game.dimension - 1);
-		double asdf = (x + 1) - (meh/2);
+			double meh = (1.*width) / (bot.game.dimension - 1);
+			double asdf = (x + 1) - (meh/2);
 
-		unsigned off = 0x20;
-		unsigned range = (0xff - off);
+			unsigned off = 0x20;
+			unsigned range = (0xff - off);
 
-		rect.x = asdf + (foo.first  - 1) * meh;
-		rect.y = asdf + (foo.second - 1) * meh;
-		rect.h = rect.w = meh + 1;
+			rect.x = asdf + (foo.first  - 1) * meh;
+			rect.y = asdf + (foo.second - 1) * meh;
+			rect.h = rect.w = meh + 1;
 
-		unsigned r=0, g=0, b=0;
+			unsigned r=0, g=0, b=0;
 
-		if (mode == modes::Traversals || mode == modes::Statistics) {
-			// TODO: config option to toggle ownership/statistic heatmaps
-			double traversals = move.second->traversals / (1.*bot.tree->root->traversals);
-			if (relative_stats) {
-				traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
+			if (mode == modes::Traversals || mode == modes::Statistics) {
+				if (leaf) {
+					// TODO: config option to toggle ownership/statistic heatmaps
+					double traversals = leaf->traversals / (1.*bot.tree->root->traversals);
+					if (relative_stats) {
+						traversals = (traversals - min_traversals) / (max_traversals - min_traversals);
+					}
+					b = off + range * traversals;
+				}
 			}
-			b = off + range * traversals;
-		}
 
-		if (mode == modes::Rave || mode == modes::Statistics) {
-			double rave_est = bot.tree->root->rave[foo].win_rate();
-			if (relative_stats) {
-				rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+			if (mode == modes::Rave || mode == modes::Statistics) {
+				double rave_est = bot.tree->root->rave[hash].win_rate();
+				if (relative_stats) {
+					rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+				}
+				g = off + range * rave_est;
 			}
-			g = off + range * rave_est;
-		}
 
-		if (mode == modes::Criticality || mode == modes::Statistics) {
-			double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
-			if (relative_stats) {
-				crit_est = (crit_est - min_crit) / (max_crit - min_crit);
+			if (mode == modes::Criticality || mode == modes::Statistics) {
+				double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
+				if (relative_stats) {
+					crit_est = (crit_est - min_crit) / (max_crit - min_crit);
+				}
+				r = off + range * crit_est;
 			}
-			r = off + range * crit_est;
+
+			if (mode == modes::Mcts) {
+				auto& stat = bot.tree->root->nodestats[hash];
+				double mcts_est = stat.win_rate();
+
+				r = off + range * mcts_est;
+				b = off + range * mcts_est;
+				g = off + range * bot.tree->root->nodestats[hash].traversals /
+					(1.*bot.tree->root->traversals);
+			}
+
+			if (mode == modes::Ownership) {
+				auto& x = (*bot.tree->root->criticality)[foo];
+				r = off + range * (x.black_owns / (1. * x.traversals));
+				g = off + range * (x.white_owns / (1. * x.traversals));
+				b = off;
+			}
+
+			// gamma correction
+			r = 0xff * pow(r/255.0, 1/2.2);
+			g = 0xff * pow(g/255.0, 1/2.2);
+			b = 0xff * pow(b/255.0, 1/2.2);
+
+			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
+			SDL_RenderFillRect(renderer, &rect);
 		}
 
-		if (mode == modes::Mcts) {
-			auto& stat = bot.tree->root->nodestats[foo];
-			double mcts_est = stat.win_rate();
-
-			r = off + range * mcts_est;
-			b = off + range * mcts_est;
-			g = off + range * bot.tree->root->nodestats[foo].traversals /
-				(1.*bot.tree->root->traversals);
-		}
-
-		if (mode == modes::Ownership) {
-			auto& x = (*bot.tree->root->criticality)[foo];
-			r = off + range * (x.black_owns / (1. * x.traversals));
-			g = off + range * (x.white_owns / (1. * x.traversals));
-			b = off;
-		}
-
-		// gamma correction
-		r = 0xff * pow(r/255.0, 1/2.2);
-		g = 0xff * pow(g/255.0, 1/2.2);
-		b = 0xff * pow(b/255.0, 1/2.2);
-
-		SDL_SetRenderDrawColor(renderer, r, g, b, 0);
-		SDL_RenderFillRect(renderer, &rect);
 	}
 }
 
@@ -293,6 +309,10 @@ void gui_state::draw_predicted(unsigned x, unsigned y, unsigned width) {
 		coordinate coord = ptr->best_move();
 		SDL_Rect r;
 
+		if (coord == coordinate {0, 0}) {
+			break;
+		}
+
 		r.x = x_off + (coord.first-1) * meh;
 		r.y = y_off + (coord.second-1) * meh;
 		r.h = r.w = blarg;
@@ -317,7 +337,7 @@ void gui_state::draw_predicted(unsigned x, unsigned y, unsigned width) {
 		}
 
 		//printf("got here\n");
-		ptr = ptr->leaves[coord].get();
+		ptr = ptr->leaves[coord_hash_v2(coord)];
 	}
 }
 
