@@ -35,7 +35,9 @@ class pattern_db {
 		void load_permutations(pattern pat, unsigned index=0);
 		void load_compile(pattern& pat);
 		void dump_patterns(void);
-		std::unordered_map<uint32_t, unsigned> patterns;
+
+		std::unique_ptr<uint8_t> pattern_values;
+		unsigned total_patterns = 0;
 };
 
 }

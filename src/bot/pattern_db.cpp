@@ -50,7 +50,7 @@ void pattern::print(void) {
 
 // TODO: if hashes only use 18 bits, why not use uint32_t?
 uint32_t pattern::hash(void) {
-	uint32_t ret = 1;
+	uint32_t ret = 0;
 
 	// XXX: only handling exact specifiers here
 	for (unsigned i = 0; i < 9; i++) {
@@ -121,6 +121,12 @@ retry:
 
 pattern_db::pattern_db(const std::string& db) {
 	std::ifstream pf(db);
+	pattern_values = std::unique_ptr<uint8_t>(new uint8_t[1 << 18]);
+
+	uint8_t *values = pattern_values.get();
+	for (int i = 0; i < (1<<18); i++) {
+		values[i] = 100;
+	}
 
 	while (pf.is_open()) {
 		pattern p = read_pattern(pf);
@@ -129,15 +135,10 @@ pattern_db::pattern_db(const std::string& db) {
 
 	dump_patterns();
 
-	std::cerr << "# total patterns loaded: " << patterns.size() << std::endl;
+	std::cerr << "# total patterns loaded: " << total_patterns << std::endl;
 }
 
 void pattern_db::dump_patterns(void) {
-	/*
-	for (auto& thing : patterns) {
-		thing.print();
-	}
-	*/
 }
 
 void pattern_db::load_pattern(pattern& pat) {
@@ -213,18 +214,11 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 
 void pattern_db::load_compile(pattern& pat) {
 	uint32_t hash = pat.hash();
-	auto it = patterns.find(hash);
 
-	if (it != patterns.end() && pat.weight > it->second) {
-		/*
-		std::cerr << "# have overlapping pattern with higher weight, ignoring...\n";
-		std::cerr << "# " << std::hex << hash << std::dec << std::endl;;
-		pat.print();
-		*/
-		return;
-	}
-
-	patterns[hash] = pat.weight;
+	uint8_t *ptr = pattern_values.get();
+	/* 0x3ffff = (1<<18)-1 */
+	ptr[hash & 0x3ffff] = (uint8_t)(pat.weight&0xff);
+	total_patterns++;
 }
 
 unsigned pattern_db::search(board *state, coordinate coord) {
@@ -232,17 +226,13 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	read_grid(state, coord, grid);
 
 	uint32_t hash = hash_grid(state, grid);
-	auto it = patterns.find(hash);
 
-	if (it == patterns.end()) {
-		return 100;
-	}
-
-	return it->second;
+	uint8_t *ptr = pattern_values.get();
+	return ptr[hash & 0x3ffff];
 }
 
 uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
-	uint32_t ret = 1;
+	uint32_t ret = 0;
 	point::color player = state->current_player;
 	point::color other  = other_player(player);
 
