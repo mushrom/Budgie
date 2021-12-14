@@ -54,6 +54,11 @@ uint32_t pattern::hash(void) {
 
 	// XXX: only handling exact specifiers here
 	for (unsigned i = 0; i < 9; i++) {
+		// TODO: should do this before ORing no?
+		//       update: yeah, probably
+		//       leaving this here in case this causes problems in the future
+		ret <<= 2;
+
 		switch (minigrid[i]) {
 			case '.':
 			case '*':
@@ -77,9 +82,6 @@ uint32_t pattern::hash(void) {
 			default:
 				break;
 		}
-
-		// TODO: should do this before ORing no?
-		ret <<= 2;
 	}
 
 	return ret;
@@ -245,6 +247,8 @@ uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
 	point::color other  = other_player(player);
 
 	for (unsigned i = 0; i < 9; i++) {
+		ret <<= 2;
+
 		if (grid[i] == point::color::Empty) {
 			ret |= 0;
 		}
@@ -260,8 +264,6 @@ uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
 		if (grid[i] == point::color::Invalid) {
 			ret |= 3;
 		}
-
-		ret <<= 2;
 	}
 
 	return ret;
