@@ -15,7 +15,7 @@ mcts_node* uct_tree_policy::search(board *state, mcts_node *ptr) {
 			}
 
 			ptr->new_node(next, state->current_player);
-			return ptr->leaves[next].get();
+			return ptr->leaves[coord_hash_v2(next)];
 		}
 
 		coordinate next = max_utc(state, ptr);
@@ -27,7 +27,7 @@ mcts_node* uct_tree_policy::search(board *state, mcts_node *ptr) {
 
 		ptr->new_node(next, state->current_player);
 		state->make_move(next);
-		ptr = ptr->leaves[next].get();
+		ptr = ptr->leaves[coord_hash_v2(next)];
 	}
 
 	return nullptr;
@@ -80,7 +80,8 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 	}
 	*/
 
-	double mcts_est = ptr->nodestats[coord].win_rate();
+	unsigned hash = coord_hash_v2(coord);
+	double mcts_est = ptr->nodestats[hash].win_rate();
 
 	/*
 	double uct = uct_weight
@@ -88,8 +89,8 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 		* */
 	double uct =
 		uct_weight * sqrt(log(ptr->traversals) /
-			((ptr->nodestats[coord].traversals > 0)
-				? ptr->nodestats[coord].traversals
+			((ptr->nodestats[hash].traversals > 0)
+				? ptr->nodestats[hash].traversals
 				: 1));
 
 

@@ -15,7 +15,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 			}
 
 			ptr->new_node(next, state->current_player);
-			return ptr->leaves[next].get();
+			return ptr->leaves[coord_hash_v2(next)];
 		}
 
 		coordinate next = {0, 0};
@@ -26,9 +26,10 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 				continue;
 			}
 
-			if (ptr->nodestats[x].win_rate() > max) {
+			unsigned hash = coord_hash_v2(x);
+			if (ptr->nodestats[hash].win_rate() > max) {
 				next = x;
-				max = ptr->nodestats[x].win_rate();
+				max = ptr->nodestats[hash].win_rate();
 			}
 		}
 
@@ -39,7 +40,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 
 		ptr->new_node(next, state->current_player);
 		state->make_move(next);
-		ptr = ptr->leaves[next].get();
+		ptr = ptr->leaves[coord_hash_v2(next)];
 	}
 
 	return nullptr;

@@ -19,6 +19,10 @@ struct coord_hash {
 	}
 };
 
+static inline unsigned coord_hash_v2(const coordinate& coord) {
+	return (coord.first << 5) | coord.second;
+}
+
 #define M 50
 
 // TODO: rename stats and crit_stats
@@ -75,7 +79,21 @@ class mcts_node {
 			color = player;
 			parent = n_parent;
 			traversals = 0;
+
+			for (int i = 0; i < 660; i++) {
+				leaves[i] = nullptr;
+			}
 		};
+
+		~mcts_node() {
+			leaves_alive.clear();
+
+			for (int i = 0; i < 660; i++) {
+				if (leaves[i]) {
+					delete leaves[i];
+				}
+			}
+		}
 
 		void update(board *state);
 		void update_stats(board *state, point::color winner);
@@ -90,12 +108,20 @@ class mcts_node {
 		                          unsigned depth=0);
 		void dump_best_move_statistics(board *state);
 
-		// TODO: what about a 19-node shallow tree instead of a map here?
-		std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
-		std::unordered_map<coordinate, stats, coord_hash> nodestats;
+		//std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
+		//std::unordered_map<coordinate, stats, coord_hash> nodestats;
+		//stats     *stats[384];
+
+		mcts_node *leaves[660];
+		stats     nodestats[660];
+		stats     rave[660];
+		//critstats critstats[384];
+
+		// for iterating over current valid leaves
+		std::vector<mcts_node*> leaves_alive;
 
 		critptr criticality;
-		ravestats rave;
+		//ravestats rave;
 
 		mcts_node *parent;
 		point::color color;

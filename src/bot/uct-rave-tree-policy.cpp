@@ -15,7 +15,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 			}
 
 			ptr->new_node(next, state->current_player);
-			return ptr->leaves[next].get();
+			return ptr->leaves[coord_hash_v2(next)];
 		}
 
 		coordinate next = max_utc(state, ptr);
@@ -27,7 +27,7 @@ mcts_node* uct_rave_tree_policy::search(board *state, mcts_node *ptr) {
 
 		ptr->new_node(next, state->current_player);
 		state->make_move(next);
-		ptr = ptr->leaves[next].get();
+		ptr = ptr->leaves[coord_hash_v2(next)];
 	}
 
 	return nullptr;
@@ -65,17 +65,19 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0;
 	}
 
-	double rave_est = ptr->rave[coord].win_rate();
-	double mcts_est = ptr->nodestats[coord].win_rate();
+	unsigned hash = coord_hash_v2(coord);
+	double rave_est = ptr->rave[hash].win_rate();
+	double mcts_est = ptr->nodestats[hash].win_rate();
+	// TODO: criticality table
 	double crit_est = (*ptr->criticality)[coord].win_rate();
 
 
 	double uct = uct_weight * sqrt(log(ptr->traversals) /
-	                 ((ptr->nodestats[coord].traversals > 0)
-	                     ? ptr->nodestats[coord].traversals
+	                 ((ptr->nodestats[hash].traversals > 0)
+	                     ? ptr->nodestats[hash].traversals
 	                     : 1));
 
-	double B = MIN(1.0, (ptr->nodestats[coord].traversals)/rave_weight);
+	double B = MIN(1.0, (ptr->nodestats[hash].traversals)/rave_weight);
 
 	return mcts_est*B + (crit_est+rave_est)*(1.0-B) + uct;
 }
