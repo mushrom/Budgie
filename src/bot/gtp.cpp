@@ -182,12 +182,18 @@ void gtp_client::repl(args_parser::option_map& options) {
 		else if (args[0] == "showboard") {
 			std::cout << "= \n";
 			bot.game.print();
-			std::cout << "\n\n";
+			std::cout << "\n";
 		}
 
 		else if (args[0] == "quit") {
 			std::cout << "=\n\n";
 			return;
+		}
+
+		else if (args[0] == "final_score") {
+			std::cout << "= ";
+			std::cout << bot.game.determine_score();
+			std::cout << "\n\n";
 		}
 
 		else {

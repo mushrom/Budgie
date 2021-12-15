@@ -115,6 +115,7 @@ class board {
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
 		point::color determine_winner(void);
+		std::string determine_score(void);
 		static uint64_t gen_hash(const coordinate& coord,
 		                         point::color color,
 		                         uint64_t hash);

@@ -484,6 +484,24 @@ point::color board::determine_winner(void) {
 	return (black > white)? point::color::Black : point::color::White;
 }
 
+std::string board::determine_score(void) {
+	endgame_clear_captured();
+
+	int white_stones = count_stones(point::color::White) + komi;
+	int black_stones = count_stones(point::color::Black);
+
+	int white_territory = count_territory(point::color::White);
+	int black_territory = count_territory(point::color::Black);
+
+	int white = white_stones + white_territory;
+	int black = black_stones + black_territory;
+	int diff  = black - white;
+
+	return (black > white)
+		? "B+" + std::to_string(diff)
+		: "W+" + std::to_string(-diff);
+}
+
 bool board::owns(const coordinate& coord, point::color color) {
 	return grid[coord_to_index(coord)] == color;
 }
