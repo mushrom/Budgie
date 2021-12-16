@@ -5,6 +5,7 @@
 #include <iostream>
 #include <bitset>
 #include <stdexcept>
+
 // for memcpy
 #include <string.h>
 
@@ -149,6 +150,16 @@ bool board::violates_ko(const coordinate& coord) {
 	return false;
 }
 
+#if 1
+// NOTE: seems the depth-first search here is significantly faster,
+//       not something I had expected since the breadth-first version
+//       avoids recursion and a lot of validity checks...
+//       interesting, wonder if it simply reaches the target with less iterations?
+//       or maybe smaller code, plays better with branch prediction, idk
+
+// do a depth-first search starting from adjacent coordinates
+// to see if 'coord' reaches any coordinate of color 'target'
+// traversing only 'color' grid cells
 bool board::reaches_iter(const coordinate& coord,
                          point::color color,
                          point::color target,
@@ -175,8 +186,123 @@ bool board::reaches_iter(const coordinate& coord,
 	return ret;
 }
 
+#else
+
+#include <assert.h>
+template <typename T, unsigned N>
+class circularBuf {
+	public:
+		T elements[N];
+		unsigned start = 0;
+		unsigned end   = 0;
+		unsigned count = 0;
+
+		void push(const T& em) {
+			//assert(count < N);
+			elements[end] = em;
+			end = (end+1) % N;
+			count++;
+		}
+
+		T front(void) {
+			return elements[start];
+		}
+
+		void pop(void) {
+			//assert(count > 0);
+			start = (start+1) % N;
+			count--;
+		}
+
+		bool empty(void) {
+			return count == 0;
+		}
+};
+
+// do a breadth-first search starting from adjacent coordinates
+// to see if 'coord' reaches any coordinate of color 'target'
+// traversing only 'color' grid cells
+bool board::reaches_iter(const coordinate& coord,
+                         point::color color,
+                         point::color target,
+                         //std::bitset<384>& marked)
+                         std::bitset<384>& visited)
+{
+	bool ret = false;
+	//std::queue<coordinate> que;
+	//coordinate circ[512];
+	//unsigned circidx = 0;
+
+	circularBuf<coordinate, 512> que;
+	//std::bitset<1024> visited = {0};
+
+	//unsigned meh = (coord.first << 5) | coord.second;
+	unsigned meh = coord_to_index(coord);
+	//marked[coord_to_index(coord)] = true;
+	visited[meh] = true;
+
+	auto thing = [&](const coordinate& asdf) {
+		//assert(asdf.first != 0 && asdf.second != 0);
+		//unsigned idx = coord_hash_v2(asdf);
+		//unsigned idx = (asdf.first << 5) | asdf.second;
+		unsigned idx = coord_to_index(asdf);
+		if (!visited[idx]) {
+			que.push(asdf);
+			visited[idx] = true;
+		}
+	};
+
+	//assert(coord.first != 0 && coord.second != 0);
+	//que.push(coord);
+	if (coord.first  > 1)         thing({coord.first - 1, coord.second});
+	if (coord.second > 1)         thing({coord.first, coord.second - 1});
+	if (coord.first  < dimension) thing({coord.first + 1, coord.second});
+	if (coord.second < dimension) thing({coord.first, coord.second + 1});
+
+	//assert(!que.empty());
+
+	while (!que.empty()) {
+		//coordinate cur = que.pop();
+		coordinate cur = que.front(); que.pop();
+		//assert(cur.first != 0 && cur.second != 0);
+		unsigned index = coord_to_index(cur);
+		//unsigned index = (cur.first << 5) | cur.second;
+
+		/*
+		if (visited[index]) {
+			continue;
+		}
+
+		visited[index] = true;
+		*/
+
+		//point::color c = get_coordinate(cur);
+		// 'cur' should always be a valid coordinate on the board
+		point::color c = (point::color)grid[(cur.second - 1)*dimension + (cur.first - 1)];
+
+		if (c == target) {
+			return true;
+
+		} else if (c == color) {
+			// continue searching, push only possible adjacent coordinates
+			if (cur.first  > 1)         thing({cur.first - 1, cur.second});
+			if (cur.second > 1)         thing({cur.first, cur.second - 1});
+			if (cur.first  < dimension) thing({cur.first + 1, cur.second});
+			if (cur.second < dimension) thing({cur.first, cur.second + 1});
+		}
+	}
+
+	// all paths from 'color' traversed, does not reach 'target'
+	return false;
+}
+#endif
+
 bool board::reaches(const coordinate& coord, point::color color, point::color target) {
 	std::bitset<384> marked = {0};
+
+	if (!is_valid_coordinate(coord)) {
+		return false;
+	}
 
 	return reaches_iter(coord, color, target, marked);
 }
