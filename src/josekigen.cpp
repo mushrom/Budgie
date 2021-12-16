@@ -90,14 +90,30 @@ std::optional<gameLinear> extractInfo(parseNode node) {
 }
 
 #include <iostream>
+#include <algorithm>
+#include <budgie/budgie.hpp>
+using namespace mcts_thing;
+
 int main(int argc, char *argv[]) {
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s [target boardsize]\n", argv[0]);
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s [target boardsize] [outfile]\n", argv[0]);
 		return 1;
 	}
 
 	int targetBoardsize = atoi(argv[1]);
 	std::string line;
+
+	args_parser::option_map options;
+
+	for (const auto& x : budgie_options) {
+		options[x.first] = x.second.def_value;
+	}
+
+	budgie bot(options);
+	bot.boardsize = targetBoardsize;
+
+	//std::map<uint64_t, std::vector<coordinate>> hashes;
+	std::map<uint64_t, std::set<coordinate>> hashes;
 
 	while (std::getline(std::cin, line)) {
 		FILE *in = fopen(line.c_str(), "r");
@@ -111,18 +127,69 @@ int main(int argc, char *argv[]) {
 		parseResult thing = parseSGF(in);
 		fclose(in);
 
+
 		if (thing.has_value()) {
 			//dump(*thing);
 			if (auto game = extractInfo(*thing)) {
 				if (game->size == targetBoardsize) {
-					printf("Dumping game %s:\n", line.c_str());
-					game->print();
+					bot.reset();
+
+					point::color player = point::color::Black;
+					for (auto& move : game->moves) {
+						if (move == "") break;
+						coordinate coord = {move[0] - 'a' + 1, move[1] - 'a' + 1};
+						player = other_player(player);
+
+						//hashes.emplace(bot.game.hash, coord);
+						//hashes[bot.game.hash].push_back(coord);
+						hashes[bot.game.hash].insert(coord);
+
+						printf("hash: 0x%016llx\n", bot.game.hash);
+						bool valid = bot.make_move(
+							budgie::move(budgie::move::types::Move,
+							             coord,
+							             player));
+
+						if (!valid) {
+							break;
+						}
+					}
+
+					bot.game.print();
+					printf(">>> final hash: 0x%016llu\n", bot.game.hash);
+
+					//printf("Dumping game %s:\n", line.c_str());
+					//game->print();
 				} else {
 					printf("<Skipped %s>\n", line.c_str());
 				}
 			}
 		}
 	}
+
+	FILE *out = fopen(argv[2], "w");
+	for (auto& [k, v] : hashes) {
+		// ignore small sample sizes
+		if (v.size() <= 1) continue;
+
+		printf("Moves for hash 0x%016llx: ", k);
+		fwrite(&k, 8, 1, out);
+
+		//std::sort(v.begin(), v.end());
+
+		for (auto& c : v) {
+			uint8_t a = c.first;
+			uint8_t b = c.second;
+			fwrite(&a, 1, 1, out);
+			fwrite(&b, 1, 1, out);
+			printf("(%d, %d) ", c.first, c.second);
+		}
+
+		fputc(0, out);
+
+		printf("\n");
+	}
+	fclose(out);
 
 	return 0;
 }
