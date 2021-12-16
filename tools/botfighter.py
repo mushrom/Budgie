@@ -10,9 +10,13 @@ import datetime
 gnugoArgs = ["gnugo", "--mode", "gtp", "--chinese-rules", "--play-out-aftermath"] 
 
 bots = [
-    ("Budgie 5000p", ["./bin/thing", "--playouts", "5000"]),
-    ("Budgie 1000p", ["./bin/thing", "--playouts", "1000"]),
-    ("Budgie 7500p", ["./bin/thing", "--playouts", "7500"]),
+    ("Budgie 5000p",      ["./bin/thing", "--playouts", "5000"]),
+    ("Budgie 1000p",      ["./bin/thing", "--playouts", "1000"]),
+    ("Budgie 7500p",      ["./bin/thing", "--playouts", "7500"]),
+    ("Budgie 10000p",     ["./bin/thing", "--playouts", "10000"]),
+    ("Budgie UCT 2500p",  ["./bin/thing", "--tree_policy", "uct", "--playouts", "5000"]),
+    ("Budgie UCT 5000p",  ["./bin/thing", "--tree_policy", "uct", "--playouts", "5000"]),
+    ("Budgie UCT 10000p", ["./bin/thing", "--tree_policy", "uct", "--playouts", "10000"]),
     ("GnuGo level 10", gnugoArgs + ["--level", "10",]),
     ("GnuGo level 5",  gnugoArgs + ["--level", "5",]),
     ("GnuGo level 3",  gnugoArgs + ["--level", "3",]),
@@ -93,7 +97,13 @@ def initBoard(bot):
     sendCommand(bot, "clear_board")
 
 if __name__ == "__main__":
-    thing = open("/tmp/data.csv", "a")
+    fname = "/tmp/data.csv"
+
+    if len(sys.argv) > 1:
+        fname = sys.argv[1]
+
+    print(f"Writing data to {fname}")
+    thing = open(fname, "a")
 
     while True:
         scram = bots.copy()
