@@ -170,7 +170,7 @@ bool board::reaches_iter(const coordinate& coord,
 
 	for (const auto& thing : adjacent(coord)) {
 		if (is_valid_coordinate(thing) && !marked[coord_to_index(thing)]) {
-			point::color foo = get_coordinate(thing);
+			point::color foo = get_coordinate_unsafe(thing);
 
 			if (foo == target) {
 				ret = true;
@@ -324,7 +324,7 @@ unsigned board::count_iter(const coordinate& coord,
 		unsigned index = coord_to_index(thing);
 
 		if (is_valid_coordinate(thing) && !marked[index]) {
-			point::color foo = get_coordinate(thing);
+			point::color foo = get_coordinate_unsafe(thing);
 
 			if (foo == target) {
 				ret++;
@@ -353,15 +353,15 @@ unsigned board::count_reachable(const coordinate& coord,
 
 
 void board::clear_stones(const coordinate& coord, point::color color) {
-	if (get_coordinate(coord) != color) {
-		return;
-	}
+	if (is_valid_coordinate(coord)) {
+		if (get_coordinate_unsafe(coord) != color) {
+			return;
+		}
 
-	set_coordinate(coord, point::color::Empty);
+		set_coordinate_unsafe(coord, point::color::Empty);
 
-	// TODO: lambdas?
-	for (auto thing : adjacent(coord)) {
-		if (is_valid_coordinate(thing)) {
+		// TODO: lambdas?
+		for (auto thing : adjacent(coord)) {
 			clear_stones(thing, color);
 		}
 	}
@@ -413,7 +413,8 @@ bool board::is_valid_coordinate(const coordinate& coord) {
 }
 
 bool board::is_valid_coordinate(unsigned x, unsigned y) {
-	return !(x < 1 || y < 1 || x > dimension || y > dimension);
+	//return !(x < 1 || y < 1 || x > dimension || y > dimension);
+	return x > 0 && y > 0 && x <= dimension && y <= dimension;
 }
 
 point::color board::get_coordinate(const coordinate& coord) {
@@ -432,13 +433,21 @@ point::color board::get_coordinate(unsigned x, unsigned y) {
 	return (point::color)grid[(y - 1)*dimension + (x - 1)];
 }
 
+point::color board::get_coordinate_unsafe(const coordinate& coord) {
+	return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
+}
+
+point::color board::get_coordinate_unsafe(unsigned x, unsigned y) {
+	return (point::color)grid[(y - 1)*dimension + (x - 1)];
+}
+
 bool board::make_move(const coordinate& coord) {
 	if (!is_valid_move(coord)) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
 		return false;
 	}
 
-	set_coordinate(coord, current_player);
+	set_coordinate_unsafe(coord, current_player);
 	group_place(coord);
 	clear_enemy_stones(coord, current_player);
 	regen_hash();
@@ -477,7 +486,7 @@ unsigned board::territory_flood(const coordinate& coord,
 
 	traversed_map[index] = true;
 
-	if (get_coordinate(coord) != point::color::Empty) {
+	if (get_coordinate_unsafe(coord) != point::color::Empty) {
 		return 0;
 
 	} else {
@@ -500,7 +509,7 @@ void board::endgame_mark_captured(const coordinate& coord,
 	for (const auto& thing : adjacent(coord)) {
 		if (is_valid_coordinate(thing)
 		    && !marked[coord_to_index(thing)]
-		    && get_coordinate(thing) == color)
+		    && get_coordinate_unsafe(thing) == color)
 		{
 			endgame_mark_captured(thing, color, marked);
 		}
@@ -543,7 +552,7 @@ void board::endgame_clear_captured(void) {
 			unsigned index = coord_to_index(coord);
 
 			if (marked[index]) {
-				set_coordinate(coord, point::color::Empty);
+				set_coordinate_unsafe(coord, point::color::Empty);
 			}
 		}
 	}
@@ -566,7 +575,7 @@ unsigned board::count_territory(point::color player) {
 			coordinate coord = {x, y};
 			unsigned index = coord_to_index(coord);
 
-			if (bitmap[index] || get_coordinate(coord) != point::color::Empty) {
+			if (bitmap[index] || get_coordinate_unsafe(coord) != point::color::Empty) {
 				continue;
 			}
 
@@ -633,11 +642,10 @@ void board::regen_hash(void) {
 
 	for (unsigned y = 1; y <= dimension; y++) {
 		for (unsigned x = 1; x <= dimension; x++) {
-			coordinate coord = {x, y};
-			point::color color = get_coordinate(coord);
+			point::color color = get_coordinate_unsafe(x, y);
 
 			if (color != point::color::Empty) {
-				ret = gen_hash(coord, color, ret);
+				ret = gen_hash({x, y}, color, ret);
 			}
 		}
 	}
@@ -666,6 +674,10 @@ void board::set_coordinate(const coordinate& coord, point::color color) {
 	if (is_valid_coordinate(coord)) {
 		grid[coord_to_index(coord)] = color;
 	}
+}
+
+void board::set_coordinate_unsafe(const coordinate& coord, point::color color) {
+	grid[coord_to_index(coord)] = color;
 }
 
 void board::print(void) {
@@ -767,7 +779,7 @@ void board::group_place(const coordinate& coord) {
 			continue;
 		}
 
-		point::color p = get_coordinate(temp);
+		point::color p = get_coordinate_unsafe(temp);
 
 		if (p == point::color::Empty)
 			(*g)->liberties.insert(temp);

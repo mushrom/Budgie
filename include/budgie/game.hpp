@@ -9,6 +9,7 @@
 #include <memory>
 #include <bitset>
 #include <anserial/anserial.hpp>
+#include <unordered_set>
 
 namespace mcts_thing {
 
@@ -54,6 +55,12 @@ class move {
 };
 
 class group {
+	struct coord_hash {
+		std::size_t operator () (const coordinate& coord) const {
+			return (coord.first << 5) | coord.second;
+		}
+	};
+
 	public:
 		point::color color;
 
@@ -61,7 +68,7 @@ class group {
 		std::list<coordinate> members;
 
 		// set so we can add/remove members quickly
-		std::set<coordinate> liberties;
+		std::unordered_set<coordinate, coord_hash> liberties;
 
 		// self-reference so that we can efficiently move groups around
 		std::list<group*>::iterator it;
@@ -104,6 +111,10 @@ class board {
 
 		point::color get_coordinate(const coordinate& coord);
 		point::color get_coordinate(unsigned x, unsigned y);
+		// get_coordinate() with no is_valid_coordinate(),
+		// in case it's already known that the coordinate is valid
+		point::color get_coordinate_unsafe(const coordinate& coord);
+		point::color get_coordinate_unsafe(unsigned x, unsigned y);
 
 		bool is_valid_move(const coordinate& coord);
 		bool is_valid_coordinate(const coordinate& coord);
@@ -177,6 +188,7 @@ class board {
 		                         std::bitset<384>& traversed_map);
 
 		void set_coordinate(const coordinate& coord, point::color color);
+		void set_coordinate_unsafe(const coordinate& coord, point::color color);
 		bool reaches_iter(const coordinate& coord, point::color color,
 		                  point::color target, std::bitset<384>& marked);
 		bool reaches(const coordinate& coord, point::color color, point::color target);

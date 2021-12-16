@@ -26,7 +26,7 @@ coordinate local_weighted_playout::apply(board *state) {
 				continue;
 			}
 
-			if (weight > best && state->is_valid_move(foo)) {
+			if (weight > best) {
 				best = weight;
 				found = 0;
 				things[found++] = foo;
