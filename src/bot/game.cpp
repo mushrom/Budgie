@@ -394,24 +394,10 @@ bool board::clear_own_stones(const coordinate& coord, point::color color) {
 }
 
 bool board::captures_enemy(const coordinate& coord, point::color color) {
-	// XXX: pretend to place a stone there, could make the initial coord in
-	//      reaches_empty() be filled though...
-	set_coordinate(coord, color);
-	bool ret = false;
+	group *capturable[4];
+	size_t n_capturable = group_capturable(coord, capturable);
 
-	point::color enemy = (color == point::color::Black)
-	                     ? point::color::White
-	                     : point::color::Black;
-
-	for (const auto& thing : adjacent(coord)) {
-		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
-			ret = true;
-			break;
-		}
-	}
-
-	set_coordinate(coord, point::color::Empty);
-	return ret;
+	return n_capturable > 0;
 }
 
 bool board::is_suicide(const coordinate& coord, point::color color) {
