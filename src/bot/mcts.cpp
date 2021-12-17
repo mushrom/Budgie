@@ -48,12 +48,14 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 	root->color = other_player(state->current_player);
 	root->coord = state->last_move;
 
+	root->init_joseki_root(state);
+
 	while (root->traversals < playouts) {
 		board scratch(state);
 		explore(&scratch);
 	}
 
-	fprintf(stderr, "# %u playouts\n", root->traversals);
+	//fprintf(stderr, "# %u playouts\n", root->traversals);
 	/*
 	std::cerr << "# predicted playout: ";
 	root->dump_best_move_statistics(state);
@@ -66,6 +68,7 @@ coordinate mcts::do_search(board *state, unsigned playouts) {
 double mcts::win_rate(coordinate& coord) {
 	unsigned hash = coord_hash_v2(coord);
 	return root->nodestats[hash].win_rate();
+
 	/*
 	auto it = root->nodestats.find(coord);
 
@@ -527,7 +530,61 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 	return nullptr;
 }
 
-void mcts_node::new_node(coordinate& coord, point::color color) {
+void mcts_node::init_joseki_root(board *state) {
+	init_joseki_hash(state, state->hash);
+	//uint64_t boardhash = state->hash;
+}
+
+#include <string.h>
+
+// XXX
+static unsigned coord_to_index(board *state, const coordinate& coord) {
+	return state->dimension*(coord.second - 1) + (coord.first - 1);
+}
+
+
+void mcts_node::init_joseki_coord(board *state,
+                                  const coordinate& coord,
+                                  point::color color)
+{
+	//uint64_t boardhash = board::gen_hash(coord, color, state->hash);
+	uint64_t boardhash = state->hash;
+	//init_joseki_hash(state, boardhash);
+
+	const auto& josekis = state->josekis->search(state->dimension, boardhash);
+
+	//printf("have hash: %016lx\n", boardhash);
+
+	// can't have a hash if the current hash isn't in the thing
+	if (josekis.size() > 0) {
+		uint8_t tempgrid[384];
+		memcpy(tempgrid, &state->grid, sizeof(state->grid));
+
+		tempgrid[coord_to_index(state, coord)] = color;
+		boardhash = state->regen_hash(tempgrid);
+		init_joseki_hash(state, boardhash);
+	}
+}
+
+void mcts_node::init_joseki_hash(board *state, uint64_t boardhash) {
+	const auto& josekis = state->josekis->search(state->dimension, boardhash);
+
+	//printf("have hash: %016lx\n", boardhash);
+
+	if (josekis.size() > 0) {
+		//printf("lookup success! (%d, %d)\n", coord.first, coord.second);
+		for (const auto& c : josekis) {
+			unsigned index = coord_hash_v2(c);
+
+			// just for testing
+			// TODO: tweak the knobs, expose this as configuration
+			nodestats[index].traversals = 1000;
+			nodestats[index].wins       = 1000;
+		}
+	}
+}
+
+void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 	unsigned hash = coord_hash_v2(coord);
 
 	if (leaves[hash] == nullptr) {
@@ -538,9 +595,27 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 
 		leaves_alive.push_back(leaves[hash]);
 
+		// TODO: flags to specify how the stats should be initialized,
+		//       default to even
+
+		// inherit rave stats from grandparent (of the leaf)
+		/*
 		if (parent) {
 			for (int i = 0; i < 660; i++) {
-				leaves[hash]->rave[i] = parent->rave[i];
+				// could copy rave, nodestats, initialize rave with nodestats or vice versa...
+				//leaves[hash]->rave[i] = parent->rave[i];
+				leaves[hash]->nodestats[i] = parent->nodestats[i];
+			}
+		}
+		*/
+
+		leaves[hash]->init_joseki_coord(state, coord, color);
+
+
+#if 0
+		if (parent && parent->parent) {
+			for (int i = 0; i < 660; i++) {
+				leaves[hash]->rave[i] = parent->parent->rave[i];
 			}
 
 			/*
@@ -549,6 +624,7 @@ void mcts_node::new_node(coordinate& coord, point::color color) {
 			}
 			*/
 		}
+#endif
 	}
 }
 

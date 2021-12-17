@@ -23,6 +23,8 @@ static inline unsigned coord_hash_v2(const coordinate& coord) {
 	return (coord.first << 5) | coord.second;
 }
 
+// TODO: tweakable, what's a good value for this?
+//       think I got 50 from the mogo paper?
 #define M 50
 
 // TODO: rename stats and crit_stats
@@ -97,7 +99,7 @@ class mcts_node {
 
 		void update(board *state);
 		void update_stats(board *state, point::color winner);
-		void new_node(coordinate& coord, point::color color);
+		void new_node(board *state, coordinate& coord, point::color color);
 
 		coordinate best_move(void);
 		bool fully_visited(board *state);
@@ -107,6 +109,12 @@ class mcts_node {
 		void dump_node_statistics(const coordinate& coord, board *state,
 		                          unsigned depth=0);
 		void dump_best_move_statistics(board *state);
+
+		void init_joseki_root(board *state);
+		void init_joseki_coord(board *state,
+		                       const coordinate& coord,
+		                       point::color color);
+		void init_joseki_hash(board *state, uint64_t boardhash);
 
 		//std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
 		//std::unordered_map<coordinate, stats, coord_hash> nodestats;

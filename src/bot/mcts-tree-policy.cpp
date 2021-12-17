@@ -14,7 +14,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 				return nullptr;
 			}
 
-			ptr->new_node(next, state->current_player);
+			ptr->new_node(state, next, state->current_player);
 			return ptr->leaves[coord_hash_v2(next)];
 		}
 
@@ -38,7 +38,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 			return nullptr;
 		}
 
-		ptr->new_node(next, state->current_player);
+		ptr->new_node(state, next, state->current_player);
 		state->make_move(next);
 		ptr = ptr->leaves[coord_hash_v2(next)];
 	}

@@ -1,4 +1,6 @@
 #include <budgie/game.hpp>
+#include <budgie/josekiDB.hpp>
+
 #include <anserial/anserial.hpp>
 #include <stdio.h>
 #include <map>
@@ -14,6 +16,7 @@ namespace mcts_thing {
 // TODO: error on board sizes larger than \sqrt(384)
 board::board(unsigned size) {
 	dimension = size;
+	josekis = std::make_shared<josekiDB>();
 
 	for (unsigned i = 0; i < 384; i++) {
 		ownership[i] = grid[i] = point::color::Empty;
@@ -44,6 +47,7 @@ void board::set(board *other) {
 	current_player = other->current_player;
 	moves = other->moves;
 	last_move = other->last_move;
+	josekis = other->josekis;
 
 	// copy internal info
 	move_list = other->move_list;
@@ -87,6 +91,7 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 	komi = n_komi;
 	moves = 0;
 	move_list = nullptr;
+	hash = InitialHash;
 
 	available_moves.clear();
 
@@ -105,6 +110,10 @@ void board::reset(unsigned boardsize, unsigned n_komi) {
 			k.clear();
 		}
 	}
+}
+
+void board::loadJosekis(std::string list) {
+	josekis->loadAll(list);
 }
 
 bool board::is_valid_move(const coordinate& coord) {

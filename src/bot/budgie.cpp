@@ -24,7 +24,9 @@ budgie::budgie(args_parser::option_map& opts) {
 	boardsize = stoi(opts["boardsize"]);
 	playouts = stoi(opts["playouts"]);
 	full_traversals = stoi(opts["node_expansion_threshold"]);
+
 	game.reset(boardsize, komi);
+	game.loadJosekis(opts["joseki_db"]);
 }
 
 bool budgie::make_move(move m) {

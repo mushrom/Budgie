@@ -100,8 +100,9 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	int targetBoardsize = atoi(argv[1]);
+	uint32_t targetBoardsize = atoi(argv[1]);
 	std::string line;
+	size_t numFiles = 0;
 
 	args_parser::option_map options;
 
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
 
 		parseResult thing = parseSGF(in);
 		fclose(in);
-
+		numFiles++;
 
 		if (thing.has_value()) {
 			//dump(*thing);
@@ -135,28 +136,33 @@ int main(int argc, char *argv[]) {
 					bot.reset();
 
 					point::color player = point::color::Black;
+					unsigned count = 0;
+
+					// TODO: add rotations and reflections
 					for (auto& move : game->moves) {
 						if (move == "") break;
+						if (count++ > 20) break;
 						coordinate coord = {move[0] - 'a' + 1, move[1] - 'a' + 1};
-						player = other_player(player);
 
 						//hashes.emplace(bot.game.hash, coord);
 						//hashes[bot.game.hash].push_back(coord);
 						hashes[bot.game.hash].insert(coord);
 
-						printf("hash: 0x%016llx\n", bot.game.hash);
+						//printf("hash: 0x%016llx\n", bot.game.hash);
 						bool valid = bot.make_move(
 							budgie::move(budgie::move::types::Move,
 							             coord,
 							             player));
+
+						player = other_player(player);
 
 						if (!valid) {
 							break;
 						}
 					}
 
-					bot.game.print();
-					printf(">>> final hash: 0x%016llu\n", bot.game.hash);
+					//bot.game.print();
+					//printf(">>> final hash: 0x%016llu\n", bot.game.hash);
 
 					//printf("Dumping game %s:\n", line.c_str());
 					//game->print();
@@ -168,11 +174,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	FILE *out = fopen(argv[2], "w");
+	uint32_t version = 0x00000001;
+	uint32_t magic   = 0xabadc0de;
+
+	fwrite(&magic, 4, 1, out);
+	fwrite(&version, 4, 1, out);
+	fwrite(&targetBoardsize, 4, 1, out);
+
 	for (auto& [k, v] : hashes) {
 		// ignore small sample sizes
-		if (v.size() <= 1) continue;
+		//if (v.size() <= 1) continue;
 
-		printf("Moves for hash 0x%016llx: ", k);
+		//printf("Moves for hash 0x%016llx: ", k);
 		fwrite(&k, 8, 1, out);
 
 		//std::sort(v.begin(), v.end());
@@ -182,14 +195,16 @@ int main(int argc, char *argv[]) {
 			uint8_t b = c.second;
 			fwrite(&a, 1, 1, out);
 			fwrite(&b, 1, 1, out);
-			printf("(%d, %d) ", c.first, c.second);
+			//printf("(%d, %d) ", c.first, c.second);
 		}
 
 		fputc(0, out);
 
-		printf("\n");
+		//printf("\n");
 	}
 	fclose(out);
+
+	printf("\n\nDone, generated table with %lu hashes from %lu files.\n", hashes.size(), numFiles);
 
 	return 0;
 }

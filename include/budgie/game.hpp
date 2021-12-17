@@ -1,5 +1,6 @@
 #pragma once
 
+#include <budgie/josekiDB.hpp>
 #include <vector>
 #include <utility>
 #include <stdio.h>
@@ -135,6 +136,7 @@ class board {
 
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi);
+		void loadJosekis(std::string list);
 
 		std::vector<uint32_t> serialize(void);
 		void serialize(anserial::serializer& ser, uint32_t parent);
@@ -149,6 +151,9 @@ class board {
 		point::color current_player = point::color::Black;
 		coordinate last_move;
 		board *parent = nullptr;
+
+		std::shared_ptr<josekiDB> josekis;
+
 
 		// TODO: maybe we should have a group map class, no need to clutter the
 		//       board class more...
@@ -177,9 +182,10 @@ class board {
 		uint8_t ownership[384];
 		std::set<coordinate> available_moves;
 
-	private:
 		void regen_hash(void);
 		uint64_t regen_hash(uint8_t grid[384]);
+
+	private:
 		void endgame_mark_captured(const coordinate& coord, point::color color,
 		                           std::bitset<384>& marked);
 		void endgame_clear_captured(void);
