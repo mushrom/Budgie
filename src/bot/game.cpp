@@ -409,6 +409,31 @@ bool board::captures_enemy(const coordinate& coord, point::color color) {
 	return n_capturable > 0;
 }
 
+/*
+// NOTE: leaving this here for future debugging,
+//       just in case groups seem broken again
+bool board::captures_enemy(const coordinate& coord, point::color color) {
+	// XXX: pretend to place a stone there, could make the initial coord in
+	//      reaches_empty() be filled though...
+	set_coordinate(coord, color);
+	bool ret = false;
+
+	point::color enemy = (color == point::color::Black)
+	                     ? point::color::White
+	                     : point::color::Black;
+
+	for (const auto& thing : adjacent(coord)) {
+		if (get_coordinate(thing) == enemy && !reaches_empty(thing, enemy)) {
+			ret = true;
+			break;
+		}
+	}
+
+	set_coordinate(coord, point::color::Empty);
+	return ret;
+}
+*/
+
 bool board::is_suicide(const coordinate& coord, point::color color) {
 	return !(reaches_empty(coord, color) || captures_enemy(coord, color));
 }
@@ -460,6 +485,7 @@ bool board::make_move(const coordinate& coord) {
 	group_place(coord);
 	clear_enemy_stones(coord, current_player);
 	regen_hash();
+	//group_check();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
 	last_move = coord;
@@ -740,6 +766,27 @@ bool board::group_check(void) {
 		{
 			printf("invalid available move at (%d, %d)", x, y);
 			return false;
+		}
+
+		for (int color = 2; color < 4; color++) {
+			for (size_t i = 0; i < 384; i++) {
+				for (group *g : group_liberties[color][i]) {
+					if (!g) {
+						printf("null group pointer in liberty lists! (%lu)\n", i);
+						continue;
+					}
+
+					if (g->liberties.size() != i) {
+						printf("liberty size mismatch! (%lu != %lu)\n", g->liberties.size(), i);
+					}
+
+					for (const coordinate& c : g->liberties) {
+						if (get_coordinate(c) != point::color::Empty) {
+							printf("liberty is not empty! (@ (%d, %d))\n", c.first, c.second);
+						}
+					}
+				}
+			}
 		}
 	}
 
