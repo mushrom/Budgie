@@ -119,8 +119,11 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 		if (policy == "local_weighted") {
 			strats.push_back(new local_weighted_playout(db));
 
-		} else if (policy == "adjacent") {
-			strats.push_back(new adjacent_playout(db));
+		} else if (policy == "adjacent-3x3") {
+			strats.push_back(new adjacent_3x3_playout(db));
+
+		} else if (policy == "adjacent-5x5") {
+			strats.push_back(new adjacent_5x5_playout(db));
 
 		} else if (policy == "capture_enemy_ataris") {
 			strats.push_back(new capture_weighted_playout(db));

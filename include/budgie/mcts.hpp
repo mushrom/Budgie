@@ -258,9 +258,15 @@ class local_weighted_playout : public playout_strategy {
 		coordinate local_best(board *state);
 };
 
-class adjacent_playout : public playout_strategy {
+class adjacent_3x3_playout : public playout_strategy {
 	public:
-		adjacent_playout(pattern_dbptr db) : playout_strategy(db) { };
+		adjacent_3x3_playout(pattern_dbptr db) : playout_strategy(db) { };
+		virtual coordinate apply(board *state);
+};
+
+class adjacent_5x5_playout : public playout_strategy {
+	public:
+		adjacent_5x5_playout(pattern_dbptr db) : playout_strategy(db) { };
 		virtual coordinate apply(board *state);
 };
 
