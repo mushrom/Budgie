@@ -7,6 +7,11 @@ coordinate adjacent_3x3_playout::apply(board *state) {
 	coordinate things[25];
 	unsigned found = 0;
 
+	if (state->moves == 0) {
+		// don't use adjacency for the first move
+		return {0, 0};
+	}
+
 	// picks randomly from the 3x3 grid surrounding the player
 	// (not including the last move, which is at the center)
 	for (int y = -1; y <= 1; y++) {
@@ -44,6 +49,11 @@ coordinate adjacent_3x3_playout::apply(board *state) {
 coordinate adjacent_5x5_playout::apply(board *state) {
 	coordinate things[25];
 	unsigned found = 0;
+
+	if (state->moves == 0) {
+		// don't use adjacency for the first move
+		return {0, 0};
+	}
 
 	// picks randomly from the 5x5 grid surrounding the player
 	// (not including the last move, which is at the center)
