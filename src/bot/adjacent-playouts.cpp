@@ -28,8 +28,13 @@ coordinate adjacent_3x3_playout::apply(board *state) {
 
 	if (found > 0) {
 		coordinate next = things[rand() % found];
+
+		// TODO: check some number of other possibilities
 		if (!state->is_valid_move(next)) {
 			return {0, 0};
+
+		} else {
+			return next;
 		}
 	}
 
@@ -61,8 +66,13 @@ coordinate adjacent_5x5_playout::apply(board *state) {
 
 	if (found > 0) {
 		coordinate next = things[rand() % found];
+
+		// TODO: check some number of other possibilities
 		if (!state->is_valid_move(next)) {
 			return {0, 0};
+
+		} else {
+			return next;
 		}
 	}
 
