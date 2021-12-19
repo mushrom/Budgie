@@ -468,43 +468,6 @@ bool board::is_suicide(const coordinate& coord, point::color color) {
 #endif
 }
 
-bool board::is_valid_coordinate(const coordinate& coord) {
-	/*
-	return !(coord.first < 1 || coord.second < 1
-	         || coord.first > dimension || coord.second > dimension);
-			 */
-	return is_valid_coordinate(coord.first, coord.second);
-}
-
-bool board::is_valid_coordinate(unsigned x, unsigned y) {
-	//return !(x < 1 || y < 1 || x > dimension || y > dimension);
-	return x > 0 && y > 0 && x <= dimension && y <= dimension;
-}
-
-point::color board::get_coordinate(const coordinate& coord) {
-	if (!is_valid_coordinate(coord)) {
-		return point::color::Invalid;
-	}
-
-	return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
-}
-
-point::color board::get_coordinate(unsigned x, unsigned y) {
-	if (!is_valid_coordinate(x, y)) {
-		return point::color::Invalid;
-	}
-
-	return (point::color)grid[(y - 1)*dimension + (x - 1)];
-}
-
-point::color board::get_coordinate_unsafe(const coordinate& coord) {
-	return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
-}
-
-point::color board::get_coordinate_unsafe(unsigned x, unsigned y) {
-	return (point::color)grid[(y - 1)*dimension + (x - 1)];
-}
-
 bool board::make_move(const coordinate& coord) {
 	if (!is_valid_move(coord)) {
 		fprintf(stderr, "# invalid move at (%u, %u)!", coord.first, coord.second);
@@ -564,6 +527,7 @@ unsigned board::territory_flood(const coordinate& coord,
 	}
 }
 
+// TODO: don't need this with new endgame_clear_captured()
 void board::endgame_mark_captured(const coordinate& coord,
                                   point::color color,
                                   std::bitset<384>& marked)
@@ -580,6 +544,9 @@ void board::endgame_mark_captured(const coordinate& coord,
 	}
 }
 
+#if 0
+// leaving this here for now, just in case
+// TODO: remove all the "just in case" stuff left behind
 void board::endgame_clear_captured(void) {
 	std::bitset<384> marked = {0};
 	std::bitset<384> traversed = {0};
@@ -622,13 +589,39 @@ void board::endgame_clear_captured(void) {
 	}
 }
 
-unsigned board::coord_to_index(const coordinate& coord) {
-	return dimension*(coord.second - 1) + (coord.first - 1);
-}
+#else
+void board::endgame_clear_captured(void) {
+	std::bitset<384> marked = {0};
+	std::bitset<384> traversed = {0};
 
-coordinate board::index_to_coord(unsigned index) {
-	return {(index % dimension) + 1, (index / dimension) + 1};
+	// enumerate all stones immediately capturable
+	for (unsigned y = 1; y <= dimension; y++) {
+		for (unsigned x = 1; x <= dimension; x++) {
+			coordinate coord = {x, y};
+			unsigned index = coord_to_index(coord);
+			point::color color = get_coordinate_unsafe(coord);
+
+			if (color == point::color::Empty
+			   || traversed[index]
+			   || marked[index]) {
+				continue;
+			}
+
+			group *g = *(groups + index);
+			size_t liberties = g->liberties.size();
+
+			//std::cerr << "# group has " << liberties << " liberties" << std::endl;
+			if (liberties < 2) {
+				// don't need to worry about maintaining group validity,
+				// no more moves will be played, so the points can just be set to empty
+				for (const auto& c : g->members) {
+					set_coordinate_unsafe(c, point::color::Empty);
+				}
+			}
+		}
+	}
 }
+#endif
 
 unsigned board::count_territory(point::color player) {
 	std::bitset<384> bitmap = {0};

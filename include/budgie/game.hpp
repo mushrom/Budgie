@@ -110,16 +110,49 @@ class board {
 		board(board *other);
 		void set(board *other);
 
-		point::color get_coordinate(const coordinate& coord);
-		point::color get_coordinate(unsigned x, unsigned y);
+		inline unsigned coord_to_index(const coordinate& coord) const {
+			return dimension*(coord.second - 1) + (coord.first - 1);
+		}
+
+		inline coordinate index_to_coord(unsigned index) const {
+			return {(index % dimension) + 1, (index / dimension) + 1};
+		}
+
+		inline bool is_valid_coordinate(const coordinate& coord) const {
+			return is_valid_coordinate(coord.first, coord.second);
+		}
+
+		inline bool is_valid_coordinate(unsigned x, unsigned y) const {
+			return x > 0 && y > 0 && x <= dimension && y <= dimension;
+		}
+
+		inline point::color get_coordinate(const coordinate& coord) const {
+			if (!is_valid_coordinate(coord)) {
+				return point::color::Invalid;
+			}
+
+			return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
+		}
+
+		inline point::color get_coordinate(unsigned x, unsigned y) const {
+			if (!is_valid_coordinate(x, y)) {
+				return point::color::Invalid;
+			}
+
+			return (point::color)grid[(y - 1)*dimension + (x - 1)];
+		}
+
 		// get_coordinate() with no is_valid_coordinate(),
 		// in case it's already known that the coordinate is valid
-		point::color get_coordinate_unsafe(const coordinate& coord);
-		point::color get_coordinate_unsafe(unsigned x, unsigned y);
+		inline point::color get_coordinate_unsafe(const coordinate& coord) const {
+			return (point::color)grid[(coord.second - 1)*dimension + (coord.first - 1)];
+		}
+
+		inline point::color get_coordinate_unsafe(unsigned x, unsigned y) const {
+			return (point::color)grid[(y - 1)*dimension + (x - 1)];
+		}
 
 		bool is_valid_move(const coordinate& coord);
-		bool is_valid_coordinate(const coordinate& coord);
-		bool is_valid_coordinate(unsigned x, unsigned y);
 		bool is_suicide(const coordinate& coord, point::color color);
 		bool violates_ko(const coordinate& coord);
 		bool captures_enemy(const coordinate& coord, point::color color);
@@ -128,9 +161,6 @@ class board {
 		unsigned count_territory(point::color player);
 		point::color determine_winner(void);
 		std::string determine_score(void);
-
-		unsigned coord_to_index(const coordinate& coord);
-		coordinate index_to_coord(unsigned index);
 
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi);
