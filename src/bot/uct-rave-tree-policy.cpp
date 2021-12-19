@@ -68,9 +68,12 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	                     ? ptr->nodestats[hash].traversals
 	                     : 1));
 
-	double B = MIN(1.0, (ptr->nodestats[hash].traversals)/rave_weight);
+	// from the pachi paper
+	float simsrave = ptr->rave[hash].traversals;
+	float sims     = ptr->nodestats[hash].traversals;
+	float B = simsrave / (simsrave + sims + simsrave*(sims/rave_weight));
 
-	return mcts_est*B + (crit_est+rave_est)*(1.0-B) + uct;
+	return mcts_est*(1.0-B) + (crit_est+rave_est)*B + uct;
 }
 
 // namespace mcts_thing
