@@ -435,7 +435,37 @@ bool board::captures_enemy(const coordinate& coord, point::color color) {
 */
 
 bool board::is_suicide(const coordinate& coord, point::color color) {
+#if 1
+	size_t maxlibs = 0;
+	size_t empty = 0;
+
+	for (const auto& thing : adjacent(coord)) {
+		if (!is_valid_coordinate(thing))
+			continue;
+
+		group *g = *(groups + coord_to_index(thing));
+		if (g == nullptr)
+			empty++;
+		else if (g->color == color)
+			maxlibs = std::max(maxlibs, g->liberties.size());
+	}
+
+	bool fills_last_lib = empty == 0 && maxlibs <= 1;
+	bool ret = fills_last_lib && !captures_enemy(coord, color);
+
+	return ret;
+#else
+	// left for debugging, still don't trust I've done everything
+	// correctly in group code... can't hurt to have this here to double-check
+	// for a little while
 	return !(reaches_empty(coord, color) || captures_enemy(coord, color));
+	/*
+
+	if (ret != temp) {
+		fprintf(stderr, "wut");
+	}
+	*/
+#endif
 }
 
 bool board::is_valid_coordinate(const coordinate& coord) {
@@ -483,7 +513,6 @@ bool board::make_move(const coordinate& coord) {
 
 	set_coordinate_unsafe(coord, current_player);
 	group_place(coord);
-	clear_enemy_stones(coord, current_player);
 	regen_hash();
 	//group_check();
 
@@ -662,27 +691,14 @@ bool board::owns(const coordinate& coord, point::color color) {
 	return grid[coord_to_index(coord)] == color;
 }
 
-uint64_t board::gen_hash(const coordinate& coord,
-                         point::color color,
-                         uint64_t hash)
-{
-	// generate 12 bit identifier for this move
-	uint16_t foo = (color << 10) | (coord.first << 5) | coord.second;
-
-	return (hash << 12) + hash + foo;
-}
-
 void board::regen_hash(void) {
+	// TODO: this could probably be vectorized, this happens
+	//       often enough that it's worth optimizing more
 	uint64_t ret = InitialHash;
 
-	for (unsigned y = 1; y <= dimension; y++) {
-		for (unsigned x = 1; x <= dimension; x++) {
-			point::color color = get_coordinate_unsafe(x, y);
-
-			if (color != point::color::Empty) {
-				ret = gen_hash({x, y}, color, ret);
-			}
-		}
+	uint64_t *ugrid = (uint64_t*)grid;
+	for (int i = 0; i < 384/8; i++) {
+		ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
 	}
 
 	hash = ret;
@@ -691,15 +707,9 @@ void board::regen_hash(void) {
 uint64_t board::regen_hash(uint8_t tempgrid[384]) {
 	uint64_t ret = InitialHash;
 
-	for (unsigned y = 1; y <= dimension; y++) {
-		for (unsigned x = 1; x <= dimension; x++) {
-			coordinate coord = {x, y};
-			point::color color = (point::color)tempgrid[coord_to_index(coord)];
-
-			if (color != point::color::Empty) {
-				ret = gen_hash(coord, color, ret);
-			}
-		}
+	uint64_t *ugrid = (uint64_t*)tempgrid;
+	for (int i = 0; i < 384/8; i++) {
+		ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
 	}
 
 	return ret;
@@ -945,6 +955,7 @@ void board::group_clear(group **a) {
 		}
 
 		groups[index] = nullptr;
+		grid[index] = point::color::Empty;
 	}
 
 	group_libs_remove(deadptr);
