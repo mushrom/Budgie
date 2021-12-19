@@ -43,7 +43,7 @@ static args_parser::default_map budgie_options = {
 		{"0.10", "UCT exploration weight",
 			{"<any postive real number or zero>"}}},
 	{"rave_weight",
-		{"2000", "RAVE bias weight",
+		{"1500", "RAVE bias weight",
 			{"<any positive integer>"}}},
 	{"node_expansion_threshold",
 		{"8", "Threshold for converting to an internal tree node, lower is slower",
