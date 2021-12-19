@@ -6,16 +6,7 @@ namespace mcts_thing {
 mcts_node* uct_tree_policy::search(board *state, mcts_node *ptr) {
 	while (ptr) {
 		if (!ptr->fully_visited(state)) {
-			coordinate next = pick_random_leaf(state, patterns.get());
-
-			// no valid moves from here, just return
-			if (!state->is_valid_move(next)) {
-				ptr->update(state);
-				return nullptr;
-			}
-
-			ptr->new_node(state, next, state->current_player);
-			return ptr->leaves[coord_hash_v2(next)];
+			return ptr;
 		}
 
 		coordinate next = max_utc(state, ptr);
