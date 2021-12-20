@@ -56,6 +56,9 @@ class crit_stats {
 		unsigned white_owns = 0;
 
 		double win_rate(void) {
+			// not enough games using this point to say one way or another
+			if (traversals < M) return 0;
+
 			double uwin = total_wins / (1. * traversals);
 			double ubx  = black_owns / (1. * traversals);
 			double ub   = black_wins / (1. * traversals);
@@ -64,7 +67,8 @@ class crit_stats {
 
 			double ret = uwin - (ubx*ub + uwx*uw);
 
-			return (ret < 0)? -ret : ret;
+			// when ret < 0, the move is anticorrelated with winning
+			return (ret > 0)? ret : 0;
 		};
 };
 
