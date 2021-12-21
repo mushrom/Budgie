@@ -18,7 +18,9 @@ sdl-ui-src =
 sdl-ui-obj = $(sdl-ui-src:.cpp=.o)
 sdl-ui-main = src/sdl-main.o
 
-bin/thing: dir-structure $(intree-libs) $(bot-obj) $(bot-main)
+all: bin/budgie bin/sdl-thing bin/josekigen
+
+bin/budgie: dir-structure $(intree-libs) $(bot-obj) $(bot-main)
 	$(CXX) $(CXXFLAGS) -o $@ $(bot-obj) $(bot-main) $(intree-libs)
 
 bin/josekigen: dir-structure $(intree-libs) $(bot-obj) $(josekigen-main)
@@ -30,8 +32,6 @@ bin/sdl-thing: dir-structure $(intree-libs) $(bot-obj) $(sdl-ui-main)
 libs/anserial/build/lib/anserial.a:
 	cd libs/anserial; make libs
 
-all: bin/thing bin/sdl-thing bin/josekigen
-
 -include $(bot-dep)
 
 .PHONY: dir-structure
@@ -40,6 +40,6 @@ dir-structure:
 
 .PHONY: clean
 clean:
-	-rm -f $(bot-obj) $(bot-main) $(sdl-ui-obj) $(sdl-ui-main)
+	-rm -f $(bot-obj) $(bot-main) $(sdl-ui-obj) $(sdl-ui-main) $(josekigen-main)
 	-cd libs/anserial; make clean
 	-rm -rf ./bin

@@ -15,4 +15,4 @@ seq 0 $MOVES | while read i; do
 
 	echo genmove b; echo showboard
 	echo genmove w; echo showboard
-done | ./bin/thing "$@"
+done | ./bin/budgie "$@"
