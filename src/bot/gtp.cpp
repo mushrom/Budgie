@@ -192,7 +192,8 @@ void gtp_client::repl(args_parser::option_map& options) {
 
 		else if (args[0] == "final_score") {
 			std::cout << "= ";
-			std::cout << bot.game.determine_score();
+			//std::cout << bot.game.determine_score();
+			std::cout << bot.game.get_score_string();
 			std::cout << "\n\n";
 		}
 
