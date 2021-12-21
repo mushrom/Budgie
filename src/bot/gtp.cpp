@@ -134,6 +134,27 @@ void gtp_client::repl(args_parser::option_map& options) {
 			bot.set_player(string_to_color(args[1]));
 			budgie::move move = bot.genmove();
 
+			//std::cerr << "Testing this!" << std::endl;
+
+			if (move.type == budgie::move::types::Move) {
+				unsigned hash = coord_hash_v2(move.coord);
+
+				std::cerr
+					<< "MALKOVICH: "
+					<< "win rate: " << 100*bot.tree->win_rate(move.coord)
+					<< "%, traversals: "
+					<< std::dec << bot.tree->root->leaves[hash]->traversals
+					<< std::endl;
+
+				std::flush(std::cerr);
+			}
+
+			/*
+			std::cerr << "# board hash: "
+				<< std::hex << bot.game.hash << std::dec
+				<< std::endl;
+				*/
+
 			switch (move.type) {
 				case budgie::move::types::Pass:
 					std::cout << "= pass\n\n";
@@ -149,20 +170,6 @@ void gtp_client::repl(args_parser::option_map& options) {
 					break;
 			}
 
-			if (move.type == budgie::move::types::Move) {
-				unsigned hash = coord_hash_v2(move.coord);
-
-				std::cerr << "# coord: (" << move.coord.first
-					<< ", " << move.coord.second
-					<< "), win rate: " << bot.tree->win_rate(move.coord)
-					<< ", traversals: "
-					<< std::dec << bot.tree->root->leaves[hash]->traversals
-					<< std::endl;
-			}
-
-			std::cerr << "# board hash: "
-				<< std::hex << bot.game.hash << std::dec
-				<< std::endl;
 		}
 
 		else if (args[0] == "move_history") {
@@ -192,7 +199,6 @@ void gtp_client::repl(args_parser::option_map& options) {
 
 		else if (args[0] == "final_score") {
 			std::cout << "= ";
-			//std::cout << bot.game.determine_score();
 			std::cout << bot.game.get_score_string();
 			std::cout << "\n\n";
 		}
