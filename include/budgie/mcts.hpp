@@ -70,6 +70,21 @@ class crit_stats {
 			// when ret < 0, the move is anticorrelated with winning
 			return (ret > 0)? ret : 0;
 		};
+
+		// get a score of how "settled" this point is
+		float settlement(void) const {
+			// probably an eye if the point has no/very few traversals
+			if (traversals < M) return 1;
+
+			float ubx = black_owns / (1. * traversals);
+			float uwx = white_owns / (1. * traversals);
+
+			float ret = (ubx > uwx)? ubx : uwx;
+
+			// still probably an eye but with some playouts using it
+			if (ret < 0.05) return 1;
+			else return ret;
+		}
 };
 
 class mcts_node {
@@ -298,6 +313,8 @@ class mcts {
 		coordinate do_search(board *state, unsigned playouts=10000);
 		double win_rate(coordinate& coord);
 		void reset();
+
+		bool ownership_settled(void);
 
 		// TODO: we should use board hashes rather than tree IDs
 		uint32_t id = 0;

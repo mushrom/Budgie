@@ -66,12 +66,11 @@ budgie::move budgie::genmove(void) {
 	if (winrate < 0.15) {
 		return move(move::types::Resign);
 
-	} else if (woncount >= 3 && winrate >= 1.0) {
+	} else if ((woncount >= 3 && winrate >= 1.0) || tree->ownership_settled()) {
 		return move(move::types::Pass);
 
-	} else if (!game.is_valid_move(coord)
-	           || game.is_suicide(coord, game.current_player))
-	{
+	// TODO: option to pass or play out to the bitter end
+	} else if (!game.is_valid_move(coord)) {
 		return move(move::types::Pass);
 
 	} else {

@@ -636,6 +636,28 @@ bool mcts_node::fully_visited(board *state) {
 	return traversals > full_traversals;
 }
 
+bool mcts::ownership_settled(void) {
+	if (!root || !root->criticality) {
+		// can't determine if there's no critmap
+		return false;
+	}
+
+	float sum = 0;
+
+	for (const auto& [_, g] : *root->criticality) {
+		sum += g.settlement();
+	}
+
+	float avgown = sum/(root->criticality->size());
+	// TODO: remove printf, leaving this here for short-term debugging
+	fprintf(stderr, "avgown: %g\n", avgown);
+
+	// will never be 1.0 because points that are likely to
+	// become eyes will consistently have lower ownership/traversals,
+	// 0.8 or so seems to be a good ownership threshold
+	return avgown > 0.81;
+}
+
 // TODO: could return hash index here, 0 is the hash for an invalid move
 coordinate mcts_node::best_move(void) {
 	coordinate ret = {0, 0};
