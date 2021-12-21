@@ -68,12 +68,29 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	                     ? ptr->nodestats[hash].traversals
 	                     : 1));
 
+#if 0
+	float expected =
+		((ptr->color == point::color::White)? -1 : 1)
+		* ((float)ptr->expected_score[hash]
+		   / (float)ptr->nodestats[hash].traversals);
+
+	// TODO: configurable values here
+	//expected = MIN(20, MAX(-20, expected)) / 20.f;
+	expected = MIN(20, MAX(0, expected)) / 20.f;
+	//expected = MIN(40, MAX(0, expected)) / 40.f;
+	//expected = MIN(40, MAX(-40, expected)) / 40.f;
+#else
+	float expected = 0;
+#endif
+
 	// from the pachi paper
 	float simsrave = ptr->rave[hash].traversals;
 	float sims     = ptr->nodestats[hash].traversals;
 	float B = simsrave / (simsrave + sims + simsrave*(sims/rave_weight));
 
-	return mcts_est*(1.0-B) + (crit_est+rave_est)*B + uct;
+	return (expected*0.05 + mcts_est)*(1.0-B)
+		+ (crit_est+rave_est)*B
+		+ uct;
 }
 
 // namespace mcts_thing

@@ -40,6 +40,7 @@ class gui_state {
 			Traversals,
 			Rave,
 			Criticality,
+			Score,
 			End,
 		};
 
@@ -126,10 +127,16 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 	double min_crit = 1.0;
 	double max_crit = 0;
 
+	double min_score = bot.boardsize*bot.boardsize;
+	double max_score = -bot.boardsize*bot.boardsize;
+
 	for (int dx = 1; dx <= bot.boardsize; dx++) {
 		for (int dy = 1; dy <= bot.boardsize; dy++) {
 			coordinate coord = {dx, dy};
 			unsigned hash = coord_hash_v2(coord);
+			if (bot.game.get_coordinate_unsafe(dx, dy) != point::color::Empty)
+				continue;
+
 			const mcts_node *leaf = bot.tree->root->leaves[hash];
 
 			double traversals = (leaf == nullptr)
@@ -138,6 +145,7 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 
 			double rave_est = bot.tree->root->rave[hash].win_rate();
 			double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
+			float score_est = (bot.tree->root->expected_score[hash] / (bot.tree->root->traversals));
 
 			if (traversals < min_traversals) {
 				min_traversals = traversals;
@@ -162,11 +170,22 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			if (crit_est > max_crit) {
 				max_crit = crit_est;
 			}
+
+			if (score_est < min_score) {
+				min_score = score_est;
+			}
+
+			if (score_est > max_score) {
+				max_score = score_est;
+			}
 		}
 	}
 
 	for (int dx = 1; dx <= bot.boardsize; dx++) {
 		for (int dy = 1; dy <= bot.boardsize; dy++) {
+			if (bot.game.get_coordinate_unsafe(dx, dy) != point::color::Empty)
+				continue;
+
 			coordinate foo = {dx, dy};
 			unsigned hash = coord_hash_v2(foo);
 			const mcts_node *leaf = bot.tree->root->leaves[hash];
@@ -226,6 +245,25 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 				r = off + range * (x.black_owns / (1. * x.traversals));
 				g = off + range * (x.white_owns / (1. * x.traversals));
 				b = off;
+			}
+
+			if (mode == modes::Score) {
+				float scoreest = float(bot.tree->root->expected_score[hash] / float(bot.tree->root->traversals));
+				bool lt = scoreest > 0;
+
+				if (relative_stats) {
+					scoreest = (scoreest - min_score) / (max_score - min_score);
+				} else {
+					scoreest = fabs(scoreest);
+				}
+
+				//auto& x = (*bot.tree->root->criticality)[foo];
+				if (lt) r = off + range*scoreest;
+				else r = off;
+				//r = off;
+				g = off + range*scoreest;
+				if (!lt) b = off + range*scoreest;
+				else b = off;
 			}
 
 			// gamma correction
@@ -511,6 +549,7 @@ void gui_state::handle_events(void) {
 	}
 }
 
+#include <unistd.h>
 int gui_state::run(void) {
 	running = true;
 
@@ -523,6 +562,7 @@ int gui_state::run(void) {
 			coord = bot.tree->do_search(&bot.game, i);
 			handle_events();
 			redraw();
+			usleep(166700);
 		}
 
 		winrates.push_back((bot.game.current_player == point::color::Black)

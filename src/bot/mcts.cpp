@@ -685,7 +685,9 @@ void mcts_node::update_stats(board *state, point::color winner) {
 }
 
 void mcts_node::update(board *state) {
-	point::color winner = state->determine_winner();
+	//point::color winner = state->determine_winner();
+	int score = state->calculate_final_score();
+	point::color winner = (score > 0)? point::color::Black : point::color::White;
 
 	update_stats(state, winner);
 
@@ -696,6 +698,7 @@ void mcts_node::update(board *state) {
 		if (ptr->parent) {
 			ptr->parent->nodestats[hash].wins += won;
 			ptr->parent->nodestats[hash].traversals++;
+			ptr->parent->expected_score[hash] += score;
 		}
 
 		ptr->traversals++;

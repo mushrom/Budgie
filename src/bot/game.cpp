@@ -647,7 +647,25 @@ unsigned board::count_territory(point::color player) {
 
 #include <unistd.h>
 
+// should be called when the positions are fully settled,
+// any stones not in atari will be counted as alive
+int board::calculate_final_score(void) {
+	endgame_clear_captured();
+
+	int white_stones = count_stones(point::color::White) + komi;
+	int black_stones = count_stones(point::color::Black);
+
+	int white_territory = count_territory(point::color::White);
+	int black_territory = count_territory(point::color::Black);
+
+	int white = white_stones + white_territory;
+	int black = black_stones + black_territory;
+
+	return black - white;
+}
+
 point::color board::determine_winner(void) {
+	/*
 	endgame_clear_captured();
 
 	int white_stones = count_stones(point::color::White) + komi;
@@ -660,9 +678,13 @@ point::color board::determine_winner(void) {
 	int black = black_stones + black_territory;
 
 	return (black > white)? point::color::Black : point::color::White;
+	*/
+
+	return (calculate_final_score() > 0)? point::color::Black : point::color::White;
 }
 
-std::string board::determine_score(void) {
+std::string board::get_score_string(void) {
+	/*
 	endgame_clear_captured();
 
 	int white_stones = count_stones(point::color::White) + komi;
@@ -673,9 +695,10 @@ std::string board::determine_score(void) {
 
 	int white = white_stones + white_territory;
 	int black = black_stones + black_territory;
-	int diff  = black - white;
+		*/
+	int diff = calculate_final_score();
 
-	return (black > white)
+	return (diff > 0)
 		? "B+" + std::to_string(diff)
 		: "W+" + std::to_string(-diff);
 }

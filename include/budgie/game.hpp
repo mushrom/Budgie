@@ -159,8 +159,10 @@ class board {
 		bool make_move(const coordinate& coord);
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
+
+		int calculate_final_score(void);
 		point::color determine_winner(void);
-		std::string determine_score(void);
+		std::string get_score_string(void);
 
 		void print(void);
 		void reset(unsigned boardsize, unsigned n_komi);

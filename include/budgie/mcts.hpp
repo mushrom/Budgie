@@ -88,6 +88,7 @@ class mcts_node {
 
 			for (int i = 0; i < 660; i++) {
 				leaves[i] = nullptr;
+				expected_score[i] = 0;
 			}
 		};
 
@@ -127,6 +128,7 @@ class mcts_node {
 		mcts_node *leaves[660];
 		stats     nodestats[660];
 		stats     rave[660];
+		float     expected_score[660];
 		//critstats critstats[384];
 
 		// for iterating over current valid leaves
