@@ -30,8 +30,8 @@ def approxElo(Rold, Rother, Won, K=32, C=200):
     return Rold + K/2 * (Won - (Lost + .5*(Rother-Rold)/C))
 """
 
-def elo(Rold, Rother, Won, K=32, C=400):
-    p1 = 1.0 / (1.0 + 10**((Rold - Rother)/C))
+def gelo(Rold, Rother, Won, K=32, C=400):
+    p1 = 1.0 / (1.0 + pow(10, ((Rother - Rold)/C)))
 
     return Rold + K*(Won - p1)
 
@@ -48,8 +48,11 @@ def calcElo(columns):
         wonBlack = (winner == "B")+0
         wonWhite = (winner == "W")+0
 
-        elos[datas[1]] = elo(elos[datas[1]], elos[datas[2]], wonBlack);
-        elos[datas[2]] = elo(elos[datas[2]], elos[datas[1]], wonWhite);
+        ea = elos[datas[1]]
+        eb = elos[datas[2]]
+
+        elos[datas[1]] = gelo(ea, eb, wonBlack);
+        elos[datas[2]] = gelo(eb, ea, wonWhite);
 
     return elos
 
