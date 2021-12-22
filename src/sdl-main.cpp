@@ -248,22 +248,28 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Score) {
-				float scoreest = float(bot.tree->root->expected_score[hash] / float(bot.tree->root->traversals));
-				bool lt = scoreest > 0;
-
-				if (relative_stats) {
-					scoreest = (scoreest - min_score) / (max_score - min_score);
+				unsigned count = bot.tree->root->score_counts[hash];
+				if (count == 0) {
+					r = g = b = off;
 				} else {
-					scoreest = fabs(scoreest);
-				}
+					float scoreest = float(bot.tree->root->expected_score[hash]) / count;
+					scoreest /= (bot.boardsize * bot.boardsize);
+					bool lt = scoreest > 0;
 
-				//auto& x = (*bot.tree->root->criticality)[foo];
-				if (lt) r = off + range*scoreest;
-				else r = off;
-				//r = off;
-				g = off + range*scoreest;
-				if (!lt) b = off + range*scoreest;
-				else b = off;
+					if (relative_stats) {
+						scoreest = (scoreest - min_score) / (max_score - min_score);
+					} else {
+						scoreest = fabs(scoreest);
+					}
+
+					//auto& x = (*bot.tree->root->criticality)[foo];
+					if (lt) r = off + range*scoreest;
+					else r = off;
+					//r = off;
+					g = off + range*scoreest;
+					if (!lt) b = off + range*scoreest;
+					else b = off;
+				}
 			}
 
 			// gamma correction

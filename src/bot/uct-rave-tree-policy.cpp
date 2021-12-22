@@ -50,7 +50,7 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 		return 0;
 	}
 
-	double weight = patterns->search(state, coord) / 100.0;
+	unsigned weight = patterns->search(state, coord) / 100.0;
 
 	if (weight == 0) {
 		return 0;
@@ -69,16 +69,19 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	                     : 1));
 
 #if 0
-	float expected =
-		((ptr->color == point::color::White)? -1 : 1)
-		* ((float)ptr->expected_score[hash]
-		   / (float)ptr->nodestats[hash].traversals);
+	float expected = 0;
+	unsigned count = ptr->score_counts[hash];
 
-	// TODO: configurable values here
-	//expected = MIN(20, MAX(-20, expected)) / 20.f;
-	expected = MIN(20, MAX(0, expected)) / 20.f;
-	//expected = MIN(40, MAX(0, expected)) / 40.f;
-	//expected = MIN(40, MAX(-40, expected)) / 40.f;
+	if (count > 0) {
+		expected = ((ptr->color == point::color::White)? -1 : 1)
+			* (ptr->expected_score[hash] / count);
+		expected = MIN(20, MAX(-20, expected)) / 20.f;
+		// TODO: configurable values here
+		//expected = MIN(20, MAX(0, expected)) / 20.f;
+		//expected = MIN(40, MAX(0, expected)) / 40.f;
+		//expected = MIN(40, MAX(-40, expected)) / 40.f;
+	}
+
 #else
 	float expected = 0;
 #endif
