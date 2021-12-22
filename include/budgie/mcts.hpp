@@ -104,6 +104,7 @@ class mcts_node {
 			for (int i = 0; i < 660; i++) {
 				leaves[i] = nullptr;
 				expected_score[i] = 0;
+				score_counts[i] = 0;
 			}
 		};
 
@@ -136,15 +137,11 @@ class mcts_node {
 		                       point::color color);
 		void init_joseki_hash(board *state, uint64_t boardhash);
 
-		//std::unordered_map<coordinate, nodeptr, coord_hash> leaves;
-		//std::unordered_map<coordinate, stats, coord_hash> nodestats;
-		//stats     *stats[384];
-
 		mcts_node *leaves[660];
 		stats     nodestats[660];
 		stats     rave[660];
 		float     expected_score[660];
-		//critstats critstats[384];
+		unsigned  score_counts[660];
 
 		// for iterating over current valid leaves
 		std::vector<mcts_node*> leaves_alive;
@@ -314,7 +311,7 @@ class mcts {
 		double win_rate(coordinate& coord);
 		void reset();
 
-		bool ownership_settled(void);
+		bool ownership_settled(board *state);
 
 		// TODO: we should use board hashes rather than tree IDs
 		uint32_t id = 0;

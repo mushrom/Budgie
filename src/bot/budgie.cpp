@@ -66,7 +66,7 @@ budgie::move budgie::genmove(void) {
 	if (winrate < 0.15) {
 		return move(move::types::Resign);
 
-	} else if ((woncount >= 3 && winrate >= 1.0) || tree->ownership_settled()) {
+	} else if ((woncount >= 3 && winrate >= 1.0) || tree->ownership_settled(&game)) {
 		return move(move::types::Pass);
 
 	// TODO: option to pass or play out to the bitter end

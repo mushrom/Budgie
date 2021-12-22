@@ -8,6 +8,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <assert.h>
+#include <float.h>
 
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
@@ -636,26 +637,54 @@ bool mcts_node::fully_visited(board *state) {
 	return traversals > full_traversals;
 }
 
-bool mcts::ownership_settled(void) {
+bool mcts::ownership_settled(board *state) {
 	if (!root || !root->criticality) {
 		// can't determine if there's no critmap
 		return false;
 	}
 
 	float sum = 0;
+	float maxscore = -FLT_MAX;
+	float minscore =  FLT_MAX;
 
 	for (const auto& [_, g] : *root->criticality) {
 		sum += g.settlement();
 	}
 
+	for (unsigned y = 1; y <= state->dimension; y++) {
+		for (unsigned x = 1; x <= state->dimension; x++) {
+			unsigned index = coord_hash_v2({x, y});
+			unsigned count = root->score_counts[index];
+			float scoresum = root->expected_score[index];
+
+			// coordinate has no score samples
+			if (count == 0)
+				continue;
+
+			float k = scoresum / count;
+			maxscore = std::max(k, maxscore);
+			minscore = std::min(k, minscore);
+
+			fprintf(stderr, "(%u, %u) %g\n", x, y, k);
+		}
+	}
+
 	float avgown = sum/(root->criticality->size());
+
+	auto sign = [](float x) { return (x > 0)? 1 : -1; };
+
 	// TODO: remove printf, leaving this here for short-term debugging
 	fprintf(stderr, "avgown: %g\n", avgown);
+	fprintf(stderr, "maxscore: %g\n", maxscore);
+	fprintf(stderr, "minscore: %g\n", minscore);
 
-	// will never be 1.0 because points that are likely to
-	// become eyes will consistently have lower ownership/traversals,
-	// 0.8 or so seems to be a good ownership threshold
-	return avgown > 0.81;
+	bool allfavor = sign(minscore) == sign(maxscore);
+
+	// avgown approaches 1 as the board becomes completely filled,
+	// allfavor is true if all moves favor the same player.
+	//
+	// TODO: tweakable
+	return avgown > 0.81 && allfavor;
 }
 
 // TODO: could return hash index here, 0 is the hash for an invalid move
@@ -708,7 +737,7 @@ void mcts_node::update_stats(board *state, point::color winner) {
 
 void mcts_node::update(board *state) {
 	//point::color winner = state->determine_winner();
-	int score = state->calculate_final_score();
+	float score = state->calculate_final_score();
 	point::color winner = (score > 0)? point::color::Black : point::color::White;
 
 	update_stats(state, winner);
@@ -721,6 +750,7 @@ void mcts_node::update(board *state) {
 			ptr->parent->nodestats[hash].wins += won;
 			ptr->parent->nodestats[hash].traversals++;
 			ptr->parent->expected_score[hash] += score;
+			ptr->parent->score_counts[hash] += 1;
 		}
 
 		ptr->traversals++;

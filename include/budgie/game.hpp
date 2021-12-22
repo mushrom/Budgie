@@ -160,7 +160,7 @@ class board {
 		unsigned count_stones(point::color player);
 		unsigned count_territory(point::color player);
 
-		int calculate_final_score(void);
+		float calculate_final_score(void);
 		point::color determine_winner(void);
 		std::string get_score_string(void);
 
@@ -175,7 +175,7 @@ class board {
 		move::moveptr move_list;
 		uint8_t grid[384];
 		uint64_t hash = InitialHash;
-		int komi = 7;
+		float komi = 5.5;
 		unsigned dimension;
 		unsigned moves = 0;
 		point::color current_player = point::color::Black;

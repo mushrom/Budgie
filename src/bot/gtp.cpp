@@ -78,7 +78,7 @@ void gtp_client::repl(args_parser::option_map& options) {
 			// XXX: duplicated state here is because might not necessarily
 			//      want to reset the board, this usually happens after
 			//      clear_board.
-			bot.komi = atoi(args[1].c_str());
+			bot.komi = atof(args[1].c_str());
 			bot.game.komi = bot.komi;
 
 			std::cout << "=\n\n";

@@ -649,17 +649,17 @@ unsigned board::count_territory(point::color player) {
 
 // should be called when the positions are fully settled,
 // any stones not in atari will be counted as alive
-int board::calculate_final_score(void) {
+float board::calculate_final_score(void) {
 	endgame_clear_captured();
 
-	int white_stones = count_stones(point::color::White) + komi;
-	int black_stones = count_stones(point::color::Black);
+	float white_stones = count_stones(point::color::White) + komi;
+	float black_stones = count_stones(point::color::Black);
 
-	int white_territory = count_territory(point::color::White);
-	int black_territory = count_territory(point::color::Black);
+	float white_territory = count_territory(point::color::White);
+	float black_territory = count_territory(point::color::Black);
 
-	int white = white_stones + white_territory;
-	int black = black_stones + black_territory;
+	float white = white_stones + white_territory;
+	float black = black_stones + black_territory;
 
 	return black - white;
 }
