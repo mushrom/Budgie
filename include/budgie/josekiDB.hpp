@@ -41,7 +41,7 @@ class josekiDB {
 		}
 
 		void load(std::string filename) {
-			printf("Loading: %s\n", filename.c_str());
+			fprintf(stderr, "Loading: %s\n", filename.c_str());
 
 			FILE *db = fopen(filename.c_str(), "r");
 
