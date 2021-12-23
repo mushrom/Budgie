@@ -62,11 +62,16 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	// TODO: criticality table
 	double crit_est = (*ptr->criticality)[coord].win_rate();
 
+	double uct =
+		uct_weight * sqrt(log(ptr->traversals)
+		                / ptr->nodestats[hash].traversals);
 
+	/*
 	double uct = uct_weight * sqrt(log(ptr->traversals) /
 	                 ((ptr->nodestats[hash].traversals > 0)
 	                     ? ptr->nodestats[hash].traversals
 	                     : 1));
+						 */
 
 #if 0
 	float expected = 0;

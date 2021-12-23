@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <bitset>
+#include <atomic>
 
 namespace mcts_thing {
 
@@ -30,10 +31,10 @@ static inline unsigned coord_hash_v2(const coordinate& coord) {
 // TODO: rename stats and crit_stats
 class stats {
 	public:
-		unsigned wins = M/2;
-		unsigned traversals = M;
+		std::atomic<unsigned> wins = M/2;
+		std::atomic<unsigned> traversals = M;
 
-		double win_rate(void) {
+		double win_rate(void) const {
 			return traversals? (double)wins / (double)traversals : 0.5;
 		};
 
@@ -46,16 +47,16 @@ class stats {
 
 class crit_stats {
 	public:
-		unsigned total_wins = 0;
-		unsigned traversals = 0;
+		std::atomic<unsigned> total_wins = 0;
+		std::atomic<unsigned> traversals = 0;
 
-		unsigned black_wins = 0;
-		unsigned white_wins = 0;
+		std::atomic<unsigned> black_wins = 0;
+		std::atomic<unsigned> white_wins = 0;
 
-		unsigned black_owns = 0;
-		unsigned white_owns = 0;
+		std::atomic<unsigned> black_owns = 0;
+		std::atomic<unsigned> white_owns = 0;
 
-		double win_rate(void) {
+		double win_rate(void) const {
 			// not enough games using this point to say one way or another
 			if (traversals < M) return 0;
 
@@ -137,6 +138,11 @@ class mcts_node {
 		                       point::color color);
 		void init_joseki_hash(board *state, uint64_t boardhash);
 
+		std::atomic<unsigned> traversals;
+		mcts_node *parent;
+		point::color color;
+		coordinate coord;
+
 		mcts_node *leaves[660];
 		stats     nodestats[660];
 		stats     rave[660];
@@ -149,23 +155,10 @@ class mcts_node {
 		critptr criticality;
 		//ravestats rave;
 
-		mcts_node *parent;
-		point::color color;
-		unsigned traversals;
 		// synced with mcts tree updates when merged, so we can
 		// send differential updates (in distributed mode)
 		unsigned updates;
-		coordinate coord;
 };
-
-static inline stats operator-(const stats& a, const stats& b) {
-	stats ret;
-	ret.wins = a.wins - b.wins;
-	ret.traversals = a.traversals - b.traversals;
-
-	return ret;
-}
-
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
 coordinate pick_random_leaf(board *state, pattern_db *patterns);
