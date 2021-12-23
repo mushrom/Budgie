@@ -2,6 +2,7 @@
 
 #include <budgie/game.hpp>
 #include <budgie/pattern_db.hpp>
+#include <budgie/ts_forward_list.hpp>
 #include <anserial/anserial.hpp>
 #include <stdint.h>
 #include <list>
@@ -150,7 +151,7 @@ class mcts_node {
 		unsigned  score_counts[660];
 
 		// for iterating over current valid leaves
-		std::vector<mcts_node*> leaves_alive;
+		ts_forward_list<mcts_node*> leaves_alive;
 
 		critptr criticality;
 		//ravestats rave;

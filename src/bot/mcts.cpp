@@ -597,7 +597,7 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 		leaves[hash]->criticality = criticality;
 		leaves[hash]->coord = coord;
 
-		leaves_alive.push_back(leaves[hash]);
+		leaves_alive.push_front(leaves[hash]);
 
 		// TODO: flags to specify how the stats should be initialized,
 		//       default to even
@@ -794,6 +794,8 @@ void mcts_node::dump_node_statistics(const coordinate& coord,
                                      board *state,
                                      unsigned depth)
 {
+	// TODO: maybe fix this for atomics
+#if 0
 	unsigned hash = coord_hash_v2(coord);
 
 	auto print_spaces = [&](){
@@ -820,6 +822,7 @@ void mcts_node::dump_node_statistics(const coordinate& coord,
 
 		leaf->dump_node_statistics(leaf->coord, state, depth + 1);
 	}
+#endif
 }
 
 void mcts_node::dump_best_move_statistics(board *state) {

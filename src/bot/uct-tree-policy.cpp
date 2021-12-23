@@ -75,7 +75,7 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 	double mcts_est = ptr->nodestats[hash].win_rate();
 
 	double uct = uct_weight
-		* sqrt(log(ptr->traversals) / ptr->nodestats[hash].traversals);
+		* sqrt(log((int)ptr->traversals) / ptr->nodestats[hash].traversals);
 	/*
 	double uct =
 		uct_weight * sqrt(log(ptr->traversals) /
