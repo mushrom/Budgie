@@ -18,6 +18,13 @@ board::board(unsigned size) {
 	dimension = size;
 	josekis = std::make_shared<josekiDB>();
 
+	// TODO: don't think that this will be a performance problem,
+	//       since board initialization is relatively infrequent...
+	//       shouldn't exhaust entropy pulling, what, 4 bytes per thread
+	//       every few seconds?
+	std::random_device rd;
+	randomgen.seed(rd());
+
 	for (unsigned i = 0; i < 384; i++) {
 		ownership[i] = grid[i] = point::color::Empty;
 		groups[i] = nullptr;
@@ -30,6 +37,10 @@ board::board(unsigned size) {
 
 board::board(board *other){
 	set(other);
+
+	// every game instance gets its own random generator, for thread safety
+	std::random_device rd;
+	randomgen.seed(rd());
 }
 
 board::~board() {

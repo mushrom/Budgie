@@ -14,22 +14,22 @@
 #define MAX(a, b) ((a > b)? a : b)
 
 namespace mcts_thing {
-	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-	std::default_random_engine generator(seed);
 
 coordinate random_coord(board *b) {
+	//std::uniform_int_distribution<int> distribution(1, b->dimension);
 	std::uniform_int_distribution<int> distribution(1, b->dimension);
 
-	return coordinate(distribution(generator), distribution(generator));
+	return coordinate(distribution(b->randomgen), distribution(b->randomgen));
 }
 
 // TODO: this could use more optimization
 coordinate pick_random_leaf(board *state, pattern_db *patterns) {
+	std::uniform_int_distribution<unsigned> udist(0, state->available_moves.size()-1);
 	std::bitset<384> map;
 	unsigned tried = 0;
 
 	while (tried < state->available_moves.size()) {
-		unsigned foo = rand() % state->available_moves.size();
+		unsigned foo = udist(state->randomgen);
 		if (map[foo]) continue;
 
 		tried++;
@@ -83,8 +83,11 @@ double mcts::win_rate(coordinate& coord) {
 }
 
 void mcts::reset() {
-	uint32_t temp = id;
-	while ((id = rand()) == temp);
+	static uint32_t temp = 0;
+
+	id = temp++;
+	// TODO: this might be needed for distributed stuff
+	//while ((id = rand()) == temp);
 	updates = 0;
 
 	root = std::move(mcts_node::nodeptr(new mcts_node(nullptr, point::color::Empty)));

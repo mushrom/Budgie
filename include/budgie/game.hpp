@@ -12,6 +12,11 @@
 #include <anserial/anserial.hpp>
 #include <unordered_set>
 
+#include <random>
+
+[[deprecated]]
+int rand(void);
+
 namespace mcts_thing {
 
 typedef std::pair<unsigned, unsigned> coordinate;
@@ -183,7 +188,7 @@ class board {
 		board *parent = nullptr;
 
 		std::shared_ptr<josekiDB> josekis;
-
+		std::mt19937 randomgen;
 
 		// TODO: maybe we should have a group map class, no need to clutter the
 		//       board class more...

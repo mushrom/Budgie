@@ -39,7 +39,8 @@ coordinate local_weighted_playout::apply(board *state) {
 	}
 
 	if (found > 0) {
-		return things[rand() % found];
+		std::uniform_int_distribution<unsigned> foundindex(0, found-1);
+		return things[foundindex(state->randomgen)];
 	}
 
 	return coordinate(0, 0);
