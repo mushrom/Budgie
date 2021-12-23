@@ -170,7 +170,7 @@ class board {
 		std::string get_score_string(void);
 
 		void print(void);
-		void reset(unsigned boardsize, unsigned n_komi);
+		void reset(unsigned boardsize, float n_komi);
 		void loadJosekis(std::string list);
 
 		std::vector<uint32_t> serialize(void);

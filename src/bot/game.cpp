@@ -96,7 +96,7 @@ void board::set(board *other) {
 	}
 }
 
-void board::reset(unsigned boardsize, unsigned n_komi) {
+void board::reset(unsigned boardsize, float n_komi) {
 	current_player = point::color::Black;
 	dimension = boardsize;
 	komi = n_komi;
@@ -663,13 +663,13 @@ unsigned board::count_territory(point::color player) {
 float board::calculate_final_score(void) {
 	endgame_clear_captured();
 
-	float white_stones = count_stones(point::color::White) + komi;
+	float white_stones = count_stones(point::color::White);
 	float black_stones = count_stones(point::color::Black);
 
 	float white_territory = count_territory(point::color::White);
 	float black_territory = count_territory(point::color::Black);
 
-	float white = white_stones + white_territory;
+	float white = white_stones + white_territory + komi;
 	float black = black_stones + black_territory;
 
 	return black - white;
@@ -707,7 +707,7 @@ std::string board::get_score_string(void) {
 	int white = white_stones + white_territory;
 	int black = black_stones + black_territory;
 		*/
-	int diff = calculate_final_score();
+	float diff = calculate_final_score();
 
 	return (diff > 0)
 		? "B+" + std::to_string(diff)
@@ -1098,7 +1098,7 @@ void board::serialize(anserial::serializer& ser, uint32_t parent) {
 		{"board",
 			{"dimension", dimension},
 			// TODO: need to add signed int, double types to anserial
-			{"komi", (uint32_t)komi},
+			{"komi", komi},
 			{"current_player", current_player}});
 
 	uint32_t move_entry = ser.add_entities(datas, {"moves"});

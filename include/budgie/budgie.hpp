@@ -96,7 +96,7 @@ class budgie {
 
 		args_parser::option_map options;
 
-		int komi;
+		float komi;
 		int boardsize;
 		int playouts;
 		bool passed = false;

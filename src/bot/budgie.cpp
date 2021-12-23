@@ -20,7 +20,7 @@ budgie::budgie(args_parser::option_map& opts) {
 	tree = init_mcts(opts);
 
 	// initialize game state
-	komi = stoi(opts["komi"]);
+	komi = stof(opts["komi"]);
 	boardsize = stoi(opts["boardsize"]);
 	playouts = stoi(opts["playouts"]);
 	full_traversals = stoi(opts["node_expansion_threshold"]);
