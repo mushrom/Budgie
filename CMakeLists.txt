@@ -40,7 +40,6 @@ set(BOT_LOGIC_SRC
 	src/bot/random-playouts.cpp
 	src/bot/budgie.cpp
 	src/bot/pattern_db.cpp
-	src/bot/jump-playouts.cpp
 	src/bot/adjacent-playouts.cpp
 	src/bot/attack_opponent_groups_playout.cpp
 	src/bot/save_atari_playout.cpp
