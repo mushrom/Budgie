@@ -18,6 +18,7 @@ enum {
 
 	PARAM_FLOAT_NONE = 0,
 	PARAM_FLOAT_UCT_WEIGHT,
+	PARAM_FLOAT_SCORE_WEIGHT,
 };
 
 inline const char *intParamNames[] = {
