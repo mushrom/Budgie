@@ -59,7 +59,7 @@ budgie::move budgie::genmove(void) {
 	}
 
 	tree->reset();
-	coordinate coord = tree->do_search(&game, playouts);
+	coordinate coord = tree->do_search(&game, pool, playouts);
 	float winrate = tree->win_rate(coord);
 
 	// TODO: make resign threshold configurable

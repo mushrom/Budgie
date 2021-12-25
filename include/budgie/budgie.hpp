@@ -2,6 +2,7 @@
 
 #include <budgie/mcts.hpp>
 #include <budgie/args_parser.hpp>
+#include <budgie/thread_pool.hpp>
 
 // TODO: change namespace to 'budgie'
 namespace mcts_thing {
@@ -104,6 +105,7 @@ class budgie {
 		board game;
 		std::unique_ptr<mcts> tree;
 		unsigned woncount = 0;
+		thread_pool pool;
 
 	private:
 		std::unique_ptr<mcts> init_mcts(args_parser::option_map& options);

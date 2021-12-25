@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <float.h>
 
+#include <budgie/thread_pool.hpp>
+
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
 
@@ -45,16 +47,25 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 	return {0, 0};
 }
 
-coordinate mcts::do_search(board *state, unsigned playouts) {
+coordinate mcts::do_search(board *state,
+                           thread_pool& pool,
+                           unsigned playouts)
+{
 	root->color = other_player(state->current_player);
 	root->coord = state->last_move;
 
 	root->init_joseki_root(state);
 
-	while (root->traversals < playouts) {
-		board scratch(state);
-		explore(&scratch);
-	}
+	pool.run_all(
+		[&] () {
+			while (root->traversals < playouts) {
+				board scratch(state);
+				explore(&scratch);
+			}
+		}
+	);
+
+	pool.wait();
 
 	//fprintf(stderr, "# %u playouts\n", root->traversals);
 	/*
@@ -589,6 +600,8 @@ void mcts_node::init_joseki_hash(board *state, uint64_t boardhash) {
 }
 
 void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
+	// TODO: avoid needing mutex
+	std::lock_guard g(mtx);
 	unsigned hash = coord_hash_v2(coord);
 
 	if (leaves[hash] == nullptr) {
@@ -647,11 +660,20 @@ bool mcts::ownership_settled(board *state) {
 	}
 
 	float sum = 0;
+	unsigned critsize = 1;
 	float maxscore = -FLT_MAX;
 	float minscore =  FLT_MAX;
 
-	for (const auto& [_, g] : *root->criticality) {
-		sum += g.settlement();
+	for (unsigned y = 1; y <= state->dimension; y++) {
+		for (unsigned x = 1; x <= state->dimension; x++) {
+			unsigned hash = coord_hash_v2({x, y});
+			crit_stats& g = (*root->criticality)[hash];
+
+			if (g.traversals > 0) {
+				sum += g.settlement();
+				critsize += 1;
+			}
+		}
 	}
 
 	for (unsigned y = 1; y <= state->dimension; y++) {
@@ -672,7 +694,7 @@ bool mcts::ownership_settled(board *state) {
 		}
 	}
 
-	float avgown = sum/(root->criticality->size());
+	float avgown = sum/critsize;
 
 	auto sign = [](float x) { return (x > 0)? 1 : -1; };
 
@@ -713,7 +735,8 @@ void mcts_node::update_stats(board *state, point::color winner) {
 	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
 		// update criticality maps
 		// TODO: plain array criticality map
-		auto& x = (*criticality)[foo->coord];
+		//auto& x = (*criticality)[foo->coord];
+		auto& x = (*criticality)[coord_hash_v2(foo->coord)];
 		x.traversals++;
 
 		x.total_wins += state->owns(foo->coord, winner);

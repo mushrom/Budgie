@@ -1,3 +1,5 @@
+#pragma once
+
 #include <budgie/ts_forward_list.hpp>
 
 #include <thread>
@@ -43,6 +45,13 @@ class thread_pool {
 			//       thread to immediately go back to sleep...
 			//       must be a more efficient way to do this
 			cv.notify_one();
+		}
+
+		// map a task to each thread in the pool
+		void run_all(Task t) {
+			for (unsigned i = 0; i < numthreads; i++) {
+				add_task(t);
+			}
 		}
 
 		void start() {

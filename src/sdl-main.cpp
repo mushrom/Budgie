@@ -144,7 +144,8 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 				: leaf->traversals / (1.*bot.tree->root->traversals);
 
 			double rave_est = bot.tree->root->rave[hash].win_rate();
-			double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
+			//double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
+			double crit_est = (*bot.tree->root->criticality)[hash].win_rate();
 			float score_est = (bot.tree->root->expected_score[hash] / (bot.tree->root->traversals));
 
 			if (traversals < min_traversals) {
@@ -223,7 +224,8 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Criticality || mode == modes::Statistics) {
-				double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
+				//double crit_est = (*bot.tree->root->criticality)[foo].win_rate();
+				double crit_est = (*bot.tree->root->criticality)[hash].win_rate();
 				if (relative_stats) {
 					crit_est = (crit_est - min_crit) / (max_crit - min_crit);
 				}
@@ -241,7 +243,8 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Ownership) {
-				auto& x = (*bot.tree->root->criticality)[foo];
+				auto& x = (*bot.tree->root->criticality)[hash];
+				//auto& x = (*bot.tree->root->criticality)[foo];
 				r = off + range * (x.black_owns / (1. * x.traversals));
 				g = off + range * (x.white_owns / (1. * x.traversals));
 				b = off;
@@ -454,7 +457,8 @@ void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned heig
 
 	for (unsigned x = 1; x <= bot.game.dimension; x++) {
 		for (unsigned y = 1; y <= bot.game.dimension; y++) {
-			auto& crit = (*bot.tree->root->criticality)[coordinate(x, y)];
+			//auto& crit = (*bot.tree->root->criticality)[coordinate(x, y)];
+			auto& crit = (*bot.tree->root->criticality)[(x << 5) | y];
 
 			score_black += crit.black_owns / (1. * crit.traversals);
 			score_white += crit.white_owns / (1. * crit.traversals);
@@ -565,7 +569,7 @@ int gui_state::run(void) {
 		coordinate coord;
 
 		for (int i = 100; running && i <= bot.playouts; i += 100) {
-			coord = bot.tree->do_search(&bot.game, i);
+			coord = bot.tree->do_search(&bot.game, bot.pool, i);
 			handle_events();
 			redraw();
 			usleep(166700);

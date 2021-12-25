@@ -84,7 +84,7 @@ void distributed_client::run() {
 		}
 
 		// finally, explore on the working tree
-		bot->tree->do_search(&state, bot->tree->root->traversals + playouts);
+		bot->tree->do_search(&state, bot->pool, bot->tree->root->traversals + playouts);
 	}
 }
 

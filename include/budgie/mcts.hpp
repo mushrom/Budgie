@@ -3,6 +3,7 @@
 #include <budgie/game.hpp>
 #include <budgie/pattern_db.hpp>
 #include <budgie/ts_forward_list.hpp>
+#include <budgie/thread_pool.hpp>
 #include <anserial/anserial.hpp>
 #include <stdint.h>
 #include <list>
@@ -92,8 +93,7 @@ class crit_stats {
 class mcts_node {
 	public:
 		typedef std::unique_ptr<mcts_node> nodeptr;
-		typedef std::unordered_map<coordinate, stats, coord_hash> ravestats;
-		typedef std::unordered_map<coordinate, crit_stats, coord_hash> critmap;
+		typedef std::array<crit_stats, 660> critmap;
 		typedef std::shared_ptr<critmap> critptr;
 
 		mcts_node(mcts_node *n_parent = nullptr,
@@ -144,6 +144,7 @@ class mcts_node {
 		point::color color;
 		coordinate coord;
 
+		std::mutex mtx;
 		mcts_node *leaves[660];
 		stats     nodestats[660];
 		stats     rave[660];
@@ -301,7 +302,9 @@ class mcts {
 		virtual void explore(board *state);
 		virtual void playout(board *state, mcts_node *ptr);
 
-		coordinate do_search(board *state, unsigned playouts=10000);
+		coordinate do_search(board *state,
+		                     thread_pool& pool,
+		                     unsigned playouts);
 		double win_rate(coordinate& coord);
 		void reset();
 
