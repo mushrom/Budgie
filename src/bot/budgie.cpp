@@ -6,11 +6,9 @@
 #include <budgie/gtp.hpp>
 #include <iostream>
 
-namespace mcts_thing {
+#include <budgie/parameters.hpp>
 
-// XXX XXX: global variable used by mcts_node::fully_visited
-// TODO: what would be a cleaner way to do this?
-unsigned full_traversals = 8;
+namespace mcts_thing {
 
 budgie::budgie(args_parser::option_map& opts) {
 	// cache options
@@ -23,10 +21,67 @@ budgie::budgie(args_parser::option_map& opts) {
 	komi = stof(opts["komi"]);
 	boardsize = stoi(opts["boardsize"]);
 	playouts = stoi(opts["playouts"]);
-	full_traversals = stoi(opts["node_expansion_threshold"]);
+	//full_traversals = stoi(opts["node_expansion_threshold"]);
 
 	game.reset(boardsize, komi);
 	game.loadJosekis(opts["joseki_db"]);
+
+	// parse parameter key=value pairs
+	std::string& params = opts["parameters"];
+	size_t start = 0;
+	size_t end   = params.find(";");
+
+	while (start < params.length()) {
+		std::string foo = params.substr(start, end);
+		size_t eq   = foo.find("=");
+		size_t type = foo.find(":");
+
+		if (eq == std::string::npos || type == std::string::npos)
+			continue;
+
+		std::string typestr = foo.substr(0, type);
+		std::string key     = foo.substr(type + 1, eq - type - 1);
+		std::string val     = foo.substr(eq + 1);
+
+		std::cerr << "have parameter: "
+			<< foo << ": "
+			<< "key: " << key << ", "
+			<< "type: " << typestr << ", "
+			<< "value: " << val << ", "
+			<< std::endl;
+
+		auto unknown = [&] () {
+			std::cerr << "Unknown key value: " << key
+				<< " (for type " << typestr << ")"
+				<< std::endl;
+		};
+
+		if (typestr == "int") {
+			if (int idx = findParam(intParamNames, key.c_str())) {
+				setInt(idx, int(stoi(val)));
+			} else unknown();
+
+		} else if (typestr == "bool") {
+			if (int idx = findParam(boolParamNames, key.c_str())) {
+				bool asdf = val == "true";
+				setBool(idx, asdf);
+			} else unknown();
+
+		} else if (typestr == "float") {
+			if (int idx = findParam(boolParamNames, key.c_str())) {
+				setFloat(idx, stof(val));
+			} else unknown();
+
+		} else {
+			std::cerr << "Unknown type: " << typestr << std::endl;
+		}
+
+		if (end == std::string::npos)
+			break;
+
+		start = end + 1;
+		end   = params.find(",", start);
+	}
 }
 
 bool budgie::make_move(move m) {
@@ -94,21 +149,14 @@ void budgie::set_player(point::color p) {
 
 std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
-	double uct_weight = std::stof(options["uct_weight"]);
-	unsigned rave_weight = std::stoi(options["rave_weight"]);
 
-	// only have this tree policy right now
 	tree_policy *tree_pol;
-	(options["tree_policy"] == "mcts")
-		? (tree_policy *)(new mcts_tree_policy(db))
-		: (tree_policy *)(new uct_rave_tree_policy(db));
-
 	if (options["tree_policy"] == "mcts") {
 		tree_pol = new mcts_tree_policy(db);
 	} else if (options["tree_policy"] == "uct") {
-		tree_pol = new uct_tree_policy(db, uct_weight);
+		tree_pol = new uct_tree_policy(db);
 	} else {
-		tree_pol = new uct_rave_tree_policy(db, uct_weight, rave_weight);
+		tree_pol = new uct_rave_tree_policy(db);
 	}
 
 	std::list<playout_strategy*> strats;

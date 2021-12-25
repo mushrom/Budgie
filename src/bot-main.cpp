@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include <budgie/budgie.hpp>
+#include <budgie/parameters.hpp>
 
 using namespace mcts_thing;
 
@@ -60,6 +61,22 @@ void print_help(void) {
 		}
 
 		printf("\n");
+	}
+
+	printf("\n");
+	printf("Available value parameters: (type:key=default value)\n");
+
+	for (int i = 1; intParamNames[i]; i++) {
+		printf("    int:%s=%d\n", intParamNames[i], intParameters[i]);
+	}
+
+	for (int i = 1; boolParamNames[i]; i++) {
+		const char *val = boolParameters[i]? "true" : "false";
+		printf("    bool:%s=%s\n", boolParamNames[i], val);
+	}
+
+	for (int i = 1; floatParamNames[i]; i++) {
+		printf("    float:%s=%g\n", floatParamNames[i], floatParameters[i]);
 	}
 }
 

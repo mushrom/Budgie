@@ -1,4 +1,5 @@
 #include <budgie/mcts.hpp>
+#include <budgie/parameters.hpp>
 #include <math.h>
 
 namespace mcts_thing {
@@ -74,7 +75,8 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 	unsigned hash = coord_hash_v2(coord);
 	double mcts_est = ptr->nodestats[hash].win_rate();
 
-	double uct = uct_weight
+	double uct =
+		getFloat(PARAM_FLOAT_UCT_WEIGHT)
 		* sqrt(log((int)ptr->traversals) / ptr->nodestats[hash].traversals);
 	/*
 	double uct =

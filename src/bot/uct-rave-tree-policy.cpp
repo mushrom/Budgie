@@ -1,5 +1,6 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
+#include <budgie/parameters.hpp>
 
 namespace mcts_thing {
 
@@ -62,8 +63,8 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	double crit_est = (*ptr->criticality)[hash].win_rate();
 
 	double uct =
-		uct_weight * sqrt(log((int)ptr->traversals)
-		                / ptr->nodestats[hash].traversals);
+		getFloat(PARAM_FLOAT_UCT_WEIGHT)
+		* sqrt(log((int)ptr->traversals) / ptr->nodestats[hash].traversals);
 
 	/*
 	double uct = uct_weight * sqrt(log(ptr->traversals) /
@@ -93,7 +94,7 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	// from the pachi paper
 	float simsrave = ptr->rave[hash].traversals;
 	float sims     = ptr->nodestats[hash].traversals;
-	float B = simsrave / (simsrave + sims + simsrave*(sims/rave_weight));
+	float B = simsrave / (simsrave + sims + simsrave*(sims/getInt(PARAM_INT_RAVE_WEIGHT)));
 
 	return (expected*0.05 + mcts_est)*(1.0-B)
 		+ (crit_est+rave_est)*B

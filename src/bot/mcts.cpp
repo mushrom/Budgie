@@ -1,5 +1,6 @@
 #include <budgie/mcts.hpp>
 #include <budgie/pattern_db.hpp>
+#include <budgie/parameters.hpp>
 #include <anserial/anserial.hpp>
 #include <random>
 #include <chrono>
@@ -645,12 +646,8 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 	}
 }
 
-// XXX XXX: defined in budgie.cpp, this is set by the argument parsing thing
-//          this is probably a code smell :P
-extern unsigned full_traversals;
-
 bool mcts_node::fully_visited(board *state) {
-	return traversals > full_traversals;
+	return traversals > getUInt(PARAM_INT_NODE_EXPANSION_THRESHOLD);
 }
 
 bool mcts::ownership_settled(board *state) {

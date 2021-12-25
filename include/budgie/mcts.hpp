@@ -197,20 +197,12 @@ class mcts_tree_policy : public tree_policy {
 // MC+UCT tree exploration policy
 class uct_tree_policy : public tree_policy {
 	public:
-		uct_tree_policy(
-			pattern_dbptr db,
-			// UCT exploration weight
-			// TODO: config option
-			double uct_c=0.20) : tree_policy(db)
-		{
-			uct_weight  = uct_c;
-		}
+		uct_tree_policy(pattern_dbptr db)
+			: tree_policy(db) {}
 
 		virtual mcts_node* search(board *state, mcts_node *ptr);
 
 	private:
-		double uct_weight;
-
 		coordinate max_utc(board *state, mcts_node *ptr);
 		double uct(const coordinate& coord, board *state, mcts_node *ptr);
 };
@@ -218,24 +210,12 @@ class uct_tree_policy : public tree_policy {
 // MC+UCT+RAVE tree exploration policy
 class uct_rave_tree_policy : public tree_policy {
 	public:
-		uct_rave_tree_policy(
-			pattern_dbptr db,
-			// TODO: config option
-			// UCT exploration weight
-			double uct_c=0.15,
-			// RAVE estimation weight
-			double rave_c=500) : tree_policy(db)
-		{
-			uct_weight  = uct_c;
-			rave_weight = rave_c;
-		}
+		uct_rave_tree_policy(pattern_dbptr db)
+			: tree_policy(db) {}
 
 		virtual mcts_node* search(board *state, mcts_node *ptr);
 
 	private:
-		double uct_weight;
-		double rave_weight;
-
 		coordinate max_utc(board *state, mcts_node *ptr);
 		double uct(const coordinate& coord, board *state, mcts_node *ptr);
 };
