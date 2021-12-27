@@ -28,7 +28,11 @@ class thread_pool {
 	ts_forward_list<Task> tasks;
 
 	public:
-		thread_pool(unsigned threads = std::thread::hardware_concurrency()) {
+		thread_pool(unsigned threads = 0) {
+			if (threads == 0) {
+				threads = std::thread::hardware_concurrency();
+			}
+
 			numthreads = threads;
 			available = 0;
 			start();

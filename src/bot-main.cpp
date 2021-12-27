@@ -128,7 +128,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	else if (args.options["mode"] == "distributed-worker") {
-		run_workers(args.options);
+		distributed_client client(args.options);
+		client.run();
 	}
 
 	else {

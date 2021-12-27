@@ -10,7 +10,9 @@
 
 namespace mcts_thing {
 
-budgie::budgie(args_parser::option_map& opts) {
+budgie::budgie(args_parser::option_map& opts)
+	: pool(stoi(opts["worker-threads"]))
+{
 	// cache options
 	options = opts;
 
