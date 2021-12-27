@@ -214,11 +214,17 @@ void pattern_db::load_permutations(pattern pat, unsigned index) {
 
 void pattern_db::load_compile(pattern& pat) {
 	uint32_t hash = pat.hash();
+	/* 0x3ffff = (1<<18)-1 */
+	uint32_t idx = hash & 0x3ffff;
 
 	uint8_t *ptr = pattern_values.get();
-	/* 0x3ffff = (1<<18)-1 */
-	ptr[hash & 0x3ffff] = (uint8_t)(pat.weight&0xff);
-	total_patterns++;
+	uint8_t weight = pat.weight&0xff;
+
+	// either override default value of 100, or prefer lower weights
+	if (ptr[idx] == 100 || weight < ptr[idx]) {
+		ptr[idx] = weight;
+		total_patterns++;
+	}
 }
 
 unsigned pattern_db::search(board *state, coordinate coord) {
