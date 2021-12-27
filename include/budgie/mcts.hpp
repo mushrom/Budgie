@@ -14,6 +14,19 @@
 #include <bitset>
 #include <atomic>
 
+// extending std::atomic to provide dereferencing for pointer types
+template <typename T>
+struct atomptr : public std::atomic<T> {
+	T operator->(void) {
+		return this->load();
+	}
+
+	T operator=(const T& value) {
+		this->store(value);
+		return value;
+	}
+};
+
 namespace mcts_thing {
 
 struct coord_hash {
@@ -144,8 +157,7 @@ class mcts_node {
 		point::color color;
 		coordinate coord;
 
-		std::mutex mtx;
-		mcts_node *leaves[660];
+		atomptr<mcts_node*> leaves[660];
 		stats     nodestats[660];
 		stats     rave[660];
 		float     expected_score[660];

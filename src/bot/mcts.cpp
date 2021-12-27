@@ -601,17 +601,30 @@ void mcts_node::init_joseki_hash(board *state, uint64_t boardhash) {
 }
 
 void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
-	// TODO: avoid needing mutex
-	std::lock_guard g(mtx);
 	unsigned hash = coord_hash_v2(coord);
 
 	if (leaves[hash] == nullptr) {
 		// this node is unvisited, set up a new node
-		leaves[hash] = new mcts_node(this, color);
-		leaves[hash]->criticality = criticality;
-		leaves[hash]->coord = coord;
+		mcts_node *node = new mcts_node(this, color);
 
-		leaves_alive.push_front(leaves[hash]);
+		// XXX: need to initialize the node as normal
+		//      before trying to swap with leaves[hash],
+		//      can't place an incomplete node into the
+		//      tree before it's ready
+		node->criticality = criticality;
+		node->coord = coord;
+		node->init_joseki_coord(state, coord, color);
+
+		mcts_node *nullnode = nullptr; // XXX: need a T& type
+		if (!leaves[hash].compare_exchange_strong(nullnode, node)) {
+			// TODO: performance counters to track stuff like this
+			//std::cerr << "nevermind" << std::endl;
+			// another thread got here first
+			delete node;
+			return;
+		}
+
+		leaves_alive.push_front(node);
 
 		// TODO: flags to specify how the stats should be initialized,
 		//       default to even
@@ -626,8 +639,6 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 			}
 		}
 		*/
-
-		leaves[hash]->init_joseki_coord(state, coord, color);
 
 
 #if 0
