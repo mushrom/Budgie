@@ -39,7 +39,7 @@ static args_parser::default_map budgie_options = {
 		{"uct-rave", "Policy to use for tree traversal",
 			{"uct-rave", "uct", "mcts"}}},
 	{"playout_policy",
-		{"capture_enemy_ataris save_own_ataris attack_enemy_groups random",
+		{"capture_enemy_ataris save_own_ataris attack_enemy_groups adjacent-3x3 random",
 			"List of strategies to use when playing out games",
 			{"random", "adjacent-3x3", "adjacent-5x5", "local_weighted", "save_own_ataris",
 				"capture_enemy_ataris", "attack_enemy_groups"}}},
