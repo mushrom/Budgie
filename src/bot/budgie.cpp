@@ -20,10 +20,12 @@ budgie::budgie(args_parser::option_map& opts)
 	tree = init_mcts(opts);
 
 	// initialize game state
-	komi = stof(opts["komi"]);
+	komi      = stof(opts["komi"]);
 	boardsize = stoi(opts["boardsize"]);
-	playouts = stoi(opts["playouts"]);
-	//full_traversals = stoi(opts["node_expansion_threshold"]);
+	playouts  = stoi(opts["playouts"]);
+
+	ogsChat      = opts["ogs_output"] == "true";
+	allowPassing = opts["pass"]       == "true";
 
 	game.reset(boardsize, komi);
 	game.loadJosekis(opts["joseki_db"]);
@@ -123,7 +125,10 @@ budgie::move budgie::genmove(void) {
 	if (winrate < 0.15) {
 		return move(move::types::Resign);
 
-	} else if ((woncount >= 3 && winrate >= 1.0) || tree->ownership_settled(&game)) {
+	} else if ((woncount >= 3 && winrate >= 1.0)) {
+		return move(move::types::Pass);
+
+	} else if (allowPassing && tree->ownership_settled(&game)) {
 		return move(move::types::Pass);
 
 	// TODO: option to pass or play out to the bitter end

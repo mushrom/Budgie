@@ -139,14 +139,16 @@ void gtp_client::repl(args_parser::option_map& options) {
 			if (move.type == budgie::move::types::Move) {
 				unsigned hash = coord_hash_v2(move.coord);
 
-				std::cerr
-					<< "MALKOVICH: "
-					<< "win rate: " << 100*bot.tree->win_rate(move.coord)
-					<< "%, traversals: "
-					<< std::dec << bot.tree->root->leaves[hash]->traversals
-					<< std::endl;
+				if (bot.ogsChat) {
+					std::cerr
+						<< "MALKOVICH: "
+						<< "win rate: " << 100*bot.tree->win_rate(move.coord)
+						<< "%, traversals: "
+						<< std::dec << bot.tree->root->leaves[hash]->traversals
+						<< std::endl;
 
-				std::flush(std::cerr);
+					std::flush(std::cerr);
+				}
 			}
 
 			/*

@@ -16,6 +16,14 @@ static args_parser::default_map budgie_options = {
 		{"5.5", "Komi given to the white player",
 			{"<any real number>"}}},
 
+	// general interface/behaviour settings
+	{"pass",
+		{"true", "Determine whether to detect when to pass. Good for humans, bad for bot matches.",
+			{"false", "true"}}},
+	{"ogs_output",
+		{"false", "Outputs statistics parsed by gtp2ogs for malkovich chat.",
+			{"false", "true"}}},
+
 	// AI settings
 	{"mode",
 		{"gtp", "Interface mode to use",
@@ -93,6 +101,8 @@ class budgie {
 		int boardsize;
 		int playouts;
 		bool passed = false;
+		bool allowPassing = true;
+		bool ogsChat = false;
 
 		board game;
 		std::unique_ptr<mcts> tree;
