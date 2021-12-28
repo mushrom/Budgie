@@ -60,7 +60,11 @@ double uct_rave_tree_policy::uct(const coordinate& coord, board *state, mcts_nod
 	unsigned hash = coord_hash_v2(coord);
 	double rave_est = ptr->rave[hash].win_rate();
 	double mcts_est = ptr->nodestats[hash].win_rate();
-	double crit_est = (*ptr->criticality)[hash].win_rate();
+	double crit_est = 0;
+
+	if (getBool(PARAM_BOOL_USE_CRITICALITY)) {
+		double crit_est = (*ptr->criticality)[hash].win_rate();
+	}
 
 	double uct =
 		getFloat(PARAM_FLOAT_UCT_WEIGHT)
