@@ -15,6 +15,8 @@ enum {
 	PARAM_BOOL_USE_UCT,
 	PARAM_BOOL_USE_CRITICALITY,
 	PARAM_BOOL_USE_EXP_SCORE,
+	PARAM_BOOL_USE_PATTERNS,
+	PARAM_BOOL_VERY_VERBOSE,
 
 	PARAM_FLOAT_NONE = 0,
 	PARAM_FLOAT_UCT_WEIGHT,
@@ -40,6 +42,7 @@ inline const char *boolParamNames[] = {
 	"use_criticality",
 	"use_expected_score",
 	"use_patterns",
+	"very_verbose",
 	nullptr
 };
 
@@ -75,6 +78,7 @@ inline bool boolParameters[] = {
 	true,  // use criticality
 	false, // use expected score
 	true,  // use patterns
+	false, // very verbose
 };
 
 inline float floatParameters[] = {

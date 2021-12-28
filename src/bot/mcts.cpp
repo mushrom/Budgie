@@ -132,10 +132,14 @@ void mcts::playout(board *state, mcts_node *ptr) {
 		if (next == coordinate(0 ,0)) {
 			//printf("#  no valid moves!\n");
 			ptr->update(state);
+			//getchar();
 			return;
 		}
 
 		state->make_move(next);
+
+		//state->print();
+		//usleep(250000);
 	}
 }
 
@@ -698,19 +702,22 @@ bool mcts::ownership_settled(board *state) {
 			maxscore = std::max(k, maxscore);
 			minscore = std::min(k, minscore);
 
-			fprintf(stderr, "(%u, %u) %g\n", x, y, k);
+			if (getBool(PARAM_BOOL_VERY_VERBOSE)) {
+				fprintf(stderr, "(%u, %u) %g\n", x, y, k);
+			}
 		}
 	}
 
 	float avgown = sum/critsize;
 
+	if (getBool(PARAM_BOOL_VERY_VERBOSE)) {
+		fprintf(stderr, "testing: %d, %d\n", PARAM_BOOL_VERY_VERBOSE, getBool(PARAM_BOOL_VERY_VERBOSE));
+		fprintf(stderr, "avgown: %g\n", avgown);
+		fprintf(stderr, "maxscore: %g\n", maxscore);
+		fprintf(stderr, "minscore: %g\n", minscore);
+	}
+
 	auto sign = [](float x) { return (x > 0)? 1 : -1; };
-
-	// TODO: remove printf, leaving this here for short-term debugging
-	fprintf(stderr, "avgown: %g\n", avgown);
-	fprintf(stderr, "maxscore: %g\n", maxscore);
-	fprintf(stderr, "minscore: %g\n", minscore);
-
 	bool allfavor = sign(minscore) == sign(maxscore);
 
 	// avgown approaches 1 as the board becomes completely filled,
