@@ -4,7 +4,7 @@
 
 namespace mcts_thing {
 
-distributed_mcts::distributed_mcts(tree_policy *tp, std::list<playout_strategy*> strats)
+distributed_mcts::distributed_mcts(tree_policy tp, std::list<playout_strategy> strats)
 	: mcts(tp, strats)
 {
 	ctx = std::unique_ptr<zmq::context_t>(new zmq::context_t);

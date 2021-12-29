@@ -1,9 +1,9 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate random_playout::apply(board *state) {
+maybe_coord random_playout(board *state) {
 	/*
 	while (true) {
 		coordinate next = pick_random_leaf(state);
@@ -17,9 +17,17 @@ coordinate random_playout::apply(board *state) {
 	}
 
 	return nullptr;
-	*/
 
 	return pick_random_leaf(state, patterns.get());
+	*/
+
+	coordinate coord = pick_random_leaf(state, &get_pattern_db());
+
+	if (coord.first == 0) {
+		return {};
+	} else {
+		return coord;
+	}
 }
 
 // namespace mcts_thing

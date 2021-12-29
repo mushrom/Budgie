@@ -1,9 +1,9 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 
-namespace mcts_thing {
+namespace mcts_thing::policies {
 
-mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
+maybe_nodeptr mcts_tree_policy(board *state, mcts_node *ptr) {
 	while (ptr) {
 		if (!ptr->fully_visited(state)) {
 			return ptr;
@@ -26,7 +26,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 
 		if (next == coordinate(0, 0)) {
 			ptr->update(state);
-			return nullptr;
+			return {};
 		}
 
 		ptr->new_node(state, next, state->current_player);
@@ -34,7 +34,7 @@ mcts_node* mcts_tree_policy::search(board *state, mcts_node *ptr) {
 		ptr = ptr->leaves[coord_hash_v2(next)];
 	}
 
-	return nullptr;
+	return {};
 }
 
 // namespace mcts_thing

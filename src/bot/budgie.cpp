@@ -1,4 +1,6 @@
 #include <budgie/budgie.hpp>
+#include <budgie/playout_strategies.hpp>
+#include <budgie/tree_policies.hpp>
 #include <budgie/pattern_db.hpp>
 #include <budgie/distributed_mcts.hpp>
 #include <budgie/distributed_client.hpp>
@@ -155,41 +157,43 @@ void budgie::set_player(point::color p) {
 }
 
 std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
-	pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
+	//pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
+	load_patterns(options["patterns"]);
 
-	tree_policy *tree_pol;
+	tree_policy tree_pol;
 	if (options["tree_policy"] == "mcts") {
-		tree_pol = new mcts_tree_policy(db);
+		tree_pol = policies::mcts_tree_policy;
 	} else if (options["tree_policy"] == "uct") {
-		tree_pol = new uct_tree_policy(db);
+		tree_pol = policies::uct_tree_policy;
 	} else {
-		tree_pol = new uct_rave_tree_policy(db);
+		tree_pol = policies::uct_rave_tree_policy;
 	}
 
-	std::list<playout_strategy*> strats;
+	std::list<playout_strategy> strats;
 	auto policies = mcts_thing::split_string(options["playout_policy"]);
 
 	for (auto policy : policies) {
 		if (policy == "local_weighted") {
-			strats.push_back(new local_weighted_playout(db));
+			//strats.push_back(new local_weighted_playout(db));
+			strats.push_back(playouts::local_weighted_playout);
 
 		} else if (policy == "adjacent-3x3") {
-			strats.push_back(new adjacent_3x3_playout(db));
+			strats.push_back(playouts::adjacent_3x3_playout);
 
 		} else if (policy == "adjacent-5x5") {
-			strats.push_back(new adjacent_5x5_playout(db));
+			strats.push_back(playouts::adjacent_5x5_playout);
 
 		} else if (policy == "capture_enemy_ataris") {
-			strats.push_back(new capture_weighted_playout(db));
+			strats.push_back(playouts::capture_weighted_playout);
 
 		} else if (policy == "attack_enemy_groups") {
-			strats.push_back(new attack_enemy_groups_playout(db));
+			strats.push_back(playouts::attack_enemy_groups_playout);
 
 		} else if (policy == "save_own_ataris") {
-			strats.push_back(new save_atari_playout(db));
+			strats.push_back(playouts::save_atari_playout);
 
 		} else if (policy == "random"){
-			strats.push_back(new random_playout(db));
+			strats.push_back(playouts::random_playout);
 
 		} else {
 			std::cerr << __func__ << ": unknown playout policy \""

@@ -2,64 +2,14 @@
 #include <budgie/parameters.hpp>
 #include <math.h>
 
-namespace mcts_thing {
+namespace mcts_thing::policies {
 
-mcts_node* uct_tree_policy::search(board *state, mcts_node *ptr) {
-	while (ptr) {
-		if (!ptr->fully_visited(state)) {
-			return ptr;
-		}
-
-		coordinate next = max_utc(state, ptr);
-
-		if (next == coordinate(0, 0)) {
-			ptr->update(state);
-			return nullptr;
-		}
-
-		ptr->new_node(state, next, state->current_player);
-		state->make_move(next);
-		ptr = ptr->leaves[coord_hash_v2(next)];
-	}
-
-	return nullptr;
-}
-
-
-coordinate uct_tree_policy::max_utc(board *state, mcts_node *ptr) {
-	double cur_max = 0;
-	coordinate ret = {0, 0};
-
-#if 0
-	for (auto& x : ptr->leaves) {
-		double temp = uct(x.first, state, ptr);
-
-		if (temp > cur_max) {
-			cur_max = temp;
-			ret = x.first;
-		}
-	}
-#else
-	for (const auto& x : state->available_moves) {
-		double temp = uct(x, state, ptr);
-
-		if (temp > cur_max) {
-			cur_max = temp;
-			ret = x;
-		}
-	}
-
-#endif
-
-	return ret;
-}
-
-double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *ptr) {
+static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) {
 	if (!state->is_valid_move(coord)) {
 		return 0;
 	}
 
-	double weight = patterns->search(state, coord) / 100.0;
+	double weight = get_pattern_db().search(state, coord) / 100.0;
 
 	if (weight == 0) {
 		return 0;
@@ -90,6 +40,44 @@ double uct_tree_policy::uct(const coordinate& coord, board *state, mcts_node *pt
 	double mc_uct_est = mcts_est + uct;
 
 	return mc_uct_est;
+}
+
+static inline maybe_coord max_utc(board *state, mcts_node *ptr) {
+	double cur_max = 0;
+	maybe_coord ret = {};
+
+	for (const auto& x : state->available_moves) {
+		double temp = uct(x, state, ptr);
+
+		if (temp > cur_max) {
+			cur_max = temp;
+			ret = x;
+		}
+	}
+
+	return ret;
+}
+
+
+maybe_nodeptr uct_tree_policy(board *state, mcts_node *ptr) {
+	while (ptr) {
+		if (!ptr->fully_visited(state)) {
+			return ptr;
+		}
+
+		maybe_coord next = max_utc(state, ptr);
+
+		if (!next) {
+			ptr->update(state);
+			return {};
+		}
+
+		ptr->new_node(state, *next, state->current_player);
+		state->make_move(*next);
+		ptr = ptr->leaves[coord_hash_v2(*next)];
+	}
+
+	return {};
 }
 
 // namespace mcts_thing

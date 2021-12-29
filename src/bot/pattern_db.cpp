@@ -3,6 +3,16 @@
 
 namespace mcts_thing {
 
+static pattern_db pattern_db_singleton;
+
+void load_patterns(const std::string& db) {
+	pattern_db_singleton.load(db);
+}
+
+pattern_db& get_pattern_db() {
+	return pattern_db_singleton;
+}
+
 void pattern::rotate_grid(void) {
 	for (unsigned y = 0; y < 3; y++) {
 		for (unsigned x = y; x < 3; x++) {
@@ -119,9 +129,10 @@ retry:
 	return ret;
 }
 
-pattern_db::pattern_db(const std::string& db) {
+void pattern_db::load(const std::string& db) {
 	std::ifstream pf(db);
 	pattern_values = std::unique_ptr<uint8_t>(new uint8_t[1 << 18]);
+	total_patterns = 0;
 
 	uint8_t *values = pattern_values.get();
 	for (int i = 0; i < (1<<18); i++) {

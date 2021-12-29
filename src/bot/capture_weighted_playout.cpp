@@ -1,18 +1,18 @@
 #include <budgie/mcts.hpp>
+#include <budgie/playout_strategies.hpp>
 #include <math.h>
 #include <assert.h>
 #include <unistd.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate capture_weighted_playout::apply(board *state) {
-	coordinate next = {0, 0};
+maybe_coord capture_weighted_playout(board *state) {
 	point::color other = other_player(state->current_player);
 	std::list<group*>& ataris = state->group_liberties[other][1];
 
 	if (state->moves == 0) {
 		// nothing to do on the first move
-		return {0, 0};
+		return {};
 	}
 
 	std::uniform_int_distribution<unsigned> diceroll(0, 5);
@@ -25,7 +25,7 @@ coordinate capture_weighted_playout::apply(board *state) {
 		coordinate temp = *g->liberties.begin();
 
 		if (!state->is_valid_coordinate(temp)) {
-			printf("invalid liberty at (%d, %d)?\n", temp.first, temp.second);
+			fprintf(stderr, "invalid liberty at (%d, %d)?\n", temp.first, temp.second);
 		}
 
 		if (state->is_valid_move(temp)) {
@@ -40,16 +40,18 @@ coordinate capture_weighted_playout::apply(board *state) {
 		// pick a random group to capture
 		group *ptr = *std::next(ataris.begin(), atarichoice(state->randomgen));
 		assert(ptr != nullptr);
-		next = *ptr->liberties.begin();
+		coordinate next = *ptr->liberties.begin();
 
 		if (!state->is_valid_move(next)) {
-			next = {0, 0};
+			return {};
+		} else {
+			return next;
 		}
 
 		//std::cerr << "boom! captured a group!" << std::endl;
 	}
 
-	return next;
+	return {};
 }
 
 // namespace mcts_thing

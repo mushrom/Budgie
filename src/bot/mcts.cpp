@@ -108,8 +108,12 @@ void mcts::reset() {
 
 void mcts::explore(board *state)
 {
-	mcts_node* ptr = tree->search(state, root.get());
-	playout(state, ptr);
+	//mcts_node* ptr = tree.search(state, root.get());
+	maybe_nodeptr ptr = tree(state, root.get());
+
+	if (ptr) {
+		playout(state, *ptr);
+	}
 }
 
 void mcts::playout(board *state, mcts_node *ptr) {
@@ -119,24 +123,22 @@ void mcts::playout(board *state, mcts_node *ptr) {
 
 	// terminates when no strategies find a valid move to play
 	for (;;) {
-		coordinate next;
+		//coordinate next;
+		maybe_coord next;
 
-		for (auto strat : playout_strats) {
-			next = strat->apply(state);
-
-			if (next != coordinate(0, 0)) {
+		for (const auto& strat : playout_strats) {
+			if (next = strat(state)) {
 				break;
 			}
 		}
 
-		if (next == coordinate(0 ,0)) {
-			//printf("#  no valid moves!\n");
-			ptr->update(state);
+		if (!next) {
 			//getchar();
+			ptr->update(state);
 			return;
 		}
 
-		state->make_move(next);
+		state->make_move(*next);
 
 		//state->print();
 		//usleep(250000);

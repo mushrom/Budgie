@@ -1,15 +1,16 @@
 #include <budgie/mcts.hpp>
+#include <budgie/playout_strategies.hpp>
 #include <math.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate adjacent_3x3_playout::apply(board *state) {
+maybe_coord adjacent_3x3_playout(board *state) {
 	coordinate things[25];
 	unsigned found = 0;
 
 	if (state->moves == 0) {
 		// don't use adjacency for the first move
-		return {0, 0};
+		return {};
 	}
 
 	// picks randomly from the 3x3 grid surrounding the player
@@ -38,23 +39,23 @@ coordinate adjacent_3x3_playout::apply(board *state) {
 
 		// TODO: check some number of other possibilities
 		if (!state->is_valid_move(next)) {
-			return {0, 0};
+			return {};
 
 		} else {
 			return next;
 		}
 	}
 
-	return coordinate(0, 0);
+	return {};
 }
 
-coordinate adjacent_5x5_playout::apply(board *state) {
+maybe_coord adjacent_5x5_playout(board *state) {
 	coordinate things[25];
 	unsigned found = 0;
 
 	if (state->moves == 0) {
 		// don't use adjacency for the first move
-		return {0, 0};
+		return {};
 	}
 
 	// picks randomly from the 5x5 grid surrounding the player
@@ -82,14 +83,14 @@ coordinate adjacent_5x5_playout::apply(board *state) {
 
 		// TODO: check some number of other possibilities
 		if (!state->is_valid_move(next)) {
-			return {0, 0};
+			return {};
 
 		} else {
 			return next;
 		}
 	}
 
-	return coordinate(0, 0);
+	return {};
 }
 
 // namespace mcts_thing

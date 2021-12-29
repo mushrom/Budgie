@@ -14,6 +14,9 @@
 #include <bitset>
 #include <atomic>
 
+#include <functional>
+#include <optional>
+
 // extending std::atomic to provide dereferencing for pointer types
 template <typename T>
 struct atomptr : public std::atomic<T> {
@@ -177,119 +180,28 @@ class mcts_node {
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
 coordinate pick_random_leaf(board *state, pattern_db *patterns);
 
-// TODO: maybe move this to pattern_db.hpp
-typedef std::shared_ptr<pattern_db> pattern_dbptr;
+typedef std::optional<coordinate> maybe_coord;
+typedef std::optional<mcts_node*> maybe_nodeptr;
 
-class tree_policy {
-	public:
-		tree_policy(pattern_dbptr db) { patterns = db; };
-		virtual mcts_node* search(board *state, mcts_node *ptr) = 0;
-
-	protected:
-		pattern_dbptr patterns;
-};
-
-class playout_strategy {
-	public:
-		playout_strategy(pattern_dbptr db) { patterns = db; }
-		virtual coordinate apply(board *state) = 0;
-
-	protected:
-		pattern_dbptr patterns;
-};
-
-// plain MCTS tree policy, exploring whichever node seems to have the highest
-// win rate
-class mcts_tree_policy : public tree_policy {
-	public:
-		mcts_tree_policy(pattern_dbptr db) : tree_policy(db){};
-		virtual mcts_node* search(board *state, mcts_node *ptr);
-};
-
-// MC+UCT tree exploration policy
-class uct_tree_policy : public tree_policy {
-	public:
-		uct_tree_policy(pattern_dbptr db)
-			: tree_policy(db) {}
-
-		virtual mcts_node* search(board *state, mcts_node *ptr);
-
-	private:
-		coordinate max_utc(board *state, mcts_node *ptr);
-		double uct(const coordinate& coord, board *state, mcts_node *ptr);
-};
-
-// MC+UCT+RAVE tree exploration policy
-class uct_rave_tree_policy : public tree_policy {
-	public:
-		uct_rave_tree_policy(pattern_dbptr db)
-			: tree_policy(db) {}
-
-		virtual mcts_node* search(board *state, mcts_node *ptr);
-
-	private:
-		coordinate max_utc(board *state, mcts_node *ptr);
-		double uct(const coordinate& coord, board *state, mcts_node *ptr);
-};
-
-class random_playout : public playout_strategy {
-	public:
-		random_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
-
-class capture_weighted_playout : public playout_strategy {
-	public:
-		capture_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
-
-class save_atari_playout : public playout_strategy {
-	public:
-		save_atari_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
-
-class attack_enemy_groups_playout : public playout_strategy {
-	public:
-		attack_enemy_groups_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
-
-class local_weighted_playout : public playout_strategy {
-	public:
-		local_weighted_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-		coordinate local_best(board *state);
-};
-
-class adjacent_3x3_playout : public playout_strategy {
-	public:
-		adjacent_3x3_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
-
-class adjacent_5x5_playout : public playout_strategy {
-	public:
-		adjacent_5x5_playout(pattern_dbptr db) : playout_strategy(db) { };
-		virtual coordinate apply(board *state);
-};
+typedef std::function<maybe_nodeptr(board *state, mcts_node *ptr)> tree_policy;
+typedef std::function<maybe_coord(board *state)> playout_strategy;
 
 class mcts {
 	public:
 		mcts() {
-			tree = nullptr;
+			// nop tree search policy for data-only trees
+			tree = [] (board*, mcts_node*) { return maybe_nodeptr(); };
 			playout_strats = {};
 			reset();
 		};
 
-		mcts(tree_policy *tp, std::list<playout_strategy*> strats)
-		{
+		mcts(tree_policy tp, std::list<playout_strategy> strats) {
 			tree = tp;
 			playout_strats = strats;
 			reset();
 		};
 
+		// overloaded in distributed mcts
 		virtual ~mcts(){};
 		virtual void explore(board *state);
 		virtual void playout(board *state, mcts_node *ptr);
@@ -314,8 +226,8 @@ class mcts {
 		bool merge(mcts *other);
 		bool sync(mcts *other);
 
-		tree_policy *tree;
-		std::list<playout_strategy*> playout_strats;
+		tree_policy tree;
+		std::list<playout_strategy> playout_strats;
 		mcts_node::nodeptr root = nullptr;
 
 	private:

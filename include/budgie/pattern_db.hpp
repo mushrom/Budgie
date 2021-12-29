@@ -24,7 +24,9 @@ class pattern {
 
 class pattern_db {
 	public:
-		pattern_db(const std::string& db);
+		//pattern_db(const std::string& db);
+		pattern_db() {};
+		void load(const std::string& db);
 		unsigned search(board *state, coordinate coord);
 		uint32_t hash_grid(board *state, point::color grid[9]);
 	
@@ -40,4 +42,8 @@ class pattern_db {
 		unsigned total_patterns = 0;
 };
 
+void load_patterns(const std::string& db);
+pattern_db& get_pattern_db();
+
+// namespace mcts_thing
 }

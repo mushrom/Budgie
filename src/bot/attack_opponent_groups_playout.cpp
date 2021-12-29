@@ -1,12 +1,12 @@
 #include <budgie/mcts.hpp>
+#include <budgie/playout_strategies.hpp>
 #include <math.h>
 #include <assert.h>
 #include <unistd.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate attack_enemy_groups_playout::apply(board *state) {
-	coordinate next = {0, 0};
+maybe_coord attack_enemy_groups_playout(board *state) {
 	point::color other = other_player(state->current_player);
 	// opponent groups with two liberties
 	std::list<group*>& weakgrps = state->group_liberties[other][2];
@@ -24,16 +24,16 @@ coordinate attack_enemy_groups_playout::apply(board *state) {
 		assert(ptr != nullptr);
 
 		// coin flip between the two liberties
-		next = *std::next(ptr->liberties.begin(), coinflip(state->randomgen));
+		coordinate next = *std::next(ptr->liberties.begin(), coinflip(state->randomgen));
 
 		if (!state->is_valid_move(next)) {
-			next = {0, 0};
+			return {};
 		}
 
 		//std::cerr << "boom! attacked a group!" << std::endl;
 	}
 
-	return next;
+	return {};
 }
 
 // namespace mcts_thing

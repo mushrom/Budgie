@@ -1,14 +1,16 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate local_weighted_playout::apply(board *state) {
+maybe_coord local_weighted_playout(board *state) {
 	coordinate things[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
 	unsigned best = 0;
 
+	// TODO: collect all neighbors and choose randomly based on weight,
+	//       rather than picking the highest rated
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			coordinate foo = {
@@ -20,7 +22,9 @@ coordinate local_weighted_playout::apply(board *state) {
 				continue;
 			}
 
-			unsigned weight = patterns->search(state, foo);
+			// TODO: update, store patterns in board class or something
+			unsigned weight = get_pattern_db().search(state, foo);
+			//unsigned weight = 100;
 
 			if (weight == 0 || !state->is_valid_move(foo)) {
 				continue;
@@ -43,8 +47,8 @@ coordinate local_weighted_playout::apply(board *state) {
 		return things[foundindex(state->randomgen)];
 	}
 
-	return coordinate(0, 0);
+	return {};
 }
 
-// namespace mcts_thing
+// namespace mcts_thing::playouts
 }

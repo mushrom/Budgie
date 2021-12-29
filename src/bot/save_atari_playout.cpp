@@ -1,12 +1,12 @@
 #include <budgie/mcts.hpp>
+#include <budgie/playout_strategies.hpp>
 #include <math.h>
 #include <assert.h>
 #include <unistd.h>
 
-namespace mcts_thing {
+namespace mcts_thing::playouts {
 
-coordinate save_atari_playout::apply(board *state) {
-	coordinate next = {0, 0};
+maybe_coord save_atari_playout(board *state) {
 	point::color current = state->current_player;
 	std::list<group*>& ataris = state->group_liberties[current][1];
 	std::uniform_int_distribution<unsigned> diceroll(0, 5);
@@ -18,16 +18,18 @@ coordinate save_atari_playout::apply(board *state) {
 		// pick a random group to capture
 		group *ptr = *std::next(ataris.begin(), atarichoice(state->randomgen));
 		//assert(ptr != nullptr);
-		next = *ptr->liberties.begin();
+		coordinate next = *ptr->liberties.begin();
 
 		if (!state->is_valid_move(next)) {
-			next = {0, 0};
+			return {};
+		} else {
+			return next;
 		}
 
 		//std::cerr << "boom! saved a group!" << std::endl;
 	}
 
-	return next;
+	return {};
 }
 
 // namespace mcts_thing
