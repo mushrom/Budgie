@@ -186,6 +186,13 @@ typedef std::optional<mcts_node*> maybe_nodeptr;
 typedef std::function<maybe_nodeptr(board *state, mcts_node *ptr)> tree_policy;
 typedef std::function<maybe_coord(board *state)> playout_strategy;
 
+// callback type for examining tree state at various points
+// bit of a XXX
+// (honestly this whole codebase needs some serious reworking...)
+typedef std::function<void(board *state, mcts_node *ptr)> tree_probe_func;
+typedef std::function<void(board *state, mcts_node *ptr, const coordinate& next)>
+        playout_probe_func;
+
 class mcts {
 	public:
 		mcts() {
@@ -229,6 +236,11 @@ class mcts {
 		tree_policy tree;
 		std::list<playout_strategy> playout_strats;
 		mcts_node::nodeptr root = nullptr;
+
+		// optional debug/extension callbacks for examining tree and playout state
+		std::optional<tree_probe_func>    treesearch_probe;
+		std::optional<playout_probe_func> playout_probe;
+		std::optional<tree_probe_func>    finished_probe;
 
 	private:
 		uint32_t serialize_node(anserial::serializer& ser,

@@ -118,6 +118,9 @@ void mcts::explore(board *state)
 
 void mcts::playout(board *state, mcts_node *ptr) {
 	if (!ptr) {
+		if (finished_probe) {
+			(*finished_probe)(state, ptr);
+		}
 		return;
 	}
 
@@ -135,7 +138,15 @@ void mcts::playout(board *state, mcts_node *ptr) {
 		if (!next) {
 			//getchar();
 			ptr->update(state);
+
+			if (finished_probe) {
+				(*finished_probe)(state, ptr);
+			}
 			return;
+		}
+
+		if (playout_probe) {
+			(*playout_probe)(state, ptr, *next);
 		}
 
 		state->make_move(*next);

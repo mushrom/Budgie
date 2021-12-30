@@ -5,9 +5,10 @@ namespace mcts_thing::playouts {
 
 maybe_coord local_weighted_playout(board *state) {
 	coordinate things[9];
+	unsigned weights[9];
 	unsigned found = 0;
 	// default weight is 100, so look for anything better than random
-	unsigned best = 0;
+	unsigned total_weights = 0;
 
 	// TODO: collect all neighbors and choose randomly based on weight,
 	//       rather than picking the highest rated
@@ -22,29 +23,29 @@ maybe_coord local_weighted_playout(board *state) {
 				continue;
 			}
 
-			// TODO: update, store patterns in board class or something
 			unsigned weight = get_pattern_db().search(state, foo);
-			//unsigned weight = 100;
-
-			if (weight == 0 || !state->is_valid_move(foo)) {
+			if (weight < 100 || !state->is_valid_move(foo)) {
 				continue;
 			}
 
-			if (weight > best) {
-				best = weight;
-				found = 0;
-				things[found++] = foo;
-			}
-
-			else if (weight == best) {
-				things[found++] = foo;
-			}
+			things[found] = foo;
+			weights[found] = weight;
+			found++;
+			total_weights += weight;
 		}
 	}
 
 	if (found > 0) {
-		std::uniform_int_distribution<unsigned> foundindex(0, found-1);
-		return things[foundindex(state->randomgen)];
+		std::uniform_int_distribution<unsigned> foundindex(0, total_weights-1);
+		unsigned choice = foundindex(state->randomgen);
+		unsigned weightsum = 0;
+
+		for (unsigned i = 0; i < found; i++) {
+			weightsum += weights[i];
+			if (choice < weightsum) {
+				return things[i];
+			}
+		}
 	}
 
 	return {};

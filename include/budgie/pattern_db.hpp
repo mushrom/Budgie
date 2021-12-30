@@ -28,10 +28,8 @@ class pattern_db {
 		pattern_db() {};
 		void load(const std::string& db);
 		unsigned search(board *state, coordinate coord);
-		uint32_t hash_grid(board *state, point::color grid[9]);
 	
 	private:
-		void read_grid(board *state, coordinate coord, point::color grid[9]);
 		pattern read_pattern(std::ifstream& f);
 		void load_pattern(pattern& pat);
 		void load_permutations(pattern pat, unsigned index=0);
@@ -41,6 +39,9 @@ class pattern_db {
 		std::unique_ptr<uint8_t> pattern_values;
 		unsigned total_patterns = 0;
 };
+
+uint32_t hash_grid(board *state, point::color grid[9]);
+void read_grid(board *state, coordinate coord, point::color grid[9]);
 
 void load_patterns(const std::string& db);
 pattern_db& get_pattern_db();

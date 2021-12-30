@@ -51,9 +51,10 @@ set(BOT_LOGIC_SRC
 	src/util/sgf.cpp
 )
 
-set(BUDGIE_MAIN     src/bot-main.cpp)
-set(SDL_MAIN        src/sdl-main.cpp)
-set(JOSEKI_GEN_MAIN src/josekigen.cpp)
+set(BUDGIE_MAIN      src/bot-main.cpp)
+set(SDL_MAIN         src/sdl-main.cpp)
+set(JOSEKI_GEN_MAIN  src/josekigen.cpp)
+set(PATTERN_GEN_MAIN src/patterngen.cpp)
 
 add_library(BudgieLogic ${BOT_LOGIC_SRC})
 target_link_libraries(BudgieLogic ${LIBS})
@@ -61,10 +62,13 @@ if (NOT WINDOWS)
 	target_link_options(BudgieLogic PUBLIC "-pthread")
 endif()
 
-add_executable(budgie    ${BUDGIE_MAIN})
-add_executable(josekigen ${JOSEKI_GEN_MAIN})
-target_link_libraries(budgie    BudgieLogic)
-target_link_libraries(josekigen BudgieLogic)
+add_executable(budgie     ${BUDGIE_MAIN})
+add_executable(josekigen  ${JOSEKI_GEN_MAIN})
+add_executable(patterngen ${PATTERN_GEN_MAIN})
+
+target_link_libraries(budgie     BudgieLogic)
+target_link_libraries(josekigen  BudgieLogic)
+target_link_libraries(patterngen BudgieLogic)
 
 if (SDL2_FOUND AND SDL2_ttf_FOUND)
 	add_executable(bot-visualize ${SDL_MAIN})

@@ -47,7 +47,7 @@ void pattern::flip_vertically(void) {
 }
 
 void pattern::print(void) {
-	std::cerr << "weight: " << weight << ", ";
+	std::cerr << "weight: " << weight << ", " << std::endl;;
 
 	for (unsigned y = 0; y < 3; y++) {
 		for (unsigned x = 0; x < 3; x++) {
@@ -235,6 +235,7 @@ void pattern_db::load_compile(pattern& pat) {
 	if (ptr[idx] == 100 || weight < ptr[idx]) {
 		ptr[idx] = weight;
 		total_patterns++;
+		//pat.print();
 	}
 }
 
@@ -248,7 +249,7 @@ unsigned pattern_db::search(board *state, coordinate coord) {
 	return ptr[hash & 0x3ffff];
 }
 
-uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
+uint32_t hash_grid(board *state, point::color grid[9]) {
 	uint32_t ret = 0;
 	point::color player = state->current_player;
 	point::color other  = other_player(player);
@@ -276,7 +277,7 @@ uint32_t pattern_db::hash_grid(board *state, point::color grid[9]) {
 	return ret;
 }
 
-void pattern_db::read_grid(board *state, coordinate coord, point::color grid[9]) {
+void read_grid(board *state, coordinate coord, point::color grid[9]) {
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			//coordinate k = {coord.first + x, coord.second + y};
