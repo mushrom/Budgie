@@ -13,12 +13,6 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 		return 0;
 	}
 
-	unsigned weight = get_pattern_db().search(state, coord);
-
-	if (weight == 0) {
-		return 0;
-	}
-
 	unsigned hash = coord_hash_v2(coord);
 	double rave_est = ptr->rave[hash].win_rate();
 	double mcts_est = ptr->nodestats[hash].win_rate();

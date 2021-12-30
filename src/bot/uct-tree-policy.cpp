@@ -9,19 +9,6 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 		return 0;
 	}
 
-	double weight = get_pattern_db().search(state, coord) / 100.0;
-
-	if (weight == 0) {
-		return 0;
-	}
-
-	/*
-	if (ptr->nodestats[coord].traversals == 0) {
-		// unexplored leaf
-		return 0.5;
-	}
-	*/
-
 	unsigned hash = coord_hash_v2(coord);
 	double mcts_est = ptr->nodestats[hash].win_rate();
 
