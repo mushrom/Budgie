@@ -8,6 +8,7 @@ enum {
 	PARAM_INT_NONE = 0,
 	PARAM_INT_RAVE_WEIGHT,
 	PARAM_INT_NODE_EXPANSION_THRESHOLD,
+	PARAM_INT_KO_DEPTH,
 
 	PARAM_BOOL_NONE = 0,
 	PARAM_BOOL_USE_WINRATE,
@@ -28,6 +29,7 @@ inline const char *intParamNames[] = {
 	"none",
 	"rave_weight",
 	"node_expansion_threshold",
+	"ko_depth",
 	nullptr
 };
 
@@ -68,6 +70,11 @@ inline int intParameters[] = {
 	0,    // none
 	1000, // rave weight
 	8,    // node expansion threshold
+	9,    // ko violation search depth
+	      // large numbers search all move history (implementing a superko rule),
+	      // 9 or so approximates a superko rule,
+	      // 2 implements a simple ko rule
+	      // 1 and 0 will hang during playouts, not recommended
 };
 
 inline bool boolParameters[] = {

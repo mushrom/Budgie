@@ -1,5 +1,6 @@
 #include <budgie/game.hpp>
 #include <budgie/josekiDB.hpp>
+#include <budgie/parameters.hpp>
 
 #include <anserial/anserial.hpp>
 #include <stdio.h>
@@ -153,9 +154,7 @@ bool board::violates_ko(const coordinate& coord) {
 	}
 
 	uint64_t temphash = group_pseudocapture(coord, capturable);
-
-	// XXX: only check few past moves for superko violations
-	unsigned k = 9;
+	unsigned k = getInt(PARAM_INT_KO_DEPTH);
 
 	for (move::moveptr ptr = move_list;
 	     ptr != nullptr && k;
