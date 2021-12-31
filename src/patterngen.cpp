@@ -24,7 +24,7 @@ static args_parser::default_map patgen_options = {
 
 	// general interface/behaviour settings
 	{"pass",
-		{"true", "Determine whether to detect when to pass. Good for humans, bad for bot matches.",
+		{"false", "Determine whether to detect when to pass. Good for humans, bad for bot matches.",
 			{"false", "true"}}},
 	{"ogs_output",
 		{"false", "Outputs statistics parsed by gtp2ogs for malkovich chat.",
@@ -161,9 +161,11 @@ int main(int argc, char *argv[]) {
 	};
 
 	for (int k = 0; k < iterations; k++) {
+		point::color winner = point::color::Invalid;
+
 		budgie bot(args.options);
 		bot.tree->playout_probe = playfunc;
-		bot.tree->finished_probe = treefunc;
+		//bot.tree->finished_probe = treefunc;
 
 		while (true) {
 			budgie::move m = bot.genmove();
@@ -173,12 +175,30 @@ int main(int argc, char *argv[]) {
 			bot.game.print();
 			printf("\n");
 
+			/*
 			if (m.type == budgie::move::types::Pass
 			 || m.type == budgie::move::types::Resign)
 			{
 				break;
 			}
+			*/
+
+			if (m.type == budgie::move::types::Resign) {
+				winner = other_player(m.player);
+				break;
+
+			} else if (m.type == budgie::move::types::Pass) {
+				winner = bot.game.determine_winner();
+				break;
+			}
 		}
+
+		for (auto& [color, hash] : patterns) {
+			wins[hash]       += color == winner;
+			traversals[hash] += 1;
+		}
+
+		patterns.clear();
 	}
 
 	for (unsigned i = 0; i < (1 << 18); i++) {

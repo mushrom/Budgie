@@ -23,10 +23,21 @@ maybe_coord local_weighted_playout(board *state) {
 				continue;
 			}
 
-			unsigned weight = get_pattern_db().search(state, foo);
-			if (weight < 100 || !state->is_valid_move(foo)) {
+			if (state->get_coordinate(foo) != point::color::Empty) {
 				continue;
 			}
+
+			if (!state->is_valid_move(foo)) {
+				continue;
+			}
+
+			unsigned weight = get_pattern_db().search(state, foo);
+
+			if (weight < 100) {
+				continue;
+			}
+
+			//fprintf(stderr, "weight: %u\n", weight);
 
 			things[found] = foo;
 			weights[found] = weight;
@@ -39,6 +50,8 @@ maybe_coord local_weighted_playout(board *state) {
 		std::uniform_int_distribution<unsigned> foundindex(0, total_weights-1);
 		unsigned choice = foundindex(state->randomgen);
 		unsigned weightsum = 0;
+
+		//fprintf(stderr, "choice: %u, weightsum: %u\n", choice, total_weights);
 
 		for (unsigned i = 0; i < found; i++) {
 			weightsum += weights[i];
