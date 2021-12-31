@@ -725,10 +725,14 @@ void board::regen_hash(void) {
 
 	uint64_t *ugrid = (uint64_t*)grid;
 	for (int i = 0; i < 384/8; i++) {
-		ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
+		//ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
+		//ret *= ugrid[i] + 3;
+		//ret = (ret << 7) + ret + ugrid[i];
+		ret = (ret << 7) + (ret >> 32) + ret + ugrid[i];
 	}
 
 	hash = ret;
+	//fprintf(stderr, "new hash: %016lx\n", hash);
 }
 
 uint64_t board::regen_hash(uint8_t tempgrid[384]) {
@@ -736,7 +740,11 @@ uint64_t board::regen_hash(uint8_t tempgrid[384]) {
 
 	uint64_t *ugrid = (uint64_t*)tempgrid;
 	for (int i = 0; i < 384/8; i++) {
-		ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
+		//ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
+		//ret = (ret<<24) + ret + ugrid[i] + 0xe133337;
+		//ret *= ret + ugrid[i] + 33;
+		//ret *= ugrid[i] + 3;
+		ret = (ret << 7) + (ret >> 32) + ret + ugrid[i];
 	}
 
 	return ret;
