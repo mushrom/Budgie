@@ -149,12 +149,6 @@ class mcts_node {
 		                          unsigned depth=0);
 		void dump_best_move_statistics(board *state);
 
-		void init_joseki_root(board *state);
-		void init_joseki_coord(board *state,
-		                       const coordinate& coord,
-		                       point::color color);
-		void init_joseki_hash(board *state, uint64_t boardhash);
-
 		std::atomic<unsigned> traversals;
 		mcts_node *parent;
 		point::color color;
@@ -176,6 +170,14 @@ class mcts_node {
 		// send differential updates (in distributed mode)
 		unsigned updates;
 };
+
+void init_node(mcts_node *ptr, board *state);
+void init_node_root(mcts_node *ptr, board *state);
+void init_node_heuristics(mcts_node *ptr, board *state);
+void init_joseki_coord(mcts_node *ptr, board *state,
+					   const coordinate& coord,
+					   point::color color);
+void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash);
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific
 coordinate pick_random_leaf(board *state, pattern_db *patterns);

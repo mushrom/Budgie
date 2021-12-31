@@ -10,8 +10,10 @@
 #include <unistd.h>
 #include <assert.h>
 #include <float.h>
+#include <string.h>
 
 #include <budgie/thread_pool.hpp>
+
 
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
@@ -54,8 +56,7 @@ coordinate mcts::do_search(board *state,
 {
 	root->color = other_player(state->current_player);
 	root->coord = state->last_move;
-
-	root->init_joseki_root(state);
+	init_node_root(root.get(), state);
 
 	pool.run_all(
 		[&] () {
@@ -563,27 +564,33 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 	return nullptr;
 }
 
-void mcts_node::init_joseki_root(board *state) {
-	init_joseki_hash(state, state->hash);
-	//uint64_t boardhash = state->hash;
+void init_node(mcts_node *ptr, board *state) {
+	init_joseki_coord(ptr, state, ptr->coord, ptr->color);
+	init_node_heuristics(ptr, state);
 }
 
-#include <string.h>
+void init_node_root(mcts_node *ptr, board *state) {
+	init_joseki_hash(ptr, state, state->hash);
+	init_node_heuristics(ptr, state);
+}
 
-// XXX
+void init_node_heuristics(mcts_node *ptr, board *state) {
+	for (const auto& leaf : state->available_moves) {
+		// do stuff
+	}
+}
+
+// XXX: TODO:
 static unsigned coord_to_index(board *state, const coordinate& coord) {
 	return state->dimension*(coord.second - 1) + (coord.first - 1);
 }
 
-
-void mcts_node::init_joseki_coord(board *state,
-                                  const coordinate& coord,
-                                  point::color color)
+void init_joseki_coord(mcts_node *ptr,
+                       board *state,
+                       const coordinate& coord,
+                       point::color color)
 {
-	//uint64_t boardhash = board::gen_hash(coord, color, state->hash);
 	uint64_t boardhash = state->hash;
-	//init_joseki_hash(state, boardhash);
-
 	const auto& josekis = state->josekis->search(state->dimension, boardhash);
 
 	//printf("have hash: %016lx\n", boardhash);
@@ -593,26 +600,26 @@ void mcts_node::init_joseki_coord(board *state,
 		uint8_t tempgrid[384];
 		memcpy(tempgrid, &state->grid, sizeof(state->grid));
 
-		tempgrid[coord_to_index(state, coord)] = color;
+		tempgrid[coord_to_index(state, ptr->coord)] = color;
 		boardhash = state->regen_hash(tempgrid);
-		init_joseki_hash(state, boardhash);
+		init_joseki_hash(ptr, state, boardhash);
 	}
 }
 
-void mcts_node::init_joseki_hash(board *state, uint64_t boardhash) {
+void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash) {
 	const auto& josekis = state->josekis->search(state->dimension, boardhash);
 
 	//printf("have hash: %016lx\n", boardhash);
 
 	if (josekis.size() > 0) {
-		//printf("lookup success! (%d, %d)\n", coord.first, coord.second);
+		//fprintf(stderr, "lookup success! (%d, %d)\n", ptr->coord.first, ptr->coord.second);
 		for (const auto& c : josekis) {
 			unsigned index = coord_hash_v2(c);
 
 			// just for testing
 			// TODO: tweak the knobs, expose this as configuration
-			nodestats[index].traversals = 1000;
-			nodestats[index].wins       = 1000;
+			ptr->nodestats[index].traversals = 1000;
+			ptr->nodestats[index].wins       = 1000;
 		}
 	}
 }
@@ -630,7 +637,7 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 		//      tree before it's ready
 		node->criticality = criticality;
 		node->coord = coord;
-		node->init_joseki_coord(state, coord, color);
+		init_node(node, state);
 
 		mcts_node *nullnode = nullptr; // XXX: need a T& type
 		if (!leaves[hash].compare_exchange_strong(nullnode, node)) {
