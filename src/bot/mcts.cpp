@@ -56,7 +56,11 @@ coordinate mcts::do_search(board *state,
 {
 	root->color = other_player(state->current_player);
 	root->coord = state->last_move;
-	init_node_root(root.get(), state);
+
+	// XXX: avoid reinitializing root node for incremental searches
+	if (root->traversals == 0) {
+		init_node_root(root.get(), state);
+	}
 
 	pool.run_all(
 		[&] () {
@@ -565,18 +569,36 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 }
 
 void init_node(mcts_node *ptr, board *state) {
-	init_joseki_coord(ptr, state, ptr->coord, ptr->color);
 	init_node_heuristics(ptr, state);
+	init_joseki_coord(ptr, state, ptr->coord, ptr->color);
 }
 
 void init_node_root(mcts_node *ptr, board *state) {
-	init_joseki_hash(ptr, state, state->hash);
 	init_node_heuristics(ptr, state);
+	init_joseki_hash(ptr, state, state->hash);
 }
 
 void init_node_heuristics(mcts_node *ptr, board *state) {
+	point::color grid[9];
 	for (const auto& leaf : state->available_moves) {
-		// do stuff
+		unsigned index = coord_hash_v2(leaf);
+
+		if (getBool(PARAM_BOOL_MCTS_INIT_PATTERNS)) {
+			unsigned pat = get_pattern_db().search(state, leaf);
+
+			// don't ignore zero-weighted patterns (eye avoidance patterns),
+			// just add a slightly less than average weight
+			pat = (pat == 0)? 90 : pat;
+
+			unsigned weight = 25.f * (pat / 100.f);
+
+			ptr->nodestats[index].wins       = weight;
+			ptr->nodestats[index].traversals = 50;
+
+		} else {
+			ptr->nodestats[index].wins       = 25;
+			ptr->nodestats[index].traversals = 50;
+		}
 	}
 }
 

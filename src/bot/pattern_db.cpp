@@ -277,7 +277,7 @@ uint32_t hash_grid(board *state, point::color grid[9]) {
 	return ret;
 }
 
-void read_grid(board *state, coordinate coord, point::color grid[9]) {
+void read_grid(board *state, const coordinate& coord, point::color grid[9]) {
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			//coordinate k = {coord.first + x, coord.second + y};

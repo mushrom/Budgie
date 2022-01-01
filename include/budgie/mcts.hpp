@@ -49,8 +49,10 @@ static inline unsigned coord_hash_v2(const coordinate& coord) {
 // TODO: rename stats and crit_stats
 class stats {
 	public:
-		std::atomic<unsigned> wins = M/2;
-		std::atomic<unsigned> traversals = M;
+		//std::atomic<unsigned> wins = M/2;
+		//std::atomic<unsigned> traversals = M;
+		std::atomic<unsigned> wins;
+		std::atomic<unsigned> traversals;
 
 		double win_rate(void) const {
 			return traversals? (double)wins / (double)traversals : 0.5;

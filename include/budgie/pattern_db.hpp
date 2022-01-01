@@ -41,7 +41,7 @@ class pattern_db {
 };
 
 uint32_t hash_grid(board *state, point::color grid[9]);
-void read_grid(board *state, coordinate coord, point::color grid[9]);
+void read_grid(board *state, const coordinate& coord, point::color grid[9]);
 
 void load_patterns(const std::string& db);
 pattern_db& get_pattern_db();

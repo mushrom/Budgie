@@ -18,6 +18,7 @@ enum {
 	PARAM_BOOL_USE_EXP_SCORE,
 	PARAM_BOOL_USE_PATTERNS,
 	PARAM_BOOL_VERY_VERBOSE,
+	PARAM_BOOL_MCTS_INIT_PATTERNS,
 
 	PARAM_FLOAT_NONE = 0,
 	PARAM_FLOAT_UCT_WEIGHT,
@@ -45,6 +46,7 @@ inline const char *boolParamNames[] = {
 	"use_expected_score",
 	"use_patterns",
 	"very_verbose",
+	"mcts_init_patterns",
 	nullptr
 };
 
@@ -86,6 +88,8 @@ inline bool boolParameters[] = {
 	false, // use expected score
 	true,  // use patterns
 	false, // very verbose
+	false, // initialize new MCTS nodes with the pattern database
+	       // (initializes with even stats for every move otherwise)
 };
 
 inline float floatParameters[] = {
