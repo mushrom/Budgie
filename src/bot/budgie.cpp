@@ -5,10 +5,10 @@
 #include <budgie/distributed_mcts.hpp>
 #include <budgie/distributed_client.hpp>
 // TODO: only included for 'split_string()', should split that in a util file
-#include <budgie/gtp.hpp>
 #include <iostream>
 
 #include <budgie/parameters.hpp>
+#include <budgie/utility.hpp>
 
 namespace mcts_thing {
 
@@ -34,11 +34,8 @@ budgie::budgie(args_parser::option_map& opts)
 
 	// parse parameter key=value pairs
 	std::string& params = opts["parameters"];
-	size_t start = 0;
-	size_t end   = params.find(";");
 
-	while (start < params.length()) {
-		std::string foo = params.substr(start, end);
+	for (const auto& foo : split_string(params, ',')) {
 		size_t eq   = foo.find("=");
 		size_t type = foo.find(":");
 
@@ -81,12 +78,6 @@ budgie::budgie(args_parser::option_map& opts)
 		} else {
 			std::cerr << "Unknown type: " << typestr << std::endl;
 		}
-
-		if (end == std::string::npos)
-			break;
-
-		start = end + 1;
-		end   = params.find(",", start);
 	}
 }
 
@@ -157,7 +148,6 @@ void budgie::set_player(point::color p) {
 }
 
 std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
-	//pattern_dbptr db = pattern_dbptr(new pattern_db(options["patterns"]));
 	load_patterns(options["patterns"]);
 
 	tree_policy tree_pol;
@@ -170,11 +160,10 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 	}
 
 	std::list<playout_strategy> strats;
-	auto policies = mcts_thing::split_string(options["playout_policy"]);
+	auto policies = split_string(options["playout_policy"], ',');
 
 	for (auto policy : policies) {
 		if (policy == "local_weighted") {
-			//strats.push_back(new local_weighted_playout(db));
 			strats.push_back(playouts::local_weighted_playout);
 
 		} else if (policy == "adjacent-3x3") {

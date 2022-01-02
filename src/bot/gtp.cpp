@@ -7,6 +7,8 @@
 
 namespace mcts_thing {
 
+// XXX: leaving this here for now, to avoid inadvertently messing up
+//      GTP parsing in the same commit as adding utility.hpp
 std::vector<std::string> split_string(std::string& s) {
 	std::istringstream iss(s);
 	std::vector<std::string> ret {
