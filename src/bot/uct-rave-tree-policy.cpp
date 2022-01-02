@@ -54,6 +54,7 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 	float simsrave = ptr->rave[hash].traversals;
 	float sims     = ptr->nodestats[hash].traversals;
 	float B = simsrave / (simsrave + sims + simsrave*(sims/getInt(PARAM_INT_RAVE_WEIGHT)));
+	//float B = sqrt(getInt(PARAM_INT_RAVE_WEIGHT) / (simsrave + getInt(PARAM_INT_RAVE_WEIGHT)));
 
 	return (expected*0.05 + mcts_est)*(1.0-B)
 		+ (crit_est+rave_est)*B

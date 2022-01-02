@@ -41,6 +41,10 @@ coordinate pick_random_leaf(board *state, pattern_db *patterns) {
 		map[foo] = true;
 		coordinate c = *std::next(state->available_moves.begin(), foo);
 
+		if (c == coordinate {0, 0})
+			// avoid passing in playouts
+			continue;
+
 		if (!state->is_valid_move(c) || patterns->search(state, c) == 0)
 			continue;
 
@@ -580,6 +584,7 @@ void init_node_root(mcts_node *ptr, board *state) {
 
 void init_node_heuristics(mcts_node *ptr, board *state) {
 	point::color grid[9];
+
 	for (const auto& leaf : state->available_moves) {
 		unsigned index = coord_hash_v2(leaf);
 
@@ -600,6 +605,10 @@ void init_node_heuristics(mcts_node *ptr, board *state) {
 			ptr->nodestats[index].traversals = 50;
 		}
 	}
+
+	// set passing to a low initial winrate to discourage traversal most of the time
+	ptr->nodestats[0].wins       = 10;
+	ptr->nodestats[0].traversals = 50;
 }
 
 // XXX: TODO:
@@ -790,6 +799,11 @@ coordinate mcts_node::best_move(void) {
 
 void mcts_node::update_stats(board *state, point::color winner) {
 	for (move::moveptr foo = state->move_list; foo; foo = foo->previous) {
+		if (foo->coord == coordinate{0,0}) {
+			// pass, just continue
+			continue;
+		}
+
 		// update criticality maps
 		// TODO: plain array criticality map
 		//auto& x = (*criticality)[foo->coord];

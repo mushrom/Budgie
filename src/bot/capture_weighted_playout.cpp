@@ -18,18 +18,20 @@ maybe_coord capture_weighted_playout(board *state) {
 	std::uniform_int_distribution<unsigned> diceroll(0, 5);
 	std::uniform_int_distribution<unsigned> coinflip(0, 1);
 
-	// check if the group of the opponent's last move is in atari,
-	// do a coin flip to determine whether to capture it
-	group *g = *(state->groups + state->coord_to_index(state->last_move));
-	if (g && g->liberties.size() == 1 && coinflip(state->randomgen) == 1) {
-		coordinate temp = *g->liberties.begin();
+	if (state->last_move != coordinate {0, 0}) {
+		// check if the group of the opponent's last move is in atari,
+		// do a coin flip to determine whether to capture it
+		group *g = *(state->groups + state->coord_to_index(state->last_move));
+		if (g && g->liberties.size() == 1 && coinflip(state->randomgen) == 1) {
+			coordinate temp = *g->liberties.begin();
 
-		if (!state->is_valid_coordinate(temp)) {
-			fprintf(stderr, "invalid liberty at (%d, %d)?\n", temp.first, temp.second);
-		}
+			if (!state->is_valid_coordinate(temp)) {
+				fprintf(stderr, "invalid liberty at (%d, %d)?\n", temp.first, temp.second);
+			}
 
-		if (state->is_valid_move(temp)) {
-			return temp;
+			if (state->is_valid_move(temp)) {
+				return temp;
+			}
 		}
 	}
 

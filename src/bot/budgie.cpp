@@ -114,14 +114,16 @@ budgie::move budgie::genmove(void) {
 	coordinate coord = tree->do_search(&game, pool, playouts);
 	float winrate = tree->win_rate(coord);
 
-	// TODO: make resign threshold configurable
 	if (winrate < 0.15) {
+		// TODO: make resign threshold configurable
 		return move(move::types::Resign);
 
-	} else if ((woncount >= 3 && winrate >= 1.0)) {
+	} else if (coord == coordinate {0, 0}) {
+		// tree search returned pass
 		return move(move::types::Pass);
 
 	} else if (allowPassing && tree->ownership_settled(&game)) {
+		// ownership is settled, can probably pass
 		return move(move::types::Pass);
 
 	// TODO: option to pass or play out to the bitter end

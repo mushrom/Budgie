@@ -130,6 +130,9 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 	double min_score = bot.boardsize*bot.boardsize;
 	double max_score = -bot.boardsize*bot.boardsize;
 
+	double min_mcts = 1.0;
+	double max_mcts = 0;
+
 	for (int dx = 1; dx <= bot.boardsize; dx++) {
 		for (int dy = 1; dy <= bot.boardsize; dy++) {
 			coordinate coord = {dx, dy};
@@ -138,6 +141,7 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 				continue;
 
 			const mcts_node *leaf = bot.tree->root->leaves[hash];
+			auto& stat = bot.tree->root->nodestats[hash];
 
 			double traversals = (leaf == nullptr)
 				? 0
@@ -147,6 +151,7 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			//double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
 			double crit_est = (*bot.tree->root->criticality)[hash].win_rate();
 			float score_est = (bot.tree->root->expected_score[hash] / (bot.tree->root->traversals));
+			double mcts_est = stat.win_rate();
 
 			if (traversals < min_traversals) {
 				min_traversals = traversals;
@@ -178,6 +183,14 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 
 			if (score_est > max_score) {
 				max_score = score_est;
+			}
+
+			if (mcts_est > max_mcts) {
+				max_mcts = mcts_est;
+			}
+
+			if (mcts_est < min_mcts) {
+				min_mcts = mcts_est;
 			}
 		}
 	}
@@ -236,8 +249,13 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 				auto& stat = bot.tree->root->nodestats[hash];
 				double mcts_est = stat.win_rate();
 
+				if (relative_stats) {
+					mcts_est = (mcts_est - min_mcts) / (max_mcts - min_mcts);
+				}
+
 				r = off + range * mcts_est;
 				b = off + range * mcts_est;
+				//g = off;
 				g = off + range * bot.tree->root->nodestats[hash].traversals /
 					(1.*bot.tree->root->traversals);
 			}
@@ -283,7 +301,6 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			SDL_SetRenderDrawColor(renderer, r, g, b, 0);
 			SDL_RenderFillRect(renderer, &rect);
 		}
-
 	}
 }
 
@@ -469,6 +486,9 @@ void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned heig
 	draw_text(x, y+16, "estimated score:");
 	draw_text(x+16, y+32, "black: " + std::to_string(score_black));
 	draw_text(x+16, y+48, "white: " + std::to_string(score_white));
+
+	double passpct = bot.tree->root->nodestats[0].win_rate();
+	draw_text(x + 16, y+64, "pass%: " + std::to_string(passpct));
 
 	draw_text(x, y + height/2, "Winrate:");
 	draw_text(x + width/2 - 28, y + height/2 + 16, "white");

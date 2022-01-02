@@ -34,6 +34,8 @@ board::board(unsigned size) {
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		available_moves.insert(index_to_coord(i));
 	}
+
+	available_moves.insert({0, 0});
 }
 
 board::board(board *other){
@@ -106,6 +108,7 @@ void board::reset(unsigned boardsize, float n_komi) {
 	hash = InitialHash;
 
 	available_moves.clear();
+	available_moves.insert({0, 0});
 
 	for (unsigned i = 0; i < dimension * dimension; i++) {
 		grid[i] = point::color::Empty;
@@ -131,6 +134,10 @@ void board::loadJosekis(std::string list) {
 bool board::is_valid_move(const coordinate& coord) {
 	unsigned index = (coord.second - 1) * dimension + (coord.first - 1);
 
+	if (coord.first == 0 && coord.second == 0) {
+		return true; // using 0,0 to indicate a pass, always valid
+	}
+
 	if (!is_valid_coordinate(coord)
 		|| grid[index] != point::color::Empty
 		|| is_suicide(coord, current_player)
@@ -145,6 +152,11 @@ bool board::is_valid_move(const coordinate& coord) {
 bool board::violates_ko(const coordinate& coord) {
 	group *capturable[4];
 	size_t n_capturable = group_capturable(coord, capturable);
+
+	if (coord.first == 0 && coord.second == 0) {
+		// pass is always valid
+		return false;
+	}
 
 	if (n_capturable == 0 || n_capturable > 1) {
 		// can't have a ko violation if there's more than one group
@@ -484,9 +496,15 @@ bool board::make_move(const coordinate& coord) {
 		return false;
 	}
 
-	set_coordinate_unsafe(coord, current_player);
-	group_place(coord);
-	regen_hash();
+	if (coord.first == 0 && coord.second == 0) {
+		// don't update stuff for passing
+		//fprintf(stderr, "passed\n");
+
+	} else {
+		set_coordinate_unsafe(coord, current_player);
+		group_place(coord);
+		regen_hash();
+	}
 	//group_check();
 
 	move_list = move::moveptr(new move(move_list, coord, current_player, hash));
