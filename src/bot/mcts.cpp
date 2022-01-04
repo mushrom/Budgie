@@ -66,6 +66,8 @@ coordinate mcts::do_search(board *state,
 		init_node_root(root.get(), state);
 	}
 
+	//root->try_expanding(state);
+
 	pool.run_all(
 		[&] () {
 			while (root->traversals < playouts) {
@@ -77,19 +79,25 @@ coordinate mcts::do_search(board *state,
 
 	pool.wait();
 
-	//fprintf(stderr, "# %u playouts\n", root->traversals);
-	/*
+	fprintf(stderr, "# %u playouts\n", (unsigned)root->traversals);
 	std::cerr << "# predicted playout: ";
 	root->dump_best_move_statistics(state);
 	std::cerr << std::endl;
-	*/
 
 	return root->best_move();
 }
 
 double mcts::win_rate(coordinate& coord) {
 	unsigned hash = coord_hash_v2(coord);
-	return root->nodestats[hash].win_rate();
+
+	if (hash < 660 && root->leaves[hash]) {
+		return root->leaves[hash]->win_rate();
+
+	} else {
+		return 0;
+	}
+
+	//return root->nodestats[hash].win_rate();
 
 	/*
 	auto it = root->nodestats.find(coord);
@@ -585,6 +593,7 @@ void init_node_root(mcts_node *ptr, board *state) {
 void init_node_heuristics(mcts_node *ptr, board *state) {
 	point::color grid[9];
 
+	/*
 	for (const auto& leaf : state->available_moves) {
 		unsigned index = coord_hash_v2(leaf);
 
@@ -609,6 +618,7 @@ void init_node_heuristics(mcts_node *ptr, board *state) {
 	// set passing to a low initial winrate to discourage traversal most of the time
 	ptr->nodestats[0].wins       = 10;
 	ptr->nodestats[0].traversals = 50;
+	*/
 }
 
 // XXX: TODO:
@@ -649,8 +659,8 @@ void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash) {
 
 			// just for testing
 			// TODO: tweak the knobs, expose this as configuration
-			ptr->nodestats[index].traversals = 1000;
-			ptr->nodestats[index].wins       = 1000;
+			//ptr->nodestats[index].traversals = 1000;
+			//ptr->nodestats[index].wins       = 1000;
 		}
 	}
 }
@@ -714,6 +724,42 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 
 bool mcts_node::fully_visited(board *state) {
 	return traversals > getUInt(PARAM_INT_NODE_EXPANSION_THRESHOLD);
+}
+
+bool mcts_node::try_expanding(board *state) {
+	if (init_finished) {
+		// node is currently being expanded,
+		// return to continue doing playouts from this node
+		// (need to avoid subnodes being lopsidedly explored before
+		//  the node is finished being expanded)
+		return true;
+	}
+
+	bool temp = false;
+	if (!init_lock.compare_exchange_strong(temp, true)) {
+		return false;
+	}
+
+	for (const auto& coord : state->available_moves) {
+		if (!state->is_valid_move(coord)) {
+			continue;
+		}
+
+		unsigned index = coord_hash_v2(coord);
+		mcts_node *node = new mcts_node(this, state->current_player);
+
+		node->criticality = criticality;
+		node->coord = coord;
+		init_node(node, state);
+
+		// should be no other threads writing here
+		leaves[index] = node;
+		leaves_alive.push_front(node);
+	}
+
+	// indicate that other threads can now traverse this node
+	init_finished = true;
+	return true;
 }
 
 bool mcts::ownership_settled(board *state) {
@@ -843,14 +889,26 @@ void mcts_node::update(board *state) {
 		bool won = ptr->color == winner;
 		unsigned hash = coord_hash_v2(ptr->coord);
 
+		/*
 		if (ptr->parent) {
-			ptr->parent->nodestats[hash].wins += won;
-			ptr->parent->nodestats[hash].traversals++;
 			ptr->parent->expected_score[hash] += score;
 			ptr->parent->score_counts[hash] += 1;
 		}
+		*/
 
+		ptr->expected_score[hash] += score;
+		ptr->score_counts[hash] += 1;
+		ptr->wins += won;
 		ptr->traversals++;
+	}
+}
+
+float mcts_node::win_rate(void) {
+	if (coord == coordinate {0, 0}) {
+		return (wins + 10.f) / (traversals + 50.f);
+	} else {
+		// TODO: store priors in node
+		return (wins + 25.f) / (traversals + 50.f);
 	}
 }
 

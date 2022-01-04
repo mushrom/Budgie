@@ -49,10 +49,10 @@ static inline unsigned coord_hash_v2(const coordinate& coord) {
 // TODO: rename stats and crit_stats
 class stats {
 	public:
-		//std::atomic<unsigned> wins = M/2;
-		//std::atomic<unsigned> traversals = M;
-		std::atomic<unsigned> wins;
-		std::atomic<unsigned> traversals;
+		std::atomic<unsigned> wins = M/2;
+		std::atomic<unsigned> traversals = M;
+		//std::atomic<unsigned> wins;
+		//std::atomic<unsigned> traversals;
 
 		double win_rate(void) const {
 			return traversals? (double)wins / (double)traversals : 0.5;
@@ -119,7 +119,7 @@ class mcts_node {
 		{
 			color = player;
 			parent = n_parent;
-			traversals = 0;
+			traversals = wins = 0;
 
 			for (int i = 0; i < 660; i++) {
 				leaves[i] = nullptr;
@@ -143,7 +143,9 @@ class mcts_node {
 		void new_node(board *state, coordinate& coord, point::color color);
 
 		coordinate best_move(void);
+		float win_rate(void);
 		bool fully_visited(board *state);
+		bool try_expanding(board *state);
 
 		unsigned terminal_nodes(void);
 		unsigned nodes(void);
@@ -152,12 +154,18 @@ class mcts_node {
 		void dump_best_move_statistics(board *state);
 
 		std::atomic<unsigned> traversals;
+		std::atomic<unsigned> wins;
+		// used to determine which thread expands this node when fully
+		// traversed, first to CAS to true initializes the new leaves
+		std::atomic<bool> init_lock = false;
+		// initializer sets this to true when the leaf is expanded
+		std::atomic<bool> init_finished = false;
+
 		mcts_node *parent;
 		point::color color;
 		coordinate coord;
 
 		atomptr<mcts_node*> leaves[660];
-		stats     nodestats[660];
 		stats     rave[660];
 		float     expected_score[660];
 		unsigned  score_counts[660];
