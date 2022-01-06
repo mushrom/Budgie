@@ -71,7 +71,7 @@ budgie::budgie(args_parser::option_map& opts)
 			} else unknown();
 
 		} else if (typestr == "float") {
-			if (int idx = findParam(boolParamNames, key.c_str())) {
+			if (int idx = findParam(floatParamNames, key.c_str())) {
 				setFloat(idx, stof(val));
 			} else unknown();
 
