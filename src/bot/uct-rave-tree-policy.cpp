@@ -1,6 +1,7 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 #include <budgie/parameters.hpp>
+#include <budgie/pattern_db.hpp>
 
 namespace mcts_thing::policies {
 
@@ -13,6 +14,12 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 
 	/*
 	if (!state->is_valid_move(coord) || !leaves[hash]) {
+		return 0;
+	}
+	*/
+
+	/*
+	if (get_pattern_db().search(state, coord) == 0) {
 		return 0;
 	}
 	*/
@@ -30,7 +37,7 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 		// TODO: adding prior value traversals to real traversals
 		//       probably shouldn't be but mimicing the behavior of the original
 		//       for testing
-		* sqrt(log((int)ptr->traversals) / (ptr->leaves[hash]->traversals + 50));
+		* sqrt(log((int)ptr->traversals) / (ptr->leaves[hash]->traversals + 1));
 
 	/*
 	double uct = uct_weight * sqrt(log(ptr->traversals) /
@@ -58,7 +65,7 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 
 	// from the pachi paper
 	float simsrave = ptr->rave[hash].traversals;
-	float sims     = ptr->leaves[hash]->traversals + 50;
+	float sims     = ptr->leaves[hash]->traversals + 1;
 	float B = simsrave / (simsrave + sims + simsrave*(sims/getInt(PARAM_INT_RAVE_WEIGHT)));
 	//float B = sqrt(getInt(PARAM_INT_RAVE_WEIGHT) / (simsrave + getInt(PARAM_INT_RAVE_WEIGHT)));
 

@@ -590,35 +590,37 @@ void init_node_root(mcts_node *ptr, board *state) {
 	init_joseki_hash(ptr, state, state->hash);
 }
 
+#undef M
+#define M 50
 void init_node_heuristics(mcts_node *ptr, board *state) {
 	point::color grid[9];
 
-	/*
-	for (const auto& leaf : state->available_moves) {
-		unsigned index = coord_hash_v2(leaf);
+	for (mcts_node *leaf : ptr->leaves_alive) {
+		if (leaf->coord == coordinate {0, 0}) {
+			leaf->prior_wins = 10;
+			leaf->prior_traversals = 100;
+			continue;
+		}
 
 		if (getBool(PARAM_BOOL_MCTS_INIT_PATTERNS)) {
-			unsigned pat = get_pattern_db().search(state, leaf);
+			unsigned pat = get_pattern_db().search(state, leaf->coord);
 
 			// don't ignore zero-weighted patterns (eye avoidance patterns),
-			// just add a slightly less than average weight
-			pat = (pat == 0)? 90 : pat;
+			// just start with a significantly less than average weight
+			// TODO: tweakable weight
+			pat = (pat == 0)? 70 : pat;
 
-			unsigned weight = 25.f * (pat / 100.f);
+			unsigned weight = M * pat/200.f;
 
-			ptr->nodestats[index].wins       = weight;
-			ptr->nodestats[index].traversals = 50;
+			leaf->prior_wins       = weight;
+			leaf->prior_traversals = M;
 
 		} else {
-			ptr->nodestats[index].wins       = 25;
-			ptr->nodestats[index].traversals = 50;
+			// TODO: M as parameter
+			leaf->prior_wins = M/2;
+			leaf->traversals = M;
 		}
 	}
-
-	// set passing to a low initial winrate to discourage traversal most of the time
-	ptr->nodestats[0].wins       = 10;
-	ptr->nodestats[0].traversals = 50;
-	*/
 }
 
 // XXX: TODO:
@@ -750,12 +752,13 @@ bool mcts_node::try_expanding(board *state) {
 
 		node->criticality = criticality;
 		node->coord = coord;
-		init_node(node, state);
 
 		// should be no other threads writing here
 		leaves[index] = node;
 		leaves_alive.push_front(node);
 	}
+
+	init_node(this, state);
 
 	// indicate that other threads can now traverse this node
 	init_finished = true;
@@ -851,8 +854,6 @@ void mcts_node::update_stats(board *state, point::color winner) {
 		}
 
 		// update criticality maps
-		// TODO: plain array criticality map
-		//auto& x = (*criticality)[foo->coord];
 		auto& x = (*criticality)[coord_hash_v2(foo->coord)];
 		x.traversals++;
 
@@ -865,14 +866,13 @@ void mcts_node::update_stats(board *state, point::color winner) {
 		// update RAVE maps
 		unsigned hash = coord_hash_v2(foo->coord);
 		for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
-			bool won = foo->color == winner;
-
 			// node rave maps track the best moves for the oppenent
 			if (ptr->color == foo->color) {
 				continue;
 			}
 
-			ptr->rave[hash].wins += won;
+			bool won = foo->color == winner;
+			ptr->rave[hash].wins += foo->color == winner;
 			ptr->rave[hash].traversals++;
 		}
 	}
@@ -904,12 +904,7 @@ void mcts_node::update(board *state) {
 }
 
 float mcts_node::win_rate(void) {
-	if (coord == coordinate {0, 0}) {
-		return (wins + 10.f) / (traversals + 50.f);
-	} else {
-		// TODO: store priors in node
-		return (wins + 25.f) / (traversals + 50.f);
-	}
+	return float(wins + prior_wins) / (traversals + prior_traversals);
 }
 
 unsigned mcts_node::terminal_nodes(void) {

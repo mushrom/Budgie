@@ -120,6 +120,9 @@ class mcts_node {
 			color = player;
 			parent = n_parent;
 			traversals = wins = 0;
+			// default priors just in case they aren't initialized elsewhere
+			prior_wins = 25;
+			prior_traversals = 50;
 
 			for (int i = 0; i < 660; i++) {
 				leaves[i] = nullptr;
@@ -155,6 +158,10 @@ class mcts_node {
 
 		std::atomic<unsigned> traversals;
 		std::atomic<unsigned> wins;
+
+		unsigned prior_wins;
+		unsigned prior_traversals;
+
 		// used to determine which thread expands this node when fully
 		// traversed, first to CAS to true initializes the new leaves
 		std::atomic<bool> init_lock = false;
