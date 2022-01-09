@@ -19,7 +19,7 @@ static args_parser::default_map patgen_options = {
 		{"9", "Initial board size, currently only square boards are supported.",
 			{"<any integer greater than 0>"}}},
 	{"komi",
-		{"5.5", "Komi given to the white player",
+		{"6.5", "Komi given to the white player",
 			{"<any real number>"}}},
 
 	// general interface/behaviour settings
@@ -45,7 +45,7 @@ static args_parser::default_map patgen_options = {
 		{"uct-rave", "Policy to use for tree traversal",
 			{"uct-rave", "uct", "mcts"}}},
 	{"playout_policy",
-		{"capture_enemy_ataris save_own_ataris attack_enemy_groups adjacent-3x3 random",
+		{"capture_enemy_ataris,save_own_ataris,attack_enemy_groups,adjacent-3x3,random",
 			"List of strategies to use when playing out games",
 			{"random", "adjacent-3x3", "adjacent-5x5", "local_weighted", "save_own_ataris",
 				"capture_enemy_ataris", "attack_enemy_groups"}}},
@@ -140,6 +140,9 @@ int main(int argc, char *argv[]) {
 	static uint32_t wins[1 << 18];
 	static uint32_t traversals[1 << 18];
 
+	static unsigned blackwins = 0;
+	static unsigned games = 0;
+
 	std::vector<std::pair<point::color, uint32_t>> patterns;
 
 	playout_probe_func playfunc = [&] (board *state, mcts_node *ptr, const coordinate& next) {
@@ -169,11 +172,9 @@ int main(int argc, char *argv[]) {
 
 		while (true) {
 			budgie::move m = bot.genmove();
-			bot.game.make_move(m.coord);
 
-			printf("### Iteration %d/%d: move %u\n", k, iterations, bot.game.moves);
-			bot.game.print();
-			printf("\n");
+			printf("### Iteration %d/%d: move %u, black: %u, white: %u\n",
+			       k, iterations, bot.game.moves, blackwins, games-blackwins);
 
 			/*
 			if (m.type == budgie::move::types::Pass
@@ -184,12 +185,17 @@ int main(int argc, char *argv[]) {
 			*/
 
 			if (m.type == budgie::move::types::Resign) {
-				winner = other_player(m.player);
+				winner = other_player(bot.game.current_player);
 				break;
 
 			} else if (m.type == budgie::move::types::Pass) {
 				winner = bot.game.determine_winner();
 				break;
+
+			} else {
+				bot.game.make_move(m.coord);
+				bot.game.print();
+				printf("\n");
 			}
 		}
 
@@ -199,6 +205,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		patterns.clear();
+
+		blackwins += winner == point::color::Black;
+		games     += 1;
 	}
 
 	for (unsigned i = 0; i < (1 << 18); i++) {
@@ -229,6 +238,8 @@ int main(int argc, char *argv[]) {
 			fprintf(fp, ":%u\n\n", (uint8_t)(200 * (float(wins[i]) / traversals[i])));
 		}
 	}
+
+	printf("results: black: %u/%u, white: %u/%u\n", blackwins, games, games-blackwins, games);
 
 	/*
 
