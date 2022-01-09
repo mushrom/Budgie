@@ -146,7 +146,7 @@ void gtp_client::repl(args_parser::option_map& options) {
 						<< "MALKOVICH: "
 						<< "win rate: " << 100*bot.tree->win_rate(move.coord)
 						<< "%, traversals: "
-						<< std::dec << bot.tree->root->leaves[hash]->traversals
+						//<< std::dec << bot.tree->root->leaves[hash]->traversals
 						<< std::endl;
 
 					std::flush(std::cerr);

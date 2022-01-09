@@ -112,6 +112,7 @@ class mcts_node {
 	public:
 		typedef std::unique_ptr<mcts_node> nodeptr;
 		typedef std::array<crit_stats, 660> critmap;
+		typedef std::array<stats, 660> ravemap;
 		typedef std::shared_ptr<critmap> critptr;
 
 		mcts_node(mcts_node *n_parent = nullptr,
@@ -123,22 +124,31 @@ class mcts_node {
 			// default priors just in case they aren't initialized elsewhere
 			prior_wins = 25;
 			prior_traversals = 50;
+			rave = std::make_unique<ravemap>();
 
+			/*
 			for (int i = 0; i < 660; i++) {
 				leaves[i] = nullptr;
 				expected_score[i] = 0;
 				score_counts[i] = 0;
 			}
+			*/
 		};
 
 		~mcts_node() {
+			for (mcts_node *leaf : leaves_alive) {
+				delete leaf;
+			}
+
 			leaves_alive.clear();
 
+			/*
 			for (int i = 0; i < 660; i++) {
 				if (leaves[i]) {
 					delete leaves[i];
 				}
 			}
+			*/
 		}
 
 		void update(board *state);
@@ -172,10 +182,11 @@ class mcts_node {
 		point::color color;
 		coordinate coord;
 
-		atomptr<mcts_node*> leaves[660];
-		stats     rave[660];
-		float     expected_score[660];
-		unsigned  score_counts[660];
+		std::unique_ptr<ravemap> rave;
+		//atomptr<mcts_node*> leaves[660];
+		//stats     rave[660];
+		//float     expected_score[660];
+		//unsigned  score_counts[660];
 
 		// for iterating over current valid leaves
 		ts_forward_list<mcts_node*> leaves_alive;

@@ -140,17 +140,28 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			if (bot.game.get_coordinate_unsafe(dx, dy) != point::color::Empty)
 				continue;
 
-			mcts_node *leaf = bot.tree->root->leaves[hash];
+			mcts_node *leaf = nullptr;
+			// XXX: O(N), comes out to about O(N^2)... only once per frame though, nbd
+			for (mcts_node *ptr : bot.tree->root->leaves_alive) {
+				if (ptr->coord == coord) {
+					leaf = ptr;
+				}
+			}
+			//mcts_node *leaf = bot.tree->root->leaves[hash];
 			//auto& stat = bot.tree->root->nodestats[hash];
 
 			double traversals = (leaf == nullptr)
 				? 0
 				: leaf->traversals / (1.*bot.tree->root->traversals);
 
-			double rave_est = bot.tree->root->rave[hash].win_rate();
+			double rave_est = 0;
+			if (bot.tree->root->rave) {
+				rave_est = (*bot.tree->root->rave)[hash].win_rate();
+			}
 			//double crit_est = (*bot.tree->root->criticality)[coord].win_rate();
 			double crit_est = (*bot.tree->root->criticality)[hash].win_rate();
-			float score_est = (bot.tree->root->expected_score[hash] / (bot.tree->root->traversals));
+			//float score_est = (bot.tree->root->expected_score[hash] / (bot.tree->root->traversals));
+			float score_est = 0.f;
 			double mcts_est = leaf? leaf->win_rate() : 0;
 
 			if (traversals < min_traversals) {
@@ -202,7 +213,14 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 
 			coordinate foo = {dx, dy};
 			unsigned hash = coord_hash_v2(foo);
-			mcts_node *leaf = bot.tree->root->leaves[hash];
+			mcts_node *leaf = nullptr;
+			// XXX: O(N), comes out to about O(N^2)... only once per frame though, nbd
+			for (mcts_node *ptr : bot.tree->root->leaves_alive) {
+				if (ptr->coord == foo) {
+					leaf = ptr;
+				}
+			}
+			//mcts_node *leaf = bot.tree->root->leaves[hash];
 			SDL_Rect rect;
 
 			double meh = (1.*width) / (bot.game.dimension - 1);
@@ -229,11 +247,13 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Rave || mode == modes::Statistics) {
-				double rave_est = bot.tree->root->rave[hash].win_rate();
-				if (relative_stats) {
-					rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+				if (bot.tree->root->rave) {
+					double rave_est = (*bot.tree->root->rave)[hash].win_rate();
+					if (relative_stats) {
+						rave_est = (rave_est - min_rave) / (max_rave - min_rave);
+					}
+					g = off + range * rave_est;
 				}
-				g = off + range * rave_est;
 			}
 
 			if (mode == modes::Criticality || mode == modes::Statistics) {
@@ -246,7 +266,7 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Mcts) {
-				mcts_node *leaf = bot.tree->root->leaves[hash];
+				//mcts_node *leaf = bot.tree->root->leaves[hash];
 				//auto& stat = bot.tree->root->nodestats[hash];
 				double mcts_est = leaf? leaf->win_rate() : 0;
 
@@ -270,11 +290,13 @@ void gui_state::draw_overlays(unsigned x, unsigned y, unsigned width) {
 			}
 
 			if (mode == modes::Score) {
-				unsigned count = bot.tree->root->score_counts[hash];
+				unsigned count = 0;
+				//unsigned count = bot.tree->root->score_counts[hash];
 				if (count == 0) {
 					r = g = b = off;
 				} else {
-					float scoreest = float(bot.tree->root->expected_score[hash]) / count;
+					//float scoreest = float(bot.tree->root->expected_score[hash]) / count;
+					float scoreest = 0.f;
 					scoreest /= (bot.boardsize * bot.boardsize);
 					bool lt = scoreest > 0;
 
@@ -402,7 +424,17 @@ void gui_state::draw_predicted(unsigned x, unsigned y, unsigned width) {
 		}
 
 		//printf("got here\n");
-		ptr = ptr->leaves[coord_hash_v2(coord)];
+		//ptr = ptr->leaves[coord_hash_v2(coord)];
+
+		mcts_node *leaf = nullptr;
+		// XXX: O(N), comes out to about O(N^2)... only once per frame though, nbd
+		for (mcts_node *ptr : ptr->leaves_alive) {
+			if (ptr->coord == coord) {
+				leaf = ptr;
+			}
+		}
+
+		ptr = leaf;
 	}
 }
 
@@ -488,9 +520,11 @@ void gui_state::draw_stats(unsigned x, unsigned y, unsigned width, unsigned heig
 	draw_text(x+16, y+32, "black: " + std::to_string(score_black));
 	draw_text(x+16, y+48, "white: " + std::to_string(score_white));
 
+	/*
 	mcts_node *leaf = bot.tree->root->leaves[0];
 	double passpct = leaf? leaf->win_rate() : 0;
 	draw_text(x + 16, y+64, "pass%: " + std::to_string(passpct));
+	*/
 
 	draw_text(x, y + height/2, "Winrate:");
 	draw_text(x + width/2 - 28, y + height/2 + 16, "white");

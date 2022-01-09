@@ -4,8 +4,8 @@
 
 namespace mcts_thing::policies {
 
-static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) {
-	unsigned hash = coord_hash_v2(coord);
+static inline double uct(board *state, mcts_node *parent, mcts_node *child) {
+	//unsigned hash = coord_hash_v2(coord);
 
 	/*
 	// TODO: could just initialize with only valid moves...
@@ -14,11 +14,12 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 	}
 	*/
 
-	double mcts_est = ptr->leaves[hash]->win_rate();
+	//double mcts_est = ptr->leaves[hash]->win_rate();
+	double mcts_est = child->win_rate();
 
 	double uct =
 		getFloat(PARAM_FLOAT_UCT_WEIGHT)
-		* sqrt(log((int)ptr->traversals) / (ptr->leaves[hash]->traversals + 1));
+		* sqrt(log((int)parent->traversals) / (child->traversals + 1));
 	/*
 	double uct =
 		uct_weight * sqrt(log(ptr->traversals) /
@@ -32,17 +33,16 @@ static inline double uct(const coordinate& coord, board *state, mcts_node *ptr) 
 	return mc_uct_est;
 }
 
-static inline maybe_coord max_utc(board *state, mcts_node *ptr) {
+static inline maybe_nodeptr max_utc(board *state, mcts_node *ptr) {
 	double cur_max = 0;
-	maybe_coord ret = {};
+	maybe_nodeptr ret = {};
 
 	for (const auto& leaf : ptr->leaves_alive) {
-		const coordinate& x = leaf->coord;
-		double temp = uct(x, state, ptr);
+		double temp = uct(state, ptr, leaf);
 
 		if (temp > cur_max) {
 			cur_max = temp;
-			ret = x;
+			ret = leaf;
 		}
 	}
 
@@ -56,7 +56,7 @@ maybe_nodeptr uct_tree_policy(board *state, mcts_node *ptr) {
 			return ptr;
 		}
 
-		maybe_coord next = max_utc(state, ptr);
+		maybe_nodeptr next = max_utc(state, ptr);
 
 		if (!next) {
 			/*
@@ -66,8 +66,9 @@ maybe_nodeptr uct_tree_policy(board *state, mcts_node *ptr) {
 			return ptr;
 		} else {
 			//ptr->new_node(state, *next, state->current_player);
-			state->make_move(*next);
-			ptr = ptr->leaves[coord_hash_v2(*next)];
+			state->make_move((*next)->coord);
+			//ptr = ptr->leaves[coord_hash_v2(*next)];
+			ptr = *next;
 		}
 	}
 

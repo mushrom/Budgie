@@ -63,6 +63,7 @@ coordinate mcts::do_search(board *state,
 
 	// XXX: avoid reinitializing root node for incremental searches
 	if (root->traversals == 0) {
+		root->try_expanding(state);
 		init_node_root(root.get(), state);
 	}
 
@@ -73,6 +74,7 @@ coordinate mcts::do_search(board *state,
 			while (root->traversals < playouts) {
 				board scratch(state);
 				explore(&scratch);
+				//fprintf(stderr, "%u\n", (unsigned)root->traversals);
 			}
 		}
 	);
@@ -88,6 +90,16 @@ coordinate mcts::do_search(board *state,
 }
 
 double mcts::win_rate(coordinate& coord) {
+	// XXX: O(N), should just return mcts_node* or winrate from best_move()
+	for (mcts_node *leaf : root->leaves_alive) {
+		if (leaf->coord == coord) {
+			return leaf->win_rate();
+		}
+	}
+
+	return 0;
+
+	/*
 	unsigned hash = coord_hash_v2(coord);
 
 	if (hash < 660 && root->leaves[hash]) {
@@ -95,18 +107,6 @@ double mcts::win_rate(coordinate& coord) {
 
 	} else {
 		return 0;
-	}
-
-	//return root->nodestats[hash].win_rate();
-
-	/*
-	auto it = root->nodestats.find(coord);
-
-	if (it != root->nodestats.end()) {
-		return it->second.win_rate();
-
-	} else {
-		return 0.5;
 	}
 	*/
 }
@@ -145,6 +145,14 @@ void mcts::playout(board *state, mcts_node *ptr) {
 	for (;;) {
 		//coordinate next;
 		maybe_coord next;
+
+		/*
+		if (state->moves > 4*state->dimension*state->dimension) {
+			ptr->update(state);
+			return;
+		}
+		*/
+
 
 		for (const auto& strat : playout_strats) {
 			if (next = strat(state)) {
@@ -595,12 +603,18 @@ void init_node_root(mcts_node *ptr, board *state) {
 void init_node_heuristics(mcts_node *ptr, board *state) {
 	point::color grid[9];
 
+	// strongly discourage passing, otherwise tree search spends
+	// a lot (a /lot/) of time exploring passes for no good reason
+	(*ptr->rave)[0].wins       = 10;
+	(*ptr->rave)[0].traversals = 100;
+
 	for (mcts_node *leaf : ptr->leaves_alive) {
 		if (leaf->coord == coordinate {0, 0}) {
 			leaf->prior_wins = 10;
 			leaf->prior_traversals = 100;
 			continue;
 		}
+		unsigned hash = coord_hash_v2(leaf->coord);
 
 		if (getBool(PARAM_BOOL_MCTS_INIT_PATTERNS)) {
 			unsigned pat = get_pattern_db().search(state, leaf->coord);
@@ -618,7 +632,7 @@ void init_node_heuristics(mcts_node *ptr, board *state) {
 		} else {
 			// TODO: M as parameter
 			leaf->prior_wins = M/2;
-			leaf->traversals = M;
+			leaf->prior_traversals = M;
 		}
 	}
 }
@@ -667,7 +681,9 @@ void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash) {
 	}
 }
 
+// TODO: not needed anymore
 void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
+#if 0
 	unsigned hash = coord_hash_v2(coord);
 
 	if (leaves[hash] == nullptr) {
@@ -708,23 +724,12 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 		*/
 
 
-#if 0
-		if (parent && parent->parent) {
-			for (int i = 0; i < 660; i++) {
-				leaves[hash]->rave[i] = parent->parent->rave[i];
-			}
-
-			/*
-			for (const auto& x : parent->rave) {
-				leaves[coord]->rave[x.first] = x.second;
-			}
-			*/
-		}
-#endif
 	}
+#endif
 }
 
 bool mcts_node::fully_visited(board *state) {
+	//fprintf(stderr, "%p: %u\n", this, (unsigned)traversals);
 	return traversals > getUInt(PARAM_INT_NODE_EXPANSION_THRESHOLD);
 }
 
@@ -747,6 +752,12 @@ bool mcts_node::try_expanding(board *state) {
 			continue;
 		}
 
+		/*
+		if (get_pattern_db().search(state, coord) == 0) {
+			continue;
+		}
+		*/
+
 		unsigned index = coord_hash_v2(coord);
 		mcts_node *node = new mcts_node(this, state->current_player);
 
@@ -754,10 +765,11 @@ bool mcts_node::try_expanding(board *state) {
 		node->coord = coord;
 
 		// should be no other threads writing here
-		leaves[index] = node;
+		//leaves[index] = node;
 		leaves_alive.push_front(node);
 	}
 
+	//this->rave = std::make_unique<ravemap>();
 	init_node(this, state);
 
 	// indicate that other threads can now traverse this node
@@ -766,6 +778,10 @@ bool mcts_node::try_expanding(board *state) {
 }
 
 bool mcts::ownership_settled(board *state) {
+	return false;
+
+	// TODO:
+#if 0
 	if (!root || !root->criticality) {
 		// can't determine if there's no critmap
 		return false;
@@ -825,6 +841,7 @@ bool mcts::ownership_settled(board *state) {
 	//
 	// TODO: tweakable
 	return avgown > 0.81 && allfavor;
+#endif
 }
 
 // TODO: could return hash index here, 0 is the hash for an invalid move
@@ -872,8 +889,10 @@ void mcts_node::update_stats(board *state, point::color winner) {
 			}
 
 			bool won = foo->color == winner;
-			ptr->rave[hash].wins += foo->color == winner;
-			ptr->rave[hash].traversals++;
+			if (ptr->rave) {
+				(*ptr->rave)[hash].wins += foo->color == winner;
+				(*ptr->rave)[hash].traversals++;
+			}
 		}
 	}
 }
@@ -882,6 +901,14 @@ void mcts_node::update(board *state) {
 	//point::color winner = state->determine_winner();
 	float score = state->calculate_final_score();
 	point::color winner = (score > 0)? point::color::Black : point::color::White;
+
+	/*
+	if (state->moves >= 4*state->dimension*state->dimension) {
+		winner = point::color::Invalid;
+		//return;
+	}
+	*/
+
 
 	update_stats(state, winner);
 
@@ -896,8 +923,8 @@ void mcts_node::update(board *state) {
 		}
 		*/
 
-		ptr->expected_score[hash] += score;
-		ptr->score_counts[hash] += 1;
+		//ptr->expected_score[hash] += score;
+		//ptr->score_counts[hash] += 1;
 		ptr->wins += won;
 		ptr->traversals++;
 	}
@@ -907,6 +934,7 @@ float mcts_node::win_rate(void) {
 	return float(wins + prior_wins) / (traversals + prior_traversals);
 }
 
+// TODO: where is this being used?
 unsigned mcts_node::terminal_nodes(void) {
 	if (leaves_alive.size() == 0) {
 		return 1;
@@ -972,7 +1000,9 @@ void mcts_node::dump_node_statistics(const coordinate& coord,
 #endif
 }
 
+// TODO: rewrite for no leaves
 void mcts_node::dump_best_move_statistics(board *state) {
+#if 0
 	coordinate coord = best_move();
 
 	if (coord == coordinate(0, 0)) {
@@ -987,6 +1017,7 @@ void mcts_node::dump_best_move_statistics(board *state) {
 		std::cerr << ", ";
 		leaves[hash]->dump_best_move_statistics(state);
 	}
+#endif
 }
 
 // namespace mcts_thing
