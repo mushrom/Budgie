@@ -5,7 +5,7 @@ namespace mcts_thing::policies {
 
 maybe_nodeptr mcts_tree_policy(board *state, mcts_node *ptr) {
 	while (ptr) {
-		if (!ptr->fully_visited(state) || !ptr->try_expanding(state)) {
+		if (!ptr->can_traverse(state)) {
 			return ptr;
 		}
 
@@ -26,9 +26,7 @@ maybe_nodeptr mcts_tree_policy(board *state, mcts_node *ptr) {
 			return ptr;
 
 		} else {
-			//ptr->new_node(state, next, state->current_player);
 			state->make_move(*next);
-			//ptr = ptr->leaves[coord_hash_v2(*next)];
 			ptr = nextleaf;
 		}
 	}

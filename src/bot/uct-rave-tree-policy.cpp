@@ -85,7 +85,7 @@ static inline maybe_nodeptr max_utc(board *state, mcts_node *ptr) {
 
 maybe_nodeptr uct_rave_tree_policy(board *state, mcts_node *ptr) {
 	while (ptr) {
-		if (!ptr->fully_visited(state) || !ptr->try_expanding(state)) {
+		if (!ptr->can_traverse(state)) {
 			return ptr;
 		}
 

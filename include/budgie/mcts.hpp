@@ -124,7 +124,7 @@ class mcts_node {
 			// default priors just in case they aren't initialized elsewhere
 			prior_wins = 25;
 			prior_traversals = 50;
-			rave = std::make_unique<ravemap>();
+			//rave = std::make_unique<ravemap>();
 
 			/*
 			for (int i = 0; i < 660; i++) {
@@ -157,6 +157,11 @@ class mcts_node {
 
 		coordinate best_move(void);
 		float win_rate(void);
+
+		bool can_traverse(board *state);
+
+		bool half_visited(board *state);
+		bool try_half_init(board *state);
 		bool fully_visited(board *state);
 		bool try_expanding(board *state);
 
@@ -171,6 +176,9 @@ class mcts_node {
 
 		unsigned prior_wins;
 		unsigned prior_traversals;
+
+		std::atomic<bool> half_lock = false;
+		std::atomic<bool> half_finished = false;
 
 		// used to determine which thread expands this node when fully
 		// traversed, first to CAS to true initializes the new leaves

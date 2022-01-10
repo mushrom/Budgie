@@ -603,11 +603,6 @@ void init_node_root(mcts_node *ptr, board *state) {
 void init_node_heuristics(mcts_node *ptr, board *state) {
 	point::color grid[9];
 
-	// strongly discourage passing, otherwise tree search spends
-	// a lot (a /lot/) of time exploring passes for no good reason
-	(*ptr->rave)[0].wins       = 10;
-	(*ptr->rave)[0].traversals = 100;
-
 	for (mcts_node *leaf : ptr->leaves_alive) {
 		if (leaf->coord == coordinate {0, 0}) {
 			leaf->prior_wins = 10;
@@ -728,9 +723,47 @@ void mcts_node::new_node(board *state, coordinate& coord, point::color color) {
 #endif
 }
 
+bool mcts_node::half_visited(board *state) {
+	//fprintf(stderr, "%p: %u\n", this, (unsigned)traversals);
+	return traversals > getUInt(PARAM_INT_NODE_EXPANSION_THRESHOLD)/2;
+}
+
 bool mcts_node::fully_visited(board *state) {
 	//fprintf(stderr, "%p: %u\n", this, (unsigned)traversals);
 	return traversals > getUInt(PARAM_INT_NODE_EXPANSION_THRESHOLD);
+}
+
+bool mcts_node::can_traverse(board *state) {
+	return half_visited(state)
+	    && try_half_init(state)
+	    && fully_visited(state)
+	    && try_expanding(state);
+}
+
+bool mcts_node::try_half_init(board *state) {
+	if (half_finished) {
+		// node is currently being expanded,
+		// return to continue doing playouts from this node
+		// (need to avoid subnodes being lopsidedly explored before
+		//  the node is finished being expanded)
+		return true;
+	}
+
+	bool temp = false;
+	if (!half_lock.compare_exchange_strong(temp, true)) {
+		return false;
+	}
+
+	this->rave = std::make_unique<ravemap>();
+
+	// strongly discourage passing, otherwise tree search spends
+	// a lot (a /lot/) of time exploring passes for no good reason
+	(*this->rave)[0].wins       = 10;
+	(*this->rave)[0].traversals = 100;
+
+	// indicate that other threads can now traverse this node
+	half_finished = true;
+	return true;
 }
 
 bool mcts_node::try_expanding(board *state) {
@@ -769,7 +802,6 @@ bool mcts_node::try_expanding(board *state) {
 		leaves_alive.push_front(node);
 	}
 
-	//this->rave = std::make_unique<ravemap>();
 	init_node(this, state);
 
 	// indicate that other threads can now traverse this node

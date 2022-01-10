@@ -52,22 +52,17 @@ static inline maybe_nodeptr max_utc(board *state, mcts_node *ptr) {
 
 maybe_nodeptr uct_tree_policy(board *state, mcts_node *ptr) {
 	while (ptr) {
-		if (!ptr->fully_visited(state) || !ptr->try_expanding(state)) {
+		if (!ptr->can_traverse(state)) {
 			return ptr;
 		}
 
 		maybe_nodeptr next = max_utc(state, ptr);
 
 		if (!next) {
-			/*
-			ptr->update(state);
-			return {};
-			*/
 			return ptr;
+
 		} else {
-			//ptr->new_node(state, *next, state->current_player);
 			state->make_move((*next)->coord);
-			//ptr = ptr->leaves[coord_hash_v2(*next)];
 			ptr = *next;
 		}
 	}
