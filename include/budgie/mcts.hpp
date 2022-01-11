@@ -167,8 +167,8 @@ class mcts_node {
 
 		unsigned terminal_nodes(void);
 		unsigned nodes(void);
-		void dump_node_statistics(const coordinate& coord, board *state,
-		                          unsigned depth=0);
+
+		void dump_node_statistics(unsigned indent=0);
 		void dump_best_move_statistics(board *state);
 
 		std::atomic<unsigned> traversals;
@@ -210,9 +210,6 @@ class mcts_node {
 void init_node(mcts_node *ptr, board *state);
 void init_node_root(mcts_node *ptr, board *state);
 void init_node_heuristics(mcts_node *ptr, board *state);
-void init_joseki_coord(mcts_node *ptr, board *state,
-					   const coordinate& coord,
-					   point::color color);
 void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash);
 
 // TODO: Maybe make this a part of the board class somewhere, since it's game-specific

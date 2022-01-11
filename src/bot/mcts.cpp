@@ -590,7 +590,8 @@ std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b) {
 
 void init_node(mcts_node *ptr, board *state) {
 	init_node_heuristics(ptr, state);
-	init_joseki_coord(ptr, state, ptr->coord, ptr->color);
+	//init_joseki_coord(ptr, state, ptr->coord, ptr->color);
+	init_joseki_hash(ptr, state, state->hash);
 }
 
 void init_node_root(mcts_node *ptr, board *state) {
@@ -624,6 +625,12 @@ void init_node_heuristics(mcts_node *ptr, board *state) {
 			leaf->prior_wins       = weight;
 			leaf->prior_traversals = M;
 
+		// game-winning move
+		} else if (getBool(PARAM_BOOL_MCTS_INIT_100PCT)) {
+			leaf->prior_wins = M/2;
+			leaf->prior_traversals = M/2;
+
+		// even game
 		} else {
 			// TODO: M as parameter
 			leaf->prior_wins = M/2;
@@ -637,41 +644,19 @@ static unsigned coord_to_index(board *state, const coordinate& coord) {
 	return state->dimension*(coord.second - 1) + (coord.first - 1);
 }
 
-void init_joseki_coord(mcts_node *ptr,
-                       board *state,
-                       const coordinate& coord,
-                       point::color color)
-{
-	uint64_t boardhash = state->hash;
-	const auto& josekis = state->josekis->search(state->dimension, boardhash);
-
-	//printf("have hash: %016lx\n", boardhash);
-
-	// can't have a hash if the current hash isn't in the thing
-	if (josekis.size() > 0) {
-		uint8_t tempgrid[384];
-		memcpy(tempgrid, &state->grid, sizeof(state->grid));
-
-		tempgrid[coord_to_index(state, ptr->coord)] = color;
-		boardhash = state->regen_hash(tempgrid);
-		init_joseki_hash(ptr, state, boardhash);
-	}
-}
-
 void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash) {
 	const auto& josekis = state->josekis->search(state->dimension, boardhash);
 
 	//printf("have hash: %016lx\n", boardhash);
 
 	if (josekis.size() > 0) {
-		//fprintf(stderr, "lookup success! (%d, %d)\n", ptr->coord.first, ptr->coord.second);
-		for (const auto& c : josekis) {
-			unsigned index = coord_hash_v2(c);
-
-			// just for testing
+		for (mcts_node *leaf : ptr->leaves_alive) {
+			//fprintf(stderr, "lookup success! (%d, %d)\n", leaf->coord.first, leaf->coord.second);
 			// TODO: tweak the knobs, expose this as configuration
-			//ptr->nodestats[index].traversals = 1000;
-			//ptr->nodestats[index].wins       = 1000;
+			if (josekis.find(leaf->coord) != josekis.end()) {
+				leaf->prior_wins       = 1000;
+				leaf->prior_traversals = 1000;
+			}
 		}
 	}
 }
@@ -996,11 +981,30 @@ unsigned mcts_node::nodes(void){
 // TODO: maybe move this to a utility function
 std::string coord_string(const coordinate& coord);
 
+void mcts_node::dump_node_statistics(unsigned indent) {
+	if (traversals == 0) return;
+	for (unsigned i = 0; i < indent*4; i++) {
+		putchar(' ');
+	}
 
-void mcts_node::dump_node_statistics(const coordinate& coord,
-                                     board *state,
-                                     unsigned depth)
-{
+	std::cout
+		<< ((color == point::color::Black)? "Black: " : "White: ")
+		<< coord.first << "," << coord.second
+		<< ": wins: " << wins
+		<< ", traversals: " << traversals
+		<< ", winrate: " << win_rate();
+
+	if (parent && parent->rave) {
+		unsigned hash = coord_hash_v2(coord);
+		std::cout << ", rave: " << (*parent->rave)[hash].win_rate();
+	}
+
+	std::cout << std::endl;
+
+	for (mcts_node *leaf : leaves_alive) {
+		leaf->dump_node_statistics(indent + 1);
+	}
+
 	// TODO: maybe fix this for atomics
 #if 0
 	unsigned hash = coord_hash_v2(coord);
