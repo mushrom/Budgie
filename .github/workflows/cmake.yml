@@ -18,7 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repo and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Install libzmq
       run: sudo apt install libzmq3-dev
