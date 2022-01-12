@@ -76,7 +76,7 @@ class crit_stats {
 		std::atomic<unsigned> black_owns = 0;
 		std::atomic<unsigned> white_owns = 0;
 
-		double win_rate(void) const {
+		double covariance(void) const {
 			// not enough games using this point to say one way or another
 			if (traversals < M) return 0;
 
@@ -86,11 +86,15 @@ class crit_stats {
 			double uwx  = white_owns / (1. * traversals);
 			double uw   = white_wins / (1. * traversals);
 
-			double ret = uwin - (ubx*ub + uwx*uw);
+			return uwin - (ubx*ub + uwx*uw);
+		}
 
+		double win_rate(void) const {
+			double ret = covariance();
 			// when ret < 0, the move is anticorrelated with winning
 			return (ret > 0)? ret : 0;
 		};
+
 
 		// get a score of how "settled" this point is
 		float settlement(void) const {

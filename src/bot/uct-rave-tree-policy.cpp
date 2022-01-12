@@ -6,25 +6,27 @@
 
 namespace mcts_thing::policies {
 
-// TODO: utility header
-#define MAX(A, B) (((A)>(B))? (A) : (B))
-#define MIN(A, B) (((A)<(B))? (A) : (B))
-
 static inline double uct(board *state, mcts_node *parent, mcts_node *child) {
 	unsigned hash = coord_hash_v2(child->coord);
 
-	/*
-	if (get_pattern_db().search(state, child->coord) == 0) {
-		return 0;
-	}
-	*/
-
-	double rave_est = (*parent->rave)[hash].win_rate();
 	double mcts_est = child->win_rate();
 	double crit_est = 0;
+	double rave_est = 0;
 
 	if (getBool(PARAM_BOOL_USE_CRITICALITY)) {
-		double crit_est = (*parent->criticality)[hash].win_rate();
+		auto& cstats = (*parent->criticality)[hash];
+		auto& rstats = (*parent->rave)[hash];
+
+		if (cstats.traversals > 200) {
+			// pachi formula for combining rave and criticality
+			double w = cstats.covariance();
+			double trav = fabs(w) * rstats.traversals;
+			double wins = std::max(0.0, w) * rstats.traversals;
+			rave_est = (double)(rstats.wins + w) / (double)(rstats.traversals + w);
+
+		} else {
+			rave_est = (double)(rstats.wins) / (double)(rstats.traversals);
+		}
 	}
 
 	double uct =

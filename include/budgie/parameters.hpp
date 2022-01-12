@@ -86,7 +86,7 @@ inline bool boolParameters[] = {
 	true,  // use winrate
 	true,  // use RAVE
 	true,  // use UCT
-	false, // use criticality
+	true,  // use criticality
 	false, // use expected score
 	true,  // use patterns
 	false, // very verbose
