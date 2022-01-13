@@ -24,6 +24,7 @@ enum {
 	PARAM_FLOAT_NONE = 0,
 	PARAM_FLOAT_UCT_WEIGHT,
 	PARAM_FLOAT_SCORE_WEIGHT,
+	PARAM_FLOAT_RESIGN_THRESHOLD,
 };
 
 inline const char *intParamNames[] = {
@@ -57,6 +58,7 @@ inline const char *floatParamNames[] = {
 	"none",
 	"uct_weight",
 	"score_weight",
+	"resign_threshold",
 	nullptr
 };
 
@@ -99,6 +101,7 @@ inline float floatParameters[] = {
 	0.f,   // none
 	0.10f, // UCT weight
 	0.05f, // expected score weight
+	0.15f, // resign threshold
 };
 
 inline void setInt(unsigned which, int value)   { intParameters[which] = value; }

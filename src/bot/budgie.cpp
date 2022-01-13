@@ -114,7 +114,7 @@ budgie::move budgie::genmove(void) {
 	coordinate coord = tree->do_search(&game, pool, playouts);
 	float winrate = tree->win_rate(coord);
 
-	if (winrate < 0.15) {
+	if (winrate < getFloat(PARAM_FLOAT_RESIGN_THRESHOLD)) {
 		// TODO: make resign threshold configurable
 		return move(move::types::Resign);
 
