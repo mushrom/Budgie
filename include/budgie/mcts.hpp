@@ -265,9 +265,9 @@ class mcts {
 		// efficient delta updates in distributed mode
 		uint32_t updates = 0;
 
-		std::vector<uint32_t> serialize(board *state, uint32_t since);
-		void serialize(anserial::serializer& ser, uint32_t parent);
-		void deserialize(std::vector<uint32_t>& serialized, board *state);
+		//std::vector<uint32_t> serialize(board *state, uint32_t since);
+		//void serialize(anserial::serializer& ser, uint32_t parent);
+		//void deserialize(std::vector<uint32_t>& serialized, board *state);
 		bool merge(mcts *other);
 		bool sync(mcts *other);
 
@@ -281,12 +281,14 @@ class mcts {
 		std::optional<tree_probe_func>    finished_probe;
 
 	private:
+		/*
 		uint32_t serialize_node(anserial::serializer& ser,
 		                        uint32_t parent,
 		                        const mcts_node* ptr,
 		                        uint32_t since);
 
 		mcts_node *deserialize_node(anserial::s_node *node, mcts_node *ptr);
+		*/
 		mcts_node *merge_node(mcts_node *own, mcts_node *other);
 		mcts_node *sync_node(mcts_node *own, mcts_node *other);
 };

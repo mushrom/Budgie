@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <map>
 #include <set>
+#include <list>
 #include <memory>
 #include <bitset>
 #include <unordered_set>
@@ -172,9 +173,9 @@ class board {
 		void reset(unsigned boardsize, float n_komi);
 		void loadJosekis(std::string list);
 
-		std::vector<uint32_t> serialize(void);
-		void serialize(anserial::serializer& ser, uint32_t parent);
-		void deserialize(anserial::s_node *node);
+		//std::vector<uint32_t> serialize(void);
+		//void serialize(anserial::serializer& ser, uint32_t parent);
+		//void deserialize(anserial::s_node *node);
 
 		move::moveptr move_list;
 		uint8_t grid[384];

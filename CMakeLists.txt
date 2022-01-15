@@ -21,10 +21,12 @@ pkg_check_modules(capnp  REQUIRED IMPORTED_TARGET capnp)
 pkg_check_modules(SDL2     IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_ttf IMPORTED_TARGET SDL2_ttf)
 
-set(LIBS PkgConfig::libzmq)
+set(LIBS PkgConfig::libzmq PkgConfig::capnp)
 
 set(SCHEMAS
 	schemas/Node.capnp
+	schemas/UpdateTree.capnp
+	schemas/Board.capnp
 )
 
 set(BOT_LOGIC_SRC
@@ -43,6 +45,7 @@ set(BOT_LOGIC_SRC
 	src/bot/game.cpp
 	src/bot/mcts-tree-policy.cpp
 	src/bot/mcts.cpp
+	src/bot/serialize.cpp
 	src/bot/uct-tree-policy.cpp
 	src/bot/uct-rave-tree-policy.cpp
 	src/util/sgf.cpp

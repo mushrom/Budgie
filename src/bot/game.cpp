@@ -2,7 +2,6 @@
 #include <budgie/josekiDB.hpp>
 #include <budgie/parameters.hpp>
 
-#include <anserial/anserial.hpp>
 #include <stdio.h>
 #include <map>
 #include <iostream>
@@ -1116,69 +1115,6 @@ uint64_t board::group_pseudocapture(const coordinate& coord, group *arr[4]) {
 
 	tempgrid[coord_to_index(coord)] = current_player;
 	return regen_hash(tempgrid);
-}
-
-void board::serialize(anserial::serializer& ser, uint32_t parent) {
-	uint32_t datas = ser.add_entities(parent,
-		{"board",
-			{"dimension", dimension},
-			// TODO: need to add signed int, double types to anserial
-			{"komi", komi},
-			{"current_player", current_player}});
-
-	uint32_t move_entry = ser.add_entities(datas, {"moves"});
-	uint32_t move_datas = ser.add_entities(move_entry, {});
-
-	for (auto& ptr = move_list; ptr != nullptr; ptr = ptr->previous) {
-		ser.add_entities(move_datas,
-			{"move",
-				{"coordinate", {ptr->coord.first, ptr->coord.second}},
-				{"player", ptr->color},
-				{"hash", {(uint32_t)(ptr->hash >> 32),
-				          (uint32_t)(ptr->hash & 0xffffffff)}},
-				});
-	}
-}
-
-#include <cassert>
-
-void board::deserialize(anserial::s_node *node) {
-	anserial::s_node* move_datas;
-	uint32_t n_dimension, n_komi;
-	point::color n_current;
-
-	if (!anserial::destructure(node,
-		{"board",
-			{"dimension", &n_dimension},
-			{"komi", &n_komi},
-			{"current_player", (uint32_t*)&n_current},
-			{"moves", &move_datas}}))
-	{
-		throw std::logic_error("board::deserialize(): invalid board tree structure");
-	}
-
-	reset(n_dimension, n_komi);
-	current_player = n_current;
-
-	auto& nodes = move_datas->entities();
-	for (auto it = nodes.rbegin(); it != nodes.rend(); it++) {
-		anserial::s_node* move_node = *it;
-		coordinate coord;
-		point::color color;
-		uint32_t temphash[2];
-
-		if (!anserial::destructure(move_node,
-			{"move",
-				{"coordinate", {&coord.first, &coord.second}},
-				{"player", (uint32_t*)&color},
-				{"hash", {temphash, temphash + 1}}}))
-		{
-			throw std::logic_error("board::deserialize(): invalid move");
-		}
-
-		current_player = color;
-		make_move(coord);
-	}
 }
 
 // namespace mcts_thing
