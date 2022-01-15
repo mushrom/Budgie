@@ -9,7 +9,6 @@
 #include <set>
 #include <memory>
 #include <bitset>
-#include <anserial/anserial.hpp>
 #include <unordered_set>
 
 #include <random>

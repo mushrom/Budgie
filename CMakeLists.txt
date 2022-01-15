@@ -15,22 +15,19 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libzmq REQUIRED IMPORTED_TARGET libzmq)
+pkg_check_modules(capnp  REQUIRED IMPORTED_TARGET capnp)
+
 # optional module for debug viewer
 pkg_check_modules(SDL2     IMPORTED_TARGET sdl2)
 pkg_check_modules(SDL2_ttf IMPORTED_TARGET SDL2_ttf)
 
 set(LIBS PkgConfig::libzmq)
 
-# TODO: either replace anserial, or add cmakelists to anserial
-include_directories("libs/anserial/include")
-set(ANSERIAL_SRC
-	libs/anserial/src/parser.cpp
-	libs/anserial/src/anserial.cpp
-	libs/anserial/src/s_tree.cpp
+set(SCHEMAS
+	schemas/Node.capnp
 )
 
 set(BOT_LOGIC_SRC
-	${ANSERIAL_SRC}
 	src/bot/args_parser.cpp
 	src/bot/distributed_client.cpp
 	src/bot/capture_weighted_playout.cpp
@@ -50,6 +47,23 @@ set(BOT_LOGIC_SRC
 	src/bot/uct-rave-tree-policy.cpp
 	src/util/sgf.cpp
 )
+
+include_directories(${PROJECT_BINARY_DIR})
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/schemas)
+
+foreach(_schema ${SCHEMAS})
+	set(_schema_out ${PROJECT_BINARY_DIR}/${_schema})
+	set(_schema_in  ${PROJECT_SOURCE_DIR}/${_schema})
+
+	list(APPEND BOT_LOGIC_SRC ${_schema_out}.c++)
+	add_custom_command(
+		OUTPUT ${_schema_out}.c++ ${_schema_out}.h
+		COMMAND capnp compile -oc++:${PROJECT_BINARY_DIR}/schemas
+		                      --src-prefix=${PROJECT_SOURCE_DIR}/schemas
+		                      ${_schema_in}
+		DEPENDS ${_schema_in}
+	)
+endforeach()
 
 set(BUDGIE_MAIN      src/bot-main.cpp)
 set(SDL_MAIN         src/sdl-main.cpp)

@@ -4,7 +4,6 @@
 #include <budgie/pattern_db.hpp>
 #include <budgie/ts_forward_list.hpp>
 #include <budgie/thread_pool.hpp>
-#include <anserial/anserial.hpp>
 #include <stdint.h>
 #include <list>
 #include <utility>
