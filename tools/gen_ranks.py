@@ -15,8 +15,12 @@ def winRatio(columns):
 
         if datas[3][0] == "B":
             wins[datas[1]] += 1
-        else:
+        elif datas[3][0] == "W":
             wins[datas[2]] += 1
+        # draw
+        else:
+            wins[datas[1]] += 0.5
+            wins[datas[2]] += 0.5
 
         games[datas[1]] += 1
         games[datas[2]] += 1
@@ -41,12 +45,15 @@ def calcElo(columns):
     for datas in columns:
         for i in range(1, 3):
             if datas[i] not in elos:
-                # default elo of 1000
-                elos.update({datas[i] : 1000})
+                # default elo of 1800
+                elos.update({datas[i] : 1800})
 
         winner = datas[3][0]
         wonBlack = (winner == "B")+0
         wonWhite = (winner == "W")+0
+
+        if winner == "0":
+            wonBlack = wonWhite = 0.5
 
         ea = elos[datas[1]]
         eb = elos[datas[2]]
@@ -73,16 +80,16 @@ if __name__ == "__main__":
         datafile = open(csv, "r")
         columns += [line.split(",") for line in datafile.readlines()]
 
-    print(" "*30 + "===== win/lose ratio:")
+    print(" "*30 + "===== win percentage:")
     wins, games = winRatio(columns)
-    datas = sorted([(k, v, games[k]-v, v/games[k]) for k,v in wins.items()], key=itemgetter(3), reverse=True)
+    datas = sorted([(k, v, games[k]-v, 100*v/games[k]) for k,v in wins.items()], key=itemgetter(3), reverse=True)
 
     for stuff in datas:
-        print("%40s:\t%4d wins\t%4d loses\t%g" % stuff)
+        print("%40s:\t%.1f wins\t%.1f loses\t%.1f%%" % stuff)
 
     print()
     print(" "*30 + "===== Elo ratings:")
     stuff = calcElo(columns).items()
     elos = sorted([(name, elo) for name, elo in stuff], key=itemgetter(1), reverse=True)
     for rank in elos:
-        print("%40s:\t%g elo" % rank)
+        print("%40s:\t%g" % rank)
