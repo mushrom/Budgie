@@ -7,7 +7,7 @@
 #include <fstream>
 #include <stdint.h>
 
-namespace mcts_thing {
+namespace bdg {
 
 class pattern {
 	public:
@@ -46,5 +46,5 @@ void read_grid(board *state, const coordinate& coord, point::color grid[9]);
 void load_patterns(const std::string& db);
 pattern_db& get_pattern_db();
 
-// namespace mcts_thing
+// namespace bdg
 }

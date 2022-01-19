@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace mcts_thing {
+namespace bdg {
 
 static inline
 std::vector<std::string> split_string(const std::string& str,
@@ -28,5 +28,5 @@ std::vector<std::string> split_string(const std::string& str,
 	return ret;
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

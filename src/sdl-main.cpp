@@ -9,7 +9,7 @@
 #include <iostream>
 #include <time.h>
 
-namespace mcts_thing {
+namespace bdg {
 
 class gui_state {
 	public:
@@ -642,10 +642,10 @@ int gui_state::run(void) {
 	return 0;
 }
 
-// namespace mcts_thing
+// namespace bdg
 }
 
-using namespace mcts_thing;
+using namespace bdg;
 
 int main(int argc, char *argv[]) {
 	try {

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <iostream>
 
-namespace mcts_thing {
+namespace bdg {
 
 distributed_client::distributed_client(args_parser::option_map& args) {
 	bot = std::unique_ptr<budgie>(new budgie(args));
@@ -95,5 +95,5 @@ void distributed_client::run() {
 	}
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

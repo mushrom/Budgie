@@ -1,7 +1,7 @@
 #include <budgie/pattern_db.hpp>
 #include <stdlib.h>
 
-namespace mcts_thing {
+namespace bdg {
 
 static pattern_db pattern_db_singleton;
 
@@ -286,5 +286,5 @@ void read_grid(board *state, const coordinate& coord, point::color grid[9]) {
 	}
 }
 
-// mcts_thing
+// bdg
 }

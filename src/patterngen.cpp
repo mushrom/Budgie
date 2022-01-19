@@ -11,7 +11,7 @@
 #include <budgie/budgie.hpp>
 #include <budgie/parameters.hpp>
 
-using namespace mcts_thing;
+using namespace bdg;
 
 static args_parser::default_map patgen_options = {
 	// general game settings

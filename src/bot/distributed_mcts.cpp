@@ -3,7 +3,7 @@
 #include <budgie/distributed_mcts.hpp>
 #include <budgie/serialize.hpp>
 
-namespace mcts_thing {
+namespace bdg {
 
 distributed_mcts::distributed_mcts(tree_policy tp, std::list<playout_strategy> strats)
 	: mcts(tp, strats)
@@ -64,5 +64,5 @@ void distributed_mcts::explore(board *state) {
 		<< "sent " << array.size() << " bytes" << std::endl;
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

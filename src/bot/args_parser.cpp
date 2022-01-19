@@ -1,6 +1,6 @@
 #include <budgie/args_parser.hpp>
 
-namespace mcts_thing {
+namespace bdg {
 
 void args_parser::parse_args(int argc, char *argv[]){
 	for (int i = 1; i < argc; i++) {
@@ -20,5 +20,5 @@ void args_parser::parse_args(int argc, char *argv[]){
 	}
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

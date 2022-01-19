@@ -4,7 +4,7 @@
 #include <budgie/game.hpp>
 #include <budgie/mcts.hpp>
 
-namespace mcts_thing {
+namespace bdg {
 
 class distributed_mcts : public mcts {
 	public:
@@ -20,5 +20,5 @@ class distributed_mcts : public mcts {
 		std::unique_ptr<zmq::socket_t> socket;
 };
 
-// namespace mcts_thing
+// namespace bdg
 }

@@ -11,7 +11,7 @@
 #include <budgie/budgie.hpp>
 #include <budgie/parameters.hpp>
 
-using namespace mcts_thing;
+using namespace bdg;
 
 /*
 args_parser::default_map default_options = {

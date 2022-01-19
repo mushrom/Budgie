@@ -6,7 +6,7 @@
 #include <map>
 #include <memory>
 
-namespace mcts_thing {
+namespace bdg {
 
 class gtp_client {
 	public:

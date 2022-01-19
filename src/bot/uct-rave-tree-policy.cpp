@@ -4,7 +4,7 @@
 #include <budgie/pattern_db.hpp>
 #include <cassert>
 
-namespace mcts_thing::policies {
+namespace bdg::policies {
 
 static inline double uct(board *state, mcts_node *parent, mcts_node *child) {
 	unsigned hash = coord_hash_v2(child->coord);
@@ -107,5 +107,5 @@ maybe_nodeptr uct_rave_tree_policy(board *state, mcts_node *ptr) {
 	return {};
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

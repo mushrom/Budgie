@@ -11,7 +11,7 @@
 // for memcpy
 #include <string.h>
 
-namespace mcts_thing {
+namespace bdg {
 
 // TODO: error on board sizes larger than \sqrt(384)
 board::board(unsigned size) {
@@ -1117,5 +1117,5 @@ uint64_t board::group_pseudocapture(const coordinate& coord, group *arr[4]) {
 	return regen_hash(tempgrid);
 }
 
-// namespace mcts_thing
+// namespace bdg
 };

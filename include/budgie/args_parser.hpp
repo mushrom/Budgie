@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <list>
 
-namespace mcts_thing {
+namespace bdg {
 
 class args_parser {
 	public:
@@ -34,5 +34,5 @@ class args_parser {
 		std::vector<std::string> arguments;
 };
 
-// namespace mcts_thing
+// namespace bdg
 }

@@ -17,7 +17,7 @@
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
 
-namespace mcts_thing {
+namespace bdg {
 
 coordinate random_coord(board *b) {
 	//std::uniform_int_distribution<int> distribution(1, b->dimension);
@@ -840,5 +840,5 @@ void mcts_node::dump_best_move_statistics(board *state) {
 #endif
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

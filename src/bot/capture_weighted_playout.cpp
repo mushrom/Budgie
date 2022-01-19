@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-namespace mcts_thing::playouts {
+namespace bdg::playouts {
 
 maybe_coord capture_weighted_playout(board *state) {
 	point::color other = other_player(state->current_player);
@@ -56,5 +56,5 @@ maybe_coord capture_weighted_playout(board *state) {
 	return {};
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

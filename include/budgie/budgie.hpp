@@ -5,7 +5,7 @@
 #include <budgie/thread_pool.hpp>
 
 // TODO: change namespace to 'budgie'
-namespace mcts_thing {
+namespace bdg {
 
 static args_parser::default_map budgie_options = {
 	// general game settings

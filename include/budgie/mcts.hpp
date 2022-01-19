@@ -29,7 +29,7 @@ struct atomptr : public std::atomic<T> {
 	}
 };
 
-namespace mcts_thing {
+namespace bdg {
 
 struct coord_hash {
 	std::size_t operator () (const coordinate& coord) const {
@@ -295,5 +295,5 @@ class mcts {
 
 std::shared_ptr<mcts> mcts_diff(mcts *a, mcts *b);
 
-// namespace mcts_thing
+// namespace bdg
 }

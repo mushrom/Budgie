@@ -1,7 +1,7 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 
-namespace mcts_thing::playouts {
+namespace bdg::playouts {
 
 maybe_coord local_weighted_playout(board *state) {
 	coordinate things[9];
@@ -64,5 +64,5 @@ maybe_coord local_weighted_playout(board *state) {
 	return {};
 }
 
-// namespace mcts_thing::playouts
+// namespace bdg::playouts
 }

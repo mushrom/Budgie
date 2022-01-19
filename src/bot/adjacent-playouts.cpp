@@ -2,7 +2,7 @@
 #include <budgie/playout_strategies.hpp>
 #include <math.h>
 
-namespace mcts_thing::playouts {
+namespace bdg::playouts {
 
 maybe_coord adjacent_3x3_playout(board *state) {
 	coordinate things[25];
@@ -93,5 +93,5 @@ maybe_coord adjacent_5x5_playout(board *state) {
 	return {};
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

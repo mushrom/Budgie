@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace mcts_thing {
+namespace bdg {
 
 enum {
 	PARAM_INT_NONE = 0,
@@ -113,5 +113,5 @@ inline unsigned getUInt(unsigned which)  { return intParameters[which]; }
 inline bool     getBool(unsigned which)  { return boolParameters[which]; }
 inline float    getFloat(unsigned which) { return floatParameters[which]; }
 
-// namespace mcts_thing
+// namespace bdg
 }

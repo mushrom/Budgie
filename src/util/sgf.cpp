@@ -6,7 +6,7 @@
 
 #include <budgie/sgf.hpp>
 
-namespace mcts_thing::sgf {
+namespace bdg::sgf {
 
 int iseof(int c) {
 	return c == EOF;
@@ -159,5 +159,5 @@ void dump(parseNode res, int indent) {
 	}
 }
 
-// namespace mcts_thing::sgf
+// namespace bdg::sgf
 }

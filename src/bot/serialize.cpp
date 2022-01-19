@@ -4,7 +4,7 @@
 #include <schemas/UpdateTree.capnp.h>
 #include <schemas/Board.capnp.h>
 
-using namespace mcts_thing;
+using namespace bdg;
 
 static
 uint32_t serialize_node(Node::Builder& builder,
@@ -196,7 +196,7 @@ mcts_node *deserialize_node(Node::Reader& reader, mcts_node *ptr) {
 	return nullptr;
 }
 
-std::unique_ptr<mcts> mcts_thing::deserializeTree(kj::ArrayPtr<kj::byte> array) {
+std::unique_ptr<mcts> bdg::deserializeTree(kj::ArrayPtr<kj::byte> array) {
 	auto ret = std::make_unique<mcts>();
 
 	kj::ArrayInputStream arr(array);
@@ -206,7 +206,7 @@ std::unique_ptr<mcts> mcts_thing::deserializeTree(kj::ArrayPtr<kj::byte> array) 
 	return ret;
 }
 
-void mcts_thing::serializeTree(kj::BufferedOutputStream& stream, mcts *tree, unsigned since) {
+void bdg::serializeTree(kj::BufferedOutputStream& stream, mcts *tree, unsigned since) {
 	::capnp::MallocMessageBuilder message;
 
 	UpdateTree::Builder builder = message.initRoot<UpdateTree>();

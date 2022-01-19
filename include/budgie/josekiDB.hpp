@@ -14,7 +14,7 @@ static const unsigned MAXSIZE = 19;
 static const unsigned MINSIZE = 5;
 #endif
 
-namespace mcts_thing {
+namespace bdg {
 
 class josekiDB {
 	public:
@@ -112,5 +112,5 @@ class josekiDB {
 		}
 };
 
-// namespace mcts_thing
+// namespace bdg
 }

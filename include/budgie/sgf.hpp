@@ -6,7 +6,7 @@
 #include <optional>
 #include <ctype.h>
 
-namespace mcts_thing::sgf {
+namespace bdg::sgf {
 
 enum tokenType {
 	LEFT_BRACKET,
@@ -70,5 +70,5 @@ typedef parseResult (*parseFunction)(FILE *fp);
 parseResult parseSGF(FILE *fp);
 void dump(parseNode res, int indent = 0);
 
-// namespace mcts_thing::sgf
+// namespace bdg::sgf
 }

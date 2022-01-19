@@ -2,7 +2,7 @@
 #include <budgie/parameters.hpp>
 #include <math.h>
 
-namespace mcts_thing::policies {
+namespace bdg::policies {
 
 static inline double uct(board *state, mcts_node *parent, mcts_node *child) {
 	//unsigned hash = coord_hash_v2(coord);
@@ -70,5 +70,5 @@ maybe_nodeptr uct_tree_policy(board *state, mcts_node *ptr) {
 	return {};
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

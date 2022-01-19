@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-namespace mcts_thing::playouts {
+namespace bdg::playouts {
 
 maybe_coord save_atari_playout(board *state) {
 	point::color current = state->current_player;
@@ -32,5 +32,5 @@ maybe_coord save_atari_playout(board *state) {
 	return {};
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

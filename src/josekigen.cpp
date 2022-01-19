@@ -6,7 +6,7 @@
 
 #include <budgie/sgf.hpp>
 
-using namespace mcts_thing::sgf;
+using namespace bdg::sgf;
 
 struct gameLinear {
 	unsigned size = 19;
@@ -92,7 +92,7 @@ std::optional<gameLinear> extractInfo(parseNode node) {
 #include <iostream>
 #include <algorithm>
 #include <budgie/budgie.hpp>
-using namespace mcts_thing;
+using namespace bdg;
 
 int main(int argc, char *argv[]) {
 	if (argc < 3) {

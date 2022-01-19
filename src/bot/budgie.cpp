@@ -10,7 +10,7 @@
 #include <budgie/parameters.hpp>
 #include <budgie/utility.hpp>
 
-namespace mcts_thing {
+namespace bdg {
 
 budgie::budgie(args_parser::option_map& opts)
 	: pool(stoi(opts["worker-threads"]))
@@ -200,5 +200,5 @@ std::unique_ptr<mcts> budgie::init_mcts(args_parser::option_map& options) {
 	}
 }
 
-// namespace mcts_thing
+// namespace bdg
 }

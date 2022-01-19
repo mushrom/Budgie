@@ -6,7 +6,7 @@
 #include <budgie/args_parser.hpp>
 #include <budgie/budgie.hpp>
 
-namespace mcts_thing {
+namespace bdg {
 
 class distributed_client {
 	public:
@@ -24,5 +24,5 @@ class distributed_client {
 		unsigned playouts;
 };
 
-// namespace mcts_thing
+// namespace bdg
 }

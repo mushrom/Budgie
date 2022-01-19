@@ -5,7 +5,7 @@
 #include <string>
 #include <iterator>
 
-namespace mcts_thing {
+namespace bdg {
 
 // XXX: leaving this here for now, to avoid inadvertently messing up
 //      GTP parsing in the same commit as adding utility.hpp
@@ -215,5 +215,5 @@ void gtp_client::repl(args_parser::option_map& options) {
 	}
 }
 
-// mcts_thing
+// bdg
 }

@@ -17,7 +17,7 @@
 [[deprecated]]
 int rand(void);
 
-namespace mcts_thing {
+namespace bdg {
 
 typedef std::pair<unsigned, unsigned> coordinate;
 
@@ -250,5 +250,5 @@ class board {
 		bool clear_own_stones(const coordinate& coord, point::color color);
 };
 
-// namespace mcts_thing
+// namespace bdg
 }

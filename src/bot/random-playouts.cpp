@@ -1,7 +1,7 @@
 #include <budgie/mcts.hpp>
 #include <math.h>
 
-namespace mcts_thing::playouts {
+namespace bdg::playouts {
 
 maybe_coord random_playout(board *state) {
 	/*
@@ -30,5 +30,5 @@ maybe_coord random_playout(board *state) {
 	}
 }
 
-// namespace mcts_thing
+// namespace bdg
 }
