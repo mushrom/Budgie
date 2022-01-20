@@ -4,6 +4,8 @@
 #include <budgie/pattern_db.hpp>
 #include <budgie/ts_forward_list.hpp>
 #include <budgie/thread_pool.hpp>
+#include <budgie/move_queue.hpp>
+
 #include <stdint.h>
 #include <list>
 #include <utility>
@@ -222,7 +224,7 @@ typedef std::optional<coordinate> maybe_coord;
 typedef std::optional<mcts_node*> maybe_nodeptr;
 
 typedef std::function<maybe_nodeptr(board *state, mcts_node *ptr)> tree_policy;
-typedef std::function<maybe_coord(board *state)> playout_strategy;
+typedef std::function<void(board *state, move_queue& queue)> playout_strategy;
 
 // callback type for examining tree state at various points
 // bit of a XXX

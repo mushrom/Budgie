@@ -6,13 +6,13 @@
 
 namespace bdg::playouts {
 
-maybe_coord save_atari_playout(board *state) {
+void save_atari_playout(board *state, move_queue& queue) {
 	point::color current = state->current_player;
 	std::list<group*>& ataris = state->group_liberties[current][1];
 	std::uniform_int_distribution<unsigned> diceroll(0, 5);
 
 	// TODO: probability here should be configurable
-	if (diceroll(state->randomgen) == 0 && !ataris.empty()) {
+	if (/*diceroll(state->randomgen) == 0 &&*/ !ataris.empty()) {
 		std::uniform_int_distribution<unsigned> atarichoice(0, ataris.size()-1);
 
 		// pick a random group to capture
@@ -20,16 +20,12 @@ maybe_coord save_atari_playout(board *state) {
 		//assert(ptr != nullptr);
 		coordinate next = *ptr->liberties.begin();
 
-		if (!state->is_valid_move(next)) {
-			return {};
-		} else {
-			return next;
+		if (state->is_valid_move(next)) {
+			queue.add(next, 100);
 		}
-
-		//std::cerr << "boom! saved a group!" << std::endl;
 	}
 
-	return {};
+	//return {};
 }
 
 // namespace bdg

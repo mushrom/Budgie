@@ -48,6 +48,7 @@ set(BOT_LOGIC_SRC
 	src/bot/serialize.cpp
 	src/bot/uct-tree-policy.cpp
 	src/bot/uct-rave-tree-policy.cpp
+	src/bot/move_queue.cpp
 	src/util/sgf.cpp
 )
 

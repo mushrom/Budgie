@@ -3,7 +3,7 @@
 
 namespace bdg::playouts {
 
-maybe_coord local_weighted_playout(board *state) {
+void local_weighted_playout(board *state, move_queue& queue) {
 	coordinate things[9];
 	unsigned weights[9];
 	unsigned found = 0;
@@ -32,36 +32,9 @@ maybe_coord local_weighted_playout(board *state) {
 			}
 
 			unsigned weight = get_pattern_db().search(state, foo);
-
-			if (weight < 100) {
-				continue;
-			}
-
-			//fprintf(stderr, "weight: %u\n", weight);
-
-			things[found] = foo;
-			weights[found] = weight;
-			found++;
-			total_weights += weight;
+			queue.add(foo, weight);
 		}
 	}
-
-	if (found > 0) {
-		std::uniform_int_distribution<unsigned> foundindex(0, total_weights-1);
-		unsigned choice = foundindex(state->randomgen);
-		unsigned weightsum = 0;
-
-		//fprintf(stderr, "choice: %u, weightsum: %u\n", choice, total_weights);
-
-		for (unsigned i = 0; i < found; i++) {
-			weightsum += weights[i];
-			if (choice < weightsum) {
-				return things[i];
-			}
-		}
-	}
-
-	return {};
 }
 
 // namespace bdg::playouts

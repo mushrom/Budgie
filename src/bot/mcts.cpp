@@ -1,6 +1,9 @@
 #include <budgie/mcts.hpp>
 #include <budgie/pattern_db.hpp>
 #include <budgie/parameters.hpp>
+#include <budgie/move_queue.hpp>
+#include <budgie/thread_pool.hpp>
+
 #include <random>
 #include <chrono>
 #include <algorithm>
@@ -10,9 +13,6 @@
 #include <assert.h>
 #include <float.h>
 #include <string.h>
-
-#include <budgie/thread_pool.hpp>
-
 
 #define MIN(a, b) ((a < b)? a : b)
 #define MAX(a, b) ((a > b)? a : b)
@@ -142,24 +142,14 @@ void mcts::playout(board *state, mcts_node *ptr) {
 
 	// terminates when no strategies find a valid move to play
 	for (;;) {
-		//coordinate next;
-		maybe_coord next;
-
-		/*
-		if (state->moves > 4*state->dimension*state->dimension) {
-			ptr->update(state);
-			return;
-		}
-		*/
-
+		move_queue que;
 
 		for (const auto& strat : playout_strats) {
-			if (next = strat(state)) {
-				break;
-			}
+			strat(state, que);
 		}
 
-		if (!next) {
+		coordinate temp = que.choose(state);
+		if (temp == coordinate {0,0}) {
 			//getchar();
 			ptr->update(state);
 
@@ -170,10 +160,10 @@ void mcts::playout(board *state, mcts_node *ptr) {
 		}
 
 		if (playout_probe) {
-			(*playout_probe)(state, ptr, *next);
+			(*playout_probe)(state, ptr, temp);
 		}
 
-		state->make_move(*next);
+		state->make_move(temp);
 
 		//state->print();
 		//usleep(250000);

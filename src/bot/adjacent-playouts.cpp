@@ -4,13 +4,10 @@
 
 namespace bdg::playouts {
 
-maybe_coord adjacent_3x3_playout(board *state) {
-	coordinate things[25];
-	unsigned found = 0;
-
+void adjacent_3x3_playout(board *state, move_queue& queue) {
 	if (state->moves == 0) {
 		// don't use adjacency for the first move
-		return {};
+		return;
 	}
 
 	// picks randomly from the 3x3 grid surrounding the player
@@ -26,36 +23,17 @@ maybe_coord adjacent_3x3_playout(board *state) {
 				continue;
 			}
 
-			if (state->get_coordinate(foo) == point::Empty) {
-				things[found++] = foo;
+			if (state->get_coordinate(foo) == point::Empty && state->is_valid_move(foo)) {
+				queue.add(foo, 100);
 			}
 		}
 	}
-
-	if (found > 0) {
-		// TODO: will constructing distributions like this be a performance problem?
-		std::uniform_int_distribution<unsigned> udist(0, found-1);
-		coordinate next = things[udist(state->randomgen)];
-
-		// TODO: check some number of other possibilities
-		if (!state->is_valid_move(next)) {
-			return {};
-
-		} else {
-			return next;
-		}
-	}
-
-	return {};
 }
 
-maybe_coord adjacent_5x5_playout(board *state) {
-	coordinate things[25];
-	unsigned found = 0;
-
+void adjacent_5x5_playout(board *state, move_queue& queue) {
 	if (state->moves == 0) {
 		// don't use adjacency for the first move
-		return {};
+		return;
 	}
 
 	// picks randomly from the 5x5 grid surrounding the player
@@ -71,26 +49,11 @@ maybe_coord adjacent_5x5_playout(board *state) {
 				continue;
 			}
 
-			if (state->get_coordinate(foo) == point::Empty) {
-				things[found++] = foo;
+			if (state->get_coordinate(foo) == point::Empty && state->is_valid_move(foo)) {
+				queue.add(foo, 100);
 			}
 		}
 	}
-
-	if (found > 0) {
-		std::uniform_int_distribution<unsigned> udist(0, found-1);
-		coordinate next = things[udist(state->randomgen)];
-
-		// TODO: check some number of other possibilities
-		if (!state->is_valid_move(next)) {
-			return {};
-
-		} else {
-			return next;
-		}
-	}
-
-	return {};
 }
 
 // namespace bdg
