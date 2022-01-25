@@ -4,12 +4,6 @@
 namespace bdg::playouts {
 
 void local_weighted_playout(board *state, move_queue& queue) {
-	coordinate things[9];
-	unsigned weights[9];
-	unsigned found = 0;
-	// default weight is 100, so look for anything better than random
-	unsigned total_weights = 0;
-
 	// TODO: collect all neighbors and choose randomly based on weight,
 	//       rather than picking the highest rated
 	for (int y = -1; y <= 1; y++) {

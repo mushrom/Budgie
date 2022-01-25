@@ -376,15 +376,12 @@ void init_node_root(mcts_node *ptr, board *state) {
 #undef M
 #define M 50
 void init_node_heuristics(mcts_node *ptr, board *state) {
-	point::color grid[9];
-
 	for (mcts_node *leaf : ptr->leaves_alive) {
 		if (leaf->coord == coordinate {0, 0}) {
 			leaf->prior_wins = 10;
 			leaf->prior_traversals = 100;
 			continue;
 		}
-		unsigned hash = coord_hash_v2(leaf->coord);
 
 		if (getBool(PARAM_BOOL_MCTS_INIT_PATTERNS)) {
 			unsigned pat = get_pattern_db().search(state, leaf->coord);
@@ -411,11 +408,6 @@ void init_node_heuristics(mcts_node *ptr, board *state) {
 			leaf->prior_traversals = M;
 		}
 	}
-}
-
-// XXX: TODO:
-static unsigned coord_to_index(board *state, const coordinate& coord) {
-	return state->dimension*(coord.second - 1) + (coord.first - 1);
 }
 
 void init_joseki_hash(mcts_node *ptr, board *state, uint64_t boardhash) {
@@ -550,7 +542,6 @@ bool mcts_node::try_expanding(board *state) {
 		}
 		*/
 
-		unsigned index = coord_hash_v2(coord);
 		mcts_node *node = new mcts_node(this, state->current_player);
 
 		node->criticality = criticality;
@@ -679,7 +670,6 @@ void mcts_node::update_stats(board *state, point::color winner) {
 				continue;
 			}
 
-			bool won = foo->color == winner;
 			if (ptr->rave) {
 				(*ptr->rave)[hash].wins += foo->color == winner;
 				(*ptr->rave)[hash].traversals++;
@@ -705,7 +695,6 @@ void mcts_node::update(board *state) {
 
 	for (mcts_node *ptr = this; ptr; ptr = ptr->parent) {
 		bool won = ptr->color == winner;
-		unsigned hash = coord_hash_v2(ptr->coord);
 
 		/*
 		if (ptr->parent) {

@@ -37,6 +37,7 @@ enum parseType {
 	SGF,
 };
 
+[[maybe_unused]]
 static const char *parseStrings[] = {
 	"NONE",
 	"VALUE",

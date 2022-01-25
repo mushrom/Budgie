@@ -12,8 +12,6 @@ void attack_enemy_groups_playout(board *state, move_queue& queue) {
 	std::list<group*>& weakgrps = state->group_liberties[other][2];
 	std::uniform_int_distribution<unsigned> dice(0, 5);
 
-	unsigned roll = dice(state->randomgen);
-
 	// TODO: probability here should be configurable
 	if (/*roll == 0 &&*/ !weakgrps.empty()) {
 		std::uniform_int_distribution<unsigned> coinflip(0, 1);

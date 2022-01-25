@@ -24,7 +24,10 @@ distributed_mcts::~distributed_mcts() {
 
 void distributed_mcts::explore(board *state) {
 	zmq::message_t request;
-	socket->recv(&request);
+	if (!socket->recv(request)) {
+		// shouldn't get here, I don't think
+		return;
+	}
 
 	uint8_t *dat = static_cast<uint8_t*>(request.data());
 	//std::vector<uint32_t> vec(dat, dat + request.size()/4);
@@ -57,7 +60,7 @@ void distributed_mcts::explore(board *state) {
 	auto array = outstream.getArray();
 	zmq::message_t reply(array.size());
 	memcpy(reply.data(), array.begin(), array.size());
-	socket->send(reply);
+	socket->send(reply, zmq::send_flags::none);
 
 	std::cerr << " <-- "
 		<< (merged? "merged, " : "rejected, ")

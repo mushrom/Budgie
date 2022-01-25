@@ -22,7 +22,7 @@ static inline double uct(board *state, mcts_node *parent, mcts_node *child) {
 			double w = cstats.covariance();
 			double trav = fabs(w) * rstats.traversals;
 			double wins = std::max(0.0, w) * rstats.traversals;
-			rave_est = (double)(rstats.wins + w) / (double)(rstats.traversals + w);
+			rave_est = (double)(rstats.wins + wins) / (double)(rstats.traversals + trav);
 
 		} else {
 			rave_est = (double)(rstats.wins) / (double)(rstats.traversals);

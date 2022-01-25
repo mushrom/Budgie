@@ -88,6 +88,8 @@ uint32_t serialize_node(Node::Builder& builder,
 	return 0;
 };
 
+// TODO: this
+#if 0
 static
 mcts_node *deserialize_node(Node::Reader& reader, mcts_node *ptr) {
 	/*
@@ -195,13 +197,14 @@ mcts_node *deserialize_node(Node::Reader& reader, mcts_node *ptr) {
 
 	return nullptr;
 }
+#endif
 
 std::unique_ptr<mcts> bdg::deserializeTree(kj::ArrayPtr<kj::byte> array) {
 	auto ret = std::make_unique<mcts>();
 
 	kj::ArrayInputStream arr(array);
 	::capnp::PackedMessageReader message(arr);
-	UpdateTree::Reader reader = message.getRoot<UpdateTree>();
+	//UpdateTree::Reader reader = message.getRoot<UpdateTree>();
 
 	return ret;
 }

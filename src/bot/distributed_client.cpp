@@ -39,7 +39,7 @@ void distributed_client::run() {
 		memcpy(request.data(), array.begin(), array.size());
 		//memset(request.data(), 'A', 1024);
 		std::cerr << " <-- sending " << request.size() << " bytes" << std::endl;
-		socket->send(request);
+		socket->send(request, zmq::send_flags::none);
 		std::cerr << '.' << std::flush;
 
 		// merge updates into the sync tree
@@ -51,7 +51,9 @@ void distributed_client::run() {
 
 		// get reply from server, deserialize
 		zmq::message_t reply;
-		socket->recv(&reply);
+		auto res = socket->recv(reply);
+		// XXX: shouldn't ever reach the continue, I don't think?
+		if (!res) continue;
 
 		///uint32_t *datas = static_cast<uint32_t*>(reply.data());
 		//uint8_t *datas = static_cast<uint8_t*>(reply.data());

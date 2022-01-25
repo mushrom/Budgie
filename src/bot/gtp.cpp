@@ -136,17 +136,12 @@ void gtp_client::repl(args_parser::option_map& options) {
 			bot.set_player(string_to_color(args[1]));
 			budgie::move move = bot.genmove();
 
-			//std::cerr << "Testing this!" << std::endl;
-
 			if (move.type == budgie::move::types::Move) {
-				unsigned hash = coord_hash_v2(move.coord);
-
 				if (bot.ogsChat) {
 					std::cerr
 						<< "MALKOVICH: "
 						<< "win rate: " << 100*bot.tree->win_rate(move.coord)
 						<< "%, traversals: "
-						//<< std::dec << bot.tree->root->leaves[hash]->traversals
 						<< std::endl;
 
 					std::flush(std::cerr);
