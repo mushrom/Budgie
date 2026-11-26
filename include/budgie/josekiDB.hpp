@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <cstdint>
 
 #ifndef MAXSIZE
 // TODO: constants header, so things like this can be baked at compile time

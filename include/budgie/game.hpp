@@ -1,6 +1,7 @@
 #pragma once
 
 #include <budgie/josekiDB.hpp>
+#include <array>
 #include <vector>
 #include <utility>
 #include <stdio.h>
